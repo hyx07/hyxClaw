@@ -2,6 +2,143 @@
 
 本地运行的知识库 AI 助手，提供 Web 对话界面、会话管理、受限文件操作、Markdown 知识库和 Token 用量统计。
 
+## 环境要求
+
+- Node.js >= 22.16.0
+- pnpm >= 10.23.0
+
+## 快速开始
+
+```powershell
+pnpm install
+
+在项目根目录创建 .env，并指定用户数据目录
+```
+HYXCLAW_DATA_DIR=C:\MyData
+```
+
+# 复制模板、创建所需目录，并生成配置文件
+pnpm dev init
+
+# 编辑 ${HYXCLAW_DATA_DIR}\config.json，填入模型提供商和搜索提供商的 API Key；默认模型提供商API Key必填，否则无法启动，其他API Key不填则相应功能禁用。
+
+pnpm build
+pnpm start
+```
+
+浏览器打开 `http://127.0.0.1:3000`。启动时也可使用 `pnpm start -- -p 8080` 或 `pnpm start -- --host 0.0.0.0` 覆盖端口和地址。
+
+`HYXCLAW_DATA_DIR` 必须设置；程序不会为它选择默认目录。初始化不会覆盖数据目录中已有的文件。
+
+## 配置
+
+首次执行 `init` 后，模板配置写入 `{HYXCLAW_DATA_DIR}/config.json`。当前可用字段以 [templates/config.json](templates/config.json) 为准；以下示例展示配置结构：
+
+```jsonc
+{
+  "providers": {
+    "zai": {
+      "apiKey": "填入你的api key",
+      "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+      "models": [
+        {
+          "id": "GLM-5.2",
+          "label": "GLM-5.2",
+          "thinking": [
+            { "id": "enabled", "params": { "thinking": { "type": "enabled" } } }
+          ],
+          "thinkingOff": { "thinking": { "type": "disabled" } }
+        }
+      ]
+    },
+    "dashscope": {
+      "apiKey": "填入你的api key",
+      "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "models": [
+        {
+          "id": "qwen3.6-flash",
+          "label": "qwen3.6-flash",
+          "modal": "vl",
+          "thinking": [
+            { "id": "512", "params": { "enable_thinking": true, "thinking_budget": 512 } },
+            { "id": "1024", "params": { "enable_thinking": true, "thinking_budget": 1024 } },
+            { "id": "4096", "params": { "enable_thinking": true, "thinking_budget": 4096 } },
+            { "id": "8192", "params": { "enable_thinking": true, "thinking_budget": 8192 } }
+          ],
+          "thinkingOff": { "enable_thinking": false }
+        },
+        {
+          "id": "deepseek-v4-flash",
+          "label": "v4-flash",
+          "thinking": [
+            { "id": "high", "params": { "enable_thinking": true, "reasoning_effort": "high" } },
+            { "id": "max", "params": { "enable_thinking": true, "reasoning_effort": "max" } }
+          ],
+          "thinkingOff": { "enable_thinking": false }
+        }
+      ]
+    },
+    "deepseek": {
+      "apiKey": "填入你的api key",
+      "baseUrl": "https://api.deepseek.com",
+      "models": [
+        {
+          "id": "deepseek-v4-flash",
+          "label": "v4-flash",
+          "thinking": [
+            { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
+            { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }
+          ],
+          "thinkingOff": { "thinking": { "type": "disabled" } }
+        }
+      ]
+    }
+  },
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-v4-flash",
+  "defaultThinkingEffort": "high",
+  "maxTokens": 8192,
+  "contextMaxTokens": 500000,
+  "contextMaxMessages": 0,
+  "maxToolCalls": 30,
+  "server": { "port": 3000, "host": "127.0.0.1" },
+  "fs": {
+    "allowedDirs": ["inputs", "knowledge_base", "files"],
+    "allowedFiles": []
+  },
+  "tools": {
+    "tavily": {
+      "enabled": true,
+      "apiKey": "",
+      "baseUrl": "https://api.tavily.com",
+      "searchDepth": "basic",
+      "maxResults": 10,
+      "includeAnswer": false,
+      "includeRawContent": false,
+      "includeUsage": false,
+      "timeoutMs": 30000,
+      "maxSearchContentChars": 2000,
+      "fetchDepth": "basic",
+      "fetchFormat": "markdown",
+      "maxFetchedChars": 50000
+    }
+  },
+  "compaction": {
+    "provider": "deepseek",
+    "model": "deepseek-v4-flash",
+    "thinkingEffort": "none"
+  }
+}
+```
+
+说明：
+
+- `defaultModel` 必须属于 `defaultProvider` 的 `models`。
+- `thinking` 是模型支持的思考选项。每个选项通过 `params` 原样传给该提供商；`thinkingOff` 定义关闭思考时的参数。
+- `modal: "vl"` 可标记支持视觉输入的模型。
+- 文件工具只能访问 `fs.allowedDirs` 与 `fs.allowedFiles`。路径均相对于数据目录。
+- Tavily 配置完整字段和默认值见 [schema.ts](src/config/schema.ts)。
+
 ## 功能
 
 - 多会话对话：创建、切换、重命名、删除、截断与 LLM 摘要压缩
@@ -14,6 +151,7 @@
 - 本地存储：会话、配置、提示词和统计数据均保存在本地数据目录
 
 ## 操作说明
+项目已内置操作说明，可以询问AI具体操作。
 
 ### 面板介绍
 
@@ -122,143 +260,6 @@
 ### 异地使用
 
 所有的本地数据就放置在${HYXCLAW_DATA_DIR}这个数据文件夹中，整个数据文件夹可以在github备份，在不同的电脑上同步该文件夹即可使用。
-
-## 环境要求
-
-- Node.js >= 22.16.0
-- pnpm >= 10.23.0
-
-## 快速开始
-
-```powershell
-pnpm install
-
-在项目根目录创建 .env，并指定用户数据目录
-```
-HYXCLAW_DATA_DIR=C:\MyData
-```
-
-# 复制模板、创建所需目录，并生成配置文件
-pnpm dev init
-
-# 编辑 ${HYXCLAW_DATA_DIR}\config.json，填入模型提供商和搜索提供商的 API Key；默认模型提供商API Key必填，否则无法启动，其他API Key不填则相应功能禁用。
-
-pnpm build
-pnpm start
-```
-
-浏览器打开 `http://127.0.0.1:3000`。启动时也可使用 `pnpm start -- -p 8080` 或 `pnpm start -- --host 0.0.0.0` 覆盖端口和地址。
-
-`HYXCLAW_DATA_DIR` 必须设置；程序不会为它选择默认目录。初始化不会覆盖数据目录中已有的文件。
-
-## 配置
-
-首次执行 `init` 后，模板配置写入 `{HYXCLAW_DATA_DIR}/config.json`。当前可用字段以 [templates/config.json](templates/config.json) 为准；以下示例展示配置结构：
-
-```jsonc
-{
-  "providers": {
-    "zai": {
-      "apiKey": "",
-      "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
-      "models": [
-        {
-          "id": "GLM-5.2",
-          "label": "GLM-5.2",
-          "thinking": [
-            { "id": "enabled", "params": { "thinking": { "type": "enabled" } } }
-          ],
-          "thinkingOff": { "thinking": { "type": "disabled" } }
-        }
-      ]
-    },
-    "dashscope": {
-      "apiKey": "",
-      "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-      "models": [
-        {
-          "id": "qwen3.6-flash",
-          "label": "qwen3.6-flash",
-          "modal": "vl",
-          "thinking": [
-            { "id": "512", "params": { "enable_thinking": true, "thinking_budget": 512 } },
-            { "id": "1024", "params": { "enable_thinking": true, "thinking_budget": 1024 } },
-            { "id": "4096", "params": { "enable_thinking": true, "thinking_budget": 4096 } },
-            { "id": "8192", "params": { "enable_thinking": true, "thinking_budget": 8192 } }
-          ],
-          "thinkingOff": { "enable_thinking": false }
-        },
-        {
-          "id": "deepseek-v4-flash",
-          "label": "v4-flash",
-          "thinking": [
-            { "id": "high", "params": { "enable_thinking": true, "reasoning_effort": "high" } },
-            { "id": "max", "params": { "enable_thinking": true, "reasoning_effort": "max" } }
-          ],
-          "thinkingOff": { "enable_thinking": false }
-        }
-      ]
-    },
-    "deepseek": {
-      "apiKey": "",
-      "baseUrl": "https://api.deepseek.com",
-      "models": [
-        {
-          "id": "deepseek-v4-flash",
-          "label": "v4-flash",
-          "thinking": [
-            { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
-            { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }
-          ],
-          "thinkingOff": { "thinking": { "type": "disabled" } }
-        }
-      ]
-    }
-  },
-  "defaultProvider": "deepseek",
-  "defaultModel": "deepseek-v4-flash",
-  "defaultThinkingEffort": "high",
-  "maxTokens": 8192,
-  "contextMaxTokens": 500000,
-  "contextMaxMessages": 0,
-  "maxToolCalls": 30,
-  "server": { "port": 3000, "host": "127.0.0.1" },
-  "fs": {
-    "allowedDirs": ["inputs", "knowledge_base", "files"],
-    "allowedFiles": []
-  },
-  "tools": {
-    "tavily": {
-      "enabled": true,
-      "apiKey": "",
-      "baseUrl": "https://api.tavily.com",
-      "searchDepth": "basic",
-      "maxResults": 10,
-      "includeAnswer": false,
-      "includeRawContent": false,
-      "includeUsage": false,
-      "timeoutMs": 30000,
-      "maxSearchContentChars": 2000,
-      "fetchDepth": "basic",
-      "fetchFormat": "markdown",
-      "maxFetchedChars": 50000
-    }
-  },
-  "compaction": {
-    "provider": "deepseek",
-    "model": "deepseek-v4-flash",
-    "thinkingEffort": "none"
-  }
-}
-```
-
-说明：
-
-- `defaultModel` 必须属于 `defaultProvider` 的 `models`。
-- `thinking` 是模型支持的思考选项。每个选项通过 `params` 原样传给该提供商；`thinkingOff` 定义关闭思考时的参数。
-- `modal: "vl"` 可标记支持视觉输入的模型。
-- 文件工具只能访问 `fs.allowedDirs` 与 `fs.allowedFiles`。路径均相对于数据目录。
-- Tavily 配置完整字段和默认值见 [schema.ts](src/config/schema.ts)。
 
 ## CLI
 
