@@ -1,6 +1,6 @@
 import { escHtml, formatTokens, formatCost } from "../format.js";
 
-const CHART_COLORS = ["#268bd2", "#2aa198", "#b58900", "#d33682", "#6c71c4", "#dc322f", "#859900", "#cb4b16"];
+const CHART_COLORS = ["#396fe5", "#2f9d85", "#c68a31", "#a06585", "#6b78c7", "#c45c5c", "#5f9f62", "#c56f45"];
 let activeUsageTab = "daily";
 let activeUsageDays = 7;
 let activeUsageMetric = "tokens";

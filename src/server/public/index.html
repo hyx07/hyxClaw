@@ -41,7 +41,7 @@
         <span>主题</span>
         <span class="settings-arrow"><i data-lucide="chevron-right"></i></span>
         <div class="settings-submenu">
-          <div class="settings-option" data-theme="light">米黄</div>
+          <div class="settings-option" data-theme="light">卡其</div>
           <div class="settings-option" data-theme="daylight">明亮</div>
           <div class="settings-option" data-theme="monochrome">墨灰</div>
         </div>
@@ -211,7 +211,7 @@
       <h3>主题 / 字体 / 字号</h3>
       <p>左下角 ⚙ 设置面板提供三种自定义：</p>
       <ul>
-        <li><strong>主题</strong>：米黄（Solarized Light）、明亮（纯白）、墨灰（深色）</li>
+        <li><strong>主题</strong>：卡其、明亮（纯白）、墨灰（深色）</li>
         <li><strong>字体</strong>：系统默认、楷体、宋体，仅影响消息正文的 Markdown 渲染区域</li>
         <li><strong>字号</strong>：10-20px 滑块，实时预览</li>
       </ul>
@@ -241,7 +241,7 @@
       <h3>工具权限控制</h3>
       <p>左下角"写入权限"复选框：勾选后 write / edit / delete / move / web_search / web_fetch 六类操作全部跳过确认弹窗，直接执行。未勾选时这六类操作每次都会弹出确认框，展示操作路径和内容预览，需手动批准。切换开关只影响之后发起的权限请求，当前已显示的确认框仍需手动选择。read / list / grep 等只读工具始终直接执行，不受此开关影响。</p>
       <h3>Token 计数、会话用量与费用统计</h3>
-      <p>顶部工具栏右侧实时显示当前会话最后一次 LLM 请求的 token 摘要（In / CR / Out / All）：In 为输入 token，CR 为输入中命中缓存的 token，Out 为不含 reasoning 的最终输出 token，All = In + Out。CR 是 In 的子集，不会额外计入 All；reasoning token 也不包含在 Out 和 All 中。All 可作为当前会话上下文的近似参考。数值小于等于 100 时显示实际整数，超过 100 时以一位小数的 k 显示。背景色随 All 值变化：超过 10 万变黄，超过 20 万变红，提示上下文长度变化。</p>
+      <p>顶部工具栏右侧实时显示当前会话最后一次 LLM 请求的 token 摘要（In / Out / All）：In 为输入 token，Out 为不含 reasoning 的最终输出 token，All = In + Out。reasoning token 不包含在 Out 和 All 中。All 可作为当前会话上下文的近似参考。数值小于等于 100 时显示实际整数，超过 100 时以一位小数的 k 显示。背景色随 All 值变化：超过 10 万变黄，超过 20 万变红，提示上下文长度变化。</p>
       <p>点击工具栏的 📊 按钮可打开完整用量与费用统计面板：</p>
       <ul>
         <li><strong>按时间</strong>：7 天或 30 天的堆叠柱状图，按模型和 Provider 分色展示每日 Token 用量；可切换到费用视图查看每日费用</li>

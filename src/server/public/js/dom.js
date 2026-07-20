@@ -305,13 +305,15 @@ export function createChatView({ state, documents, pickers, permissions, actions
 
   function updateSidebarCollapseIcon() {
     const sidebar = document.getElementById("sidebar");
-    const icon = document.querySelector("#sidebar-collapse-btn i");
-    if (!icon) return;
-    if (sidebar.classList.contains("collapsed")) {
-      icon.setAttribute("data-lucide", "panel-left-open");
-    } else {
-      icon.setAttribute("data-lucide", "panel-left-close");
-    }
+    const button = document.getElementById("sidebar-collapse-btn");
+    if (!sidebar || !button) return;
+
+    const isCollapsed = sidebar.classList.contains("collapsed");
+    const label = isCollapsed ? "展开侧栏" : "收起侧栏";
+    button.innerHTML = `<i data-lucide="${isCollapsed ? "panel-left-open" : "panel-left-close"}"></i>`;
+    button.title = label;
+    button.setAttribute("aria-label", label);
+    button.setAttribute("aria-expanded", String(!isCollapsed));
   }
 
   /* ---- Modal Esc handling ---- */

@@ -31,13 +31,14 @@
   --rail-default-width: clamp(280px, 30vw, 420px);
   --rail-collapsed-width: 44px;
   --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
-  --bg-surface: #fffaf0;
-  --bg-elevated: #fffdf7;
-  --toolbar-menu-bg: #f5ecd8;
-  --toolbar-menu-selected-bg: #e7dcc1;
-  --hover-bg: rgba(88, 110, 117, 0.08);
-  --send-btn-disabled-bg: #bec3c4;
-  --send-btn-disabled-text: #697174;
+  --bg-surface: #f4eedc;
+  --bg-elevated: #faf4e4;
+  --toolbar-menu-bg: #ddd6c1;
+  --toolbar-menu-selected-bg: #d3cbb5;
+  --empty-state-icon-bg: #e4decb;
+  --hover-bg: rgba(86, 92, 101, 0.08);
+  --send-btn-disabled-bg: #b9baa9;
+  --send-btn-disabled-text: #6c7069;
 }
 
 html[data-theme="daylight"] {
@@ -49,6 +50,7 @@ html[data-theme="daylight"] {
   --bg-elevated: #ffffff;
   --toolbar-menu-bg: #ffffff;
   --toolbar-menu-selected-bg: #edf2ff;
+  --empty-state-icon-bg: #edf2ff;
   --border: #e5e7eb;
   --border-strong: #cfd4dc;
   --text: #3f4754;
@@ -63,24 +65,30 @@ html[data-theme="daylight"] {
   --send-btn-hover: #234bc8;
   --send-btn-disabled-bg: #d1d5db;
   --send-btn-disabled-text: #7f8792;
-  --user-bg: #f1f4fb;
+  --user-bg: #ebf5ff;
   --assistant-bg: transparent;
   --composer-bg: #ffffff;
   --chat-header-bg: rgba(255, 255, 255, 0.88);
   --hover-bg: rgba(17, 24, 39, 0.055);
 }
 
+html[data-theme="daylight"] .session-item.active,
+html[data-theme="daylight"] .doc-entry.active {
+  background: #e1e4e8;
+}
+
 html[data-theme="monochrome"] {
   --bg: #202020;
   --bg2: #181818;
-  --bg3: #262626;
-  --bg4: #2a2a2a;
-  --bg-surface: #252525;
-  --bg-elevated: #2b2b2b;
-  --toolbar-menu-bg: #2b2b2b;
-  --toolbar-menu-selected-bg: #333333;
-  --border: #383838;
-  --border-strong: #505050;
+  --bg3: #2c2c2c;
+  --bg4: #303030;
+  --bg-surface: #2e2e2e;
+  --bg-elevated: #323232;
+  --toolbar-menu-bg: #2c2c2c;
+  --toolbar-menu-selected-bg: #383838;
+  --empty-state-icon-bg: #333333;
+  --border: #4a4a4a;
+  --border-strong: #626262;
   --text: #d5d5d5;
   --text1: #f4f4f4;
   --text2: #b7b7b7;
@@ -527,7 +535,10 @@ input:focus-visible {
   border-radius: var(--radius-md);
 }
 #doc-preview-content.markdown-body blockquote {
-  background: var(--toolbar-menu-selected-bg);
+  background: var(--user-bg);
+}
+html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
+  background: #292929;
 }
 .reasoning-block summary,
 .tool-block summary {
@@ -569,7 +580,7 @@ input:focus-visible {
   justify-content: center;
   margin-bottom: var(--space-2);
   color: var(--accent);
-  background: var(--accent-soft);
+  background: var(--empty-state-icon-bg);
   border-radius: var(--radius-lg);
 }
 .empty-state-icon .lucide,
@@ -1382,16 +1393,16 @@ input:focus-visible {
   background: var(--hover-bg);
 }
 
-/* Keep the statistics surface neutral in the warm theme so accent controls remain legible. */
+/* Keep the statistics surface aligned with the khaki theme. */
 html:not([data-theme]) #usage-panel,
 html[data-theme="light"] #usage-panel,
 html:not([data-theme]) #usage-table,
 html[data-theme="light"] #usage-table {
-  background: #ffffff;
+  background: var(--bg-elevated);
 }
 html:not([data-theme]) #usage-table th,
 html[data-theme="light"] #usage-table th {
-  background: #f7f8fa;
+  background: var(--bg4);
 }
 
 @media (max-width: 720px) {

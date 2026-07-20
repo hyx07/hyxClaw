@@ -4,53 +4,53 @@
     :root {
       --md-font-family: system-ui, -apple-system, sans-serif;
       --md-font-size: 14px;
-      --bg: #fdf6e3;
-      --bg2: #eee8d5;
-      --bg3: #fffaf0;
-      --bg4: #f7efd9;
-      --border: #d6ccb1;
-      --border-strong: #b9ad8f;
-      --resize-divider: rgba(185, 173, 143, 0.5);
-      --text: #657b83;
-      --text1: #586e75;
-      --text2: #586e75;
-      --muted: #839496;
-      --accent: #268bd2;
+      --bg: #eee8d5;
+      --bg2: #e4decb;
+      --bg3: #f4eedc;
+      --bg4: #e8e1ce;
+      --border: #c3bead;
+      --border-strong: #aaa590;
+      --resize-divider: rgba(195, 190, 173, 0.58);
+      --text: #565c65;
+      --text1: #414750;
+      --text2: #626975;
+      --muted: #85877f;
+      --accent: #396fe5;
       --accent-text: #ffffff;
-      --accent-soft: #e4f1fa;
-      --accent-hover: #2aa198;
-      --user-bg: #f5e6d3;
+      --accent-soft: #e4edff;
+      --accent-hover: #295bc4;
+      --user-bg: #e3dcc7;
       --assistant-bg: #eee8d5;
-      --danger: #dc322f;
-      --danger-soft: #fde7e4;
-      --success: #2aa198;
-      --success-soft: #e1f3ef;
-      --shadow: 0 8px 28px rgba(88, 110, 117, 0.12);
+      --danger: #ad5e58;
+      --danger-soft: #f2dfdc;
+      --success: #4c9b72;
+      --success-soft: #ddf1e5;
+      --shadow: 0 8px 28px rgba(65, 71, 80, 0.14);
 
-      --bullet-dot: #1f2528;
-      --status-connected: #4caf50;
-      --code-bg: #f6efd9;
-      --code-color: #586e75;
-      --composer-bg: #f5ecd8;
-      --send-btn-bg: #cb7d2c;
-      --send-btn-hover: #b86f27;
-      --tool-result-bg: #eee4cc;
-      --picker-focus-bg: #e0d5b8;
-      --perm-allow-bg: #c8b99a;
-      --perm-allow-text: #3a2e1e;
-      --perm-allow-hover: #b8a88a;
-      --toggle-on: #e8922a;
-      --toggle-knob: #fff;
-      --token-warn-bg: #f5a623;
-      --token-caution-bg: #fed7aa;
+      --bullet-dot: #717171;
+      --status-connected: #4c9b72;
+      --code-bg: #e4decb;
+      --code-color: #4d535d;
+      --composer-bg: #ddd6c1;
+      --send-btn-bg: #396fe5;
+      --send-btn-hover: #295bc4;
+      --tool-result-bg: #e4decb;
+      --picker-focus-bg: #d4cdb6;
+      --perm-allow-bg: #c7bea5;
+      --perm-allow-text: #414136;
+      --perm-allow-hover: #b7af95;
+      --toggle-on: #4d7ded;
+      --toggle-knob: #fffdf7;
+      --token-warn-bg: #bd8c42;
+      --token-caution-bg: #dfca83;
 
       --chat-header-bg: rgba(238, 232, 213, 0.92);
-      --image-btn-bg: rgba(253, 246, 227, 0.62);
-      --pending-image-bg: rgba(253, 246, 227, 0.45);
+      --image-btn-bg: rgba(244, 238, 220, 0.72);
+      --pending-image-bg: rgba(244, 238, 220, 0.52);
 
-      --md-blockquote-bg: rgba(253, 246, 227, 0.64);
-      --md-code-inline-bg: rgba(101, 123, 131, 0.1);
-      --md-th-bg: rgba(253, 246, 227, 0.72);
+      --md-blockquote-bg: rgba(244, 238, 220, 0.82);
+      --md-code-inline-bg: rgba(86, 92, 101, 0.1);
+      --md-th-bg: rgba(244, 238, 220, 0.9);
     }
 
     html[data-theme="daylight"] {
@@ -69,7 +69,7 @@
       --accent-text: #ffffff;
       --accent-soft: #eef3ff;
       --accent-hover: #1e49c9;
-      --user-bg: #f1f5ff;
+      --user-bg: #ebf5ff;
       --assistant-bg: #ffffff;
       --danger: #d15252;
       --danger-soft: #fff0f0;
@@ -107,10 +107,10 @@
     html[data-theme="monochrome"] {
       --bg: #202020;
       --bg2: #151515;
-      --bg3: #242424;
-      --bg4: #292929;
-      --border: #363636;
-      --border-strong: #4a4a4a;
+      --bg3: #2c2c2c;
+      --bg4: #303030;
+      --border: #4a4a4a;
+      --border-strong: #626262;
       --resize-divider: rgba(74, 74, 74, 0.7);
       --text: #d8d8d8;
       --text1: #f2f2f2;
@@ -120,7 +120,7 @@
       --accent-text: #202020;
       --accent-soft: #333333;
       --accent-hover: #ffffff;
-      --user-bg: #292929;
+      --user-bg: #323232;
       --assistant-bg: #202020;
       --danger: #e08a8a;
       --danger-soft: #432d2d;
@@ -130,13 +130,13 @@
 
       --bullet-dot: #c8c8c8;
       --status-connected: #9fbd94;
-      --code-bg: #2b2b2b;
+      --code-bg: #303030;
       --code-color: #e2e2e2;
-      --composer-bg: #242424;
+      --composer-bg: #2c2c2c;
       --send-btn-bg: #e6e6e6;
       --send-btn-hover: #ffffff;
-      --tool-result-bg: #292929;
-      --picker-focus-bg: #303030;
+      --tool-result-bg: #323232;
+      --picker-focus-bg: #383838;
       --perm-allow-bg: #b9b9b9;
       --perm-allow-text: #202020;
       --perm-allow-hover: #d0d0d0;

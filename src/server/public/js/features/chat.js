@@ -154,11 +154,10 @@ export function createChatFeature({
   function updateTokenDisplay(usage) {
     if (!state.tokenDisplayEl || !usage) return;
     const input = usage.inputTokens || 0;
-    const cachedRead = usage.cachedReadTokens || 0;
     const output = usage.outputTokens || 0;
     const total = input + output;
-    state.tokenDisplayEl.textContent = `In: ${formatContextTokens(input)} CR: ${formatContextTokens(cachedRead)} Out: ${formatContextTokens(output)} All: ${formatContextTokens(total)}`;
-    state.tokenDisplayEl.title = "当前上下文估计：最后一次 LLM 请求的输入、缓存命中和最终输出";
+    state.tokenDisplayEl.textContent = `In: ${formatContextTokens(input)} Out: ${formatContextTokens(output)} All: ${formatContextTokens(total)}`;
+    state.tokenDisplayEl.title = "当前上下文估计：最后一次 LLM 请求的输入和最终输出";
     state.tokenDisplayEl.style.display = "inline-block";
     state.tokenDisplayEl.style.background = total > 100000 ? (total > 200000 ? "var(--token-warn-bg)" : "var(--token-caution-bg)") : "";
     state.tokenDisplayEl.style.color = "var(--text2)";
