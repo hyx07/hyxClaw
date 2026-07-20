@@ -1,0 +1,17 @@
+{
+  "categories": {
+    "correctness": "warn",
+    "suspicious": "warn",
+    "perf": "warn",
+    "style": "off",
+    "restriction": "off"
+  },
+  "ignorePatterns": [
+    "dist",
+    "node_modules",
+    "coverage"
+  ],
+  "rules": {
+    "unicorn/no-empty-file": "off"
+  }
+}

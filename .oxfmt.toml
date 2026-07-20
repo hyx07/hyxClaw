@@ -1,0 +1,12 @@
+# oxfmt configuration
+
+[formatting]
+indent_type = "spaces"
+indent_width = 2
+line_ending = "lf"
+
+[formatting.quote_style]
+quote_type = "double"
+
+[formatting.whitespace]
+call_parentheses = "always"

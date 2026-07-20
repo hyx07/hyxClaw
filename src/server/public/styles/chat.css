@@ -1,0 +1,505 @@
+
+    .composer-left,
+    .composer-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+
+    #send-btn {
+      background: var(--send-btn-bg);
+      color: var(--accent-text);
+      border: 1px solid rgba(147, 86, 24, 0.18);
+      border-radius: 9px;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    #send-btn:hover:not(:disabled) { background: var(--send-btn-hover); }
+
+    #send-btn:disabled {
+      background: rgba(88, 110, 117, 0.28);
+      border-color: rgba(88, 110, 117, 0.08);
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+
+    #no-session {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text2);
+      font-size: 14px;
+    }
+
+
+    .reasoning-block,
+    .tool-block {
+      margin: 10px 0 12px;
+      border: none;
+      border-radius: 0;
+      font-size: 14px;
+      background: transparent;
+    }
+
+    /* Tighten spacing between consecutive blocks that belong to the same agent
+       round.  CSS margin-collapse picks the MAX of two adjacent vertical
+       margins, so we must shrink BOTH sides — preceding margin-bottom AND
+       following margin-top — for the gap to actually become smaller. */
+
+    /* reasoning → tool (direct, when no text between them — need BOTH sides) */
+    .reasoning-block:has(+ .tool-block)         { margin-bottom: 12px; }
+    .reasoning-block + .tool-block              { margin-top: 12px; }
+
+    /* reasoning → text (text-segment already has margin:0, only preceding needed) */
+    .reasoning-block:has(+ .text-segment)       { margin-bottom: 12px; }
+
+    /* text → tool */
+    .text-segment + .tool-block                 { margin-top: 12px; }
+
+    /* tool → tool (consecutive — need BOTH sides) */
+    .tool-block:has(+ .tool-block)              { margin-bottom: 12px; }
+    .tool-block + .tool-block                   { margin-top: 12px; }
+    .tool-block:last-child                      { margin-bottom: 12px; }
+
+    /* tool → reasoning (between rounds — need BOTH sides) */
+    .tool-block:has(+ .reasoning-block)         { margin-bottom: 12px; }
+    .tool-block + .reasoning-block              { margin-top: 12px; }
+
+    /* Prevent .markdown-body p { margin: 0.58em 0 } (layout.css L272) from
+       creating phantom blank lines inside text areas.  Use a compound
+       selector to beat the single-class specificity (0,2,1 > 0,1,1). */
+    .text-segment.markdown-body p,
+    .message-content.markdown-body p            { margin: 0; }
+
+    .cancelled-mark {
+      color: var(--muted);
+      font-style: italic;
+      font-size: 13px;
+    }
+
+
+    .reasoning-block summary,
+    .tool-block summary {
+      padding: 0;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text);
+      user-select: none;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 650;
+    }
+
+
+    .details-caret {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1;
+      margin-left: 2px;
+      transition: transform 0.15s, color 0.15s;
+      transform: rotate(0deg);
+      display: inline-block;
+    }
+
+
+    .reasoning-block[open] .details-caret,
+    .tool-block[open] .details-caret {
+      transform: rotate(90deg);
+      color: var(--text2);
+    }
+
+
+    .reasoning-block summary::-webkit-details-marker,
+    .tool-block summary::-webkit-details-marker { display: none; }
+
+
+    .reasoning-block summary { color: var(--text); }
+
+
+    .tool-name-badge {
+      background: transparent;
+      color: var(--text);
+      border: none;
+      border-radius: 999px;
+      padding: 0;
+      font-family: inherit;
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .tool-path-badge {
+      background: transparent;
+      color: var(--text);
+      border: none;
+      border-radius: 999px;
+      padding: 0;
+      font-family: inherit;
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      padding: 4px 0;
+      max-width: 360px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .tool-query-badge {
+      background: transparent;
+      color: var(--text);
+      border: none;
+      border-radius: 999px;
+      padding: 0;
+      font-family: inherit;
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 500;
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .reasoning-content,
+    .tool-block-result {
+      margin: 8px 0 0 0;
+      padding: 9px 11px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.55;
+      border: 1px solid rgba(185, 173, 143, 0.42);
+      border-radius: 10px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
+      background: var(--tool-result-bg);
+    }
+
+
+    .tool-block-result {
+      font-family: inherit;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .tool-block.error summary { color: var(--text); }
+
+
+    .reasoning-content {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+
+    #usage-modal,
+    #knowledge-modal,
+    #compact-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(88, 110, 117, 0.14);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      padding: 24px;
+    }
+
+    #usage-modal.open,
+    #knowledge-modal.open,
+    #compact-modal.open { display: flex; }
+
+
+    #usage-panel {
+      width: min(1000px, calc(100vw - 48px));
+      max-height: min(740px, calc(100vh - 48px));
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 10px 28px rgba(88, 110, 117, 0.14);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #knowledge-panel,
+    #compact-panel {
+      width: min(1000px, calc(100vw - 48px));
+      max-height: min(560px, calc(100vh - 48px));
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 10px 28px rgba(88, 110, 117, 0.14);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+    }
+
+
+    #compact-panel {
+      width: min(360px, calc(100vw - 32px));
+    }
+
+
+    .panel-scroll-body {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    #file-picker-popover,
+    #command-picker-popover {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 0;
+      width: min(420px, calc(100vw - 32px));
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 -4px 20px rgba(88, 110, 117, 0.16);
+      z-index: 30;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #file-picker-popover.open,
+    #command-picker-popover.open { display: flex; }
+
+
+    #file-picker-popover-header,
+    #command-picker-popover-header {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px 8px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      margin-bottom: 6px;
+    }
+
+    #file-picker-popover-header strong,
+    #command-picker-popover-header strong {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text2);
+    }
+
+
+    #file-picker-popover-body,
+    #command-picker-popover-body {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+
+    #file-picker-empty,
+    #command-picker-empty {
+      font-size: 13px;
+      color: var(--text2);
+      padding: 14px;
+    }
+
+
+    #file-picker-list,
+    #command-picker-list {
+      display: flex;
+      flex-direction: column;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+
+    .file-picker-item,
+    .command-picker-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(185, 173, 143, 0.28);
+      user-select: none;
+    }
+
+    .file-picker-item:last-child,
+    .command-picker-item:last-child { border-bottom: none; }
+
+    .file-picker-item.focused,
+    .command-picker-item.focused { background: var(--picker-focus-bg); }
+
+    .file-picker-item span {
+      font-size: 13px;
+      color: var(--text2);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .command-picker-item {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 3px;
+    }
+
+    .command-picker-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text2);
+    }
+
+    .command-picker-preview {
+      font-size: 12px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: 0.82;
+    }
+
+
+    #tool-permission-overlay {
+      display: none;
+    }
+
+    #tool-permission-dialog {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 0;
+      width: min(420px, calc(100vw - 32px));
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+      z-index: 30;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 16px 18px 14px;
+      gap: 12px;
+    }
+
+    #tool-permission-dialog.open { display: flex; }
+
+    #tool-permission-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text1);
+    }
+
+    #tool-permission-body {
+      font-size: 13px;
+      color: var(--text2);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    #tool-permission-body .perm-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    #tool-permission-body .perm-label {
+      color: var(--text2);
+      min-width: 48px;
+      flex-shrink: 0;
+    }
+
+    #tool-permission-body .perm-value {
+      color: var(--text1);
+      word-break: break-all;
+      font-family: inherit;
+      font-size: 12px;
+      background: rgba(0,0,0,0.05);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+
+    #tool-permission-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    #tool-permission-deny {
+      padding: 6px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    #tool-permission-allow {
+      padding: 6px 16px;
+      border-radius: 6px;
+      border: none;
+      background: var(--perm-allow-bg);
+      color: var(--perm-allow-text);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    #tool-permission-deny:hover { background: rgba(0,0,0,0.06); }
+
+    #tool-permission-allow:hover { background: var(--perm-allow-hover); }
+
+
+    /* toggle switch */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--text2);
+      cursor: pointer;
+      user-select: none;
+      margin-left: 10px;
+      margin-right: 10px;
+    }
+
+    .toggle-wrap input[type="checkbox"] { display: none; }
+
+    .toggle-track {
+      position: relative;
+      width: 30px;
+      height: 17px;
+      border-radius: 9px;
+      background: var(--border);
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .toggle-track::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--toggle-knob);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: transform 0.2s;
+    }

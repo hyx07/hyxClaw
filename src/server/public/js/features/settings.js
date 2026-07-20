@@ -1,0 +1,72 @@
+const THEMES = new Set(["light", "daylight", "monochrome"]);
+
+const FONT_MAP = {
+  system: "system-ui, -apple-system, sans-serif",
+  kaiti: '"KaiTi", "STKaiti", "AR PL UKai CN", serif',
+  simsun: '"SimSun", "STSong", "Noto Serif CJK SC", serif',
+};
+
+export function initSettings() {
+  const updateThemeActive = () => {
+    const current = document.documentElement.getAttribute("data-theme") || "light";
+    document.querySelectorAll(".settings-option[data-theme]").forEach((element) => {
+      element.classList.toggle("active", element.dataset.theme === current);
+    });
+  };
+  const setTheme = (theme) => {
+    const selectedTheme = THEMES.has(theme) ? theme : "light";
+    document.documentElement.setAttribute("data-theme", selectedTheme);
+    localStorage.setItem("hyxclaw-theme", selectedTheme);
+    updateThemeActive();
+  };
+  setTheme(localStorage.getItem("hyxclaw-theme") || "light");
+
+  const updateFontActive = () => {
+    const current = localStorage.getItem("hyxclaw-font") || "system";
+    document.querySelectorAll(".settings-option[data-font]").forEach((element) => {
+      element.classList.toggle("active", element.dataset.font === current);
+    });
+  };
+  const setFont = (font) => {
+    document.documentElement.style.setProperty("--md-font-family", FONT_MAP[font] || FONT_MAP.system);
+    localStorage.setItem("hyxclaw-font", font);
+    updateFontActive();
+  };
+  setFont(localStorage.getItem("hyxclaw-font") || "system");
+
+  const setFontSize = (size) => {
+    document.documentElement.style.setProperty("--md-font-size", size + "px");
+    localStorage.setItem("hyxclaw-font-size", size);
+    const label = document.getElementById("font-size-label");
+    if (label) label.textContent = size + "px";
+  };
+  const size = Number(localStorage.getItem("hyxclaw-font-size") || 15);
+  const slider = document.getElementById("font-size-slider");
+  if (slider) {
+    slider.value = size;
+    slider.addEventListener("input", () => setFontSize(Number(slider.value)));
+  }
+  setFontSize(size);
+
+  const dropdown = document.getElementById("settings-dropdown");
+  document.getElementById("settings-btn")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    dropdown?.classList.toggle("open");
+  });
+  document.querySelectorAll(".settings-option[data-theme]").forEach((element) => {
+    element.addEventListener("click", (event) => {
+      event.stopPropagation();
+      setTheme(element.dataset.theme);
+    });
+  });
+  document.querySelectorAll(".settings-option[data-font]").forEach((element) => {
+    element.addEventListener("click", (event) => {
+      event.stopPropagation();
+      setFont(element.dataset.font);
+    });
+  });
+  document.addEventListener("click", (event) => {
+    const settings = document.getElementById("sidebar-settings");
+    if (settings && !settings.contains(event.target)) dropdown?.classList.remove("open");
+  });
+}

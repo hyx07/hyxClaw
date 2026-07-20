@@ -1,0 +1,124 @@
+{
+  "providers": {
+    "zai": {
+      "apiKey": "",
+      "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+      "models": [
+        {
+          "id": "GLM-5.2",
+          "label": "GLM-5.2",
+          "cost": { "input": 8, "output": 28, "cachedRead": 2 },
+          "thinking": [{ "id": "enabled", "params": { "thinking": { "type": "enabled" } } }],
+          "thinkingOff": { "thinking": { "type": "disabled" } }
+        }
+      ]
+    },
+    "dashscope": {
+      "apiKey": "",
+      "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "models": [
+        {
+          "id": "qwen3.6-flash",
+          "label": "qwen3.6-flash",
+          "modal": "vl",
+          "cost": { "input": 1.2, "output": 7.2 },
+          "thinking": [
+            { "id": "512", "params": { "enable_thinking": true, "thinking_budget": 512 } },
+            { "id": "1024", "params": { "enable_thinking": true, "thinking_budget": 1024 } },
+            { "id": "4096", "params": { "enable_thinking": true, "thinking_budget": 4096 } },
+            { "id": "8192", "params": { "enable_thinking": true, "thinking_budget": 8192 } }
+          ],
+          "thinkingOff": { "enable_thinking": false }
+        },
+        {
+          "id": "qwen3.7-plus",
+          "label": "qwen3.7-plus",
+          "modal": "vl",
+          "cost": { "input": 2, "output": 8, "cachedRead": 0.4, "cachedWrite": 2.5 },
+          "thinking": [
+            { "id": "512", "params": { "enable_thinking": true, "thinking_budget": 512 } },
+            { "id": "1024", "params": { "enable_thinking": true, "thinking_budget": 1024 } },
+            { "id": "4096", "params": { "enable_thinking": true, "thinking_budget": 4096 } },
+            { "id": "8192", "params": { "enable_thinking": true, "thinking_budget": 8192 } }
+          ],
+          "thinkingOff": { "enable_thinking": false }
+        },
+        {
+          "id": "glm-5.2",
+          "label": "glm-5.2",
+          "cost": { "input": 8, "output": 28, "cachedRead": 2 },
+          "thinking": [
+            { "id": "high", "params": { "enable_thinking": true, "reasoning_effort": "high" } },
+            { "id": "max", "params": { "enable_thinking": true, "reasoning_effort": "max" } }
+          ],
+          "thinkingOff": { "enable_thinking": false }
+        },
+        {
+          "id": "deepseek-v4-flash",
+          "label": "v4-flash",
+          "cost": { "input": 1, "output": 2, "cachedRead": 0.2 },
+          "thinking": [
+            { "id": "high", "params": { "enable_thinking": true, "reasoning_effort": "high" } },
+            { "id": "max", "params": { "enable_thinking": true, "reasoning_effort": "max" } }
+          ],
+          "thinkingOff": { "enable_thinking": false }
+        }
+      ]
+    },
+    "deepseek": {
+      "apiKey": "",
+      "baseUrl": "https://api.deepseek.com",
+      "models": [
+        {
+          "id": "deepseek-v4-flash",
+          "label": "v4-flash",
+          "cost": { "input": 1, "output": 2, "cachedRead": 0.02 },
+          "thinking": [
+            { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
+            { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }
+          ],
+          "thinkingOff": { "thinking": { "type": "disabled" } }
+        },
+        {
+          "id": "deepseek-v4-pro",
+          "label": "v4-pro",
+          "cost": { "input": 3, "output": 6, "cachedRead": 0.025 },
+          "thinking": [
+            { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
+            { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }
+          ],
+          "thinkingOff": { "thinking": { "type": "disabled" } }
+        }
+      ]
+    }
+  },
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-v4-flash",
+  "defaultThinkingEffort": "high",
+  "maxTokens": 8192,
+  "contextMaxTokens": 500000,
+  "contextMaxMessages": 0,
+  "maxToolCalls": 30,
+  "tools": {
+    "tavily": {
+      "enabled": true,
+      "apiKey": "",
+      "baseUrl": "https://api.tavily.com",
+      "searchDepth": "basic",
+      "maxResults": 10,
+      "includeAnswer": false,
+      "includeRawContent": false,
+      "includeUsage": false,
+      "timeoutMs": 30000,
+      "maxSearchContentChars": 2000,
+      "fetchDepth": "basic",
+      "fetchFormat": "markdown",
+      "maxFetchedChars": 50000
+    }
+  },
+  "compaction": {
+    "provider": "deepseek",
+    "model": "deepseek-v4-flash",
+    "thinkingEffort": "none"
+  }
+}

@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+# Build output
+dist/
+.claude/
+.agents/
+.pnpm-store/
+scripts/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+vitest-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Database (local development data)
+database/*.db
+database/*.db-*
+
+# Test coverage
+coverage/
+
+# Temporary files
+*.tmp
+.tmp/
+.test-data/
