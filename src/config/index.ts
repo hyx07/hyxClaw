@@ -282,15 +282,12 @@ export function resolveModelThinking(config: Config, provider: ProviderName, mod
 }
 
 export async function loadConfig(userDataDir?: string): Promise<Config> {
-  const paths = getPaths(userDataDir);
-  await ensureDirectories(paths);
-  const userConfig = await loadConfigFile(paths.config);
-  const config = validateConfig(userConfig);
+  const config = await loadConfigWithoutApiKey(userDataDir);
   getDefaultProviderCredential(config);
   return config;
 }
 
-async function loadConfigNoKeyCheck(userDataDir?: string): Promise<Config> {
+export async function loadConfigWithoutApiKey(userDataDir?: string): Promise<Config> {
   const paths = getPaths(userDataDir);
   await ensureDirectories(paths);
   const userConfig = await loadConfigFile(paths.config);

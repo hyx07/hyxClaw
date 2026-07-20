@@ -268,10 +268,7 @@ hyxclaw init                    # 初始化数据目录和模板配置
 hyxclaw start                   # 启动 Web 服务
 hyxclaw start -p 8080           # 指定端口
 hyxclaw start --host 0.0.0.0    # 指定监听地址
-hyxclaw config                  # 显示配置位置和当前设置（API Key 会脱敏）
-hyxclaw sessions                # 列出会话
-hyxclaw session:create [title]  # 创建会话
-hyxclaw status                  # 检查配置和会话状态
+hyxclaw status                  # 检查配置、数据目录与启动条件
 ```
 
 ## HTTP API

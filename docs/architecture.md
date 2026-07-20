@@ -124,12 +124,8 @@ $HYXCLAW_DATA_DIR/
 
 ### 3.1 CLI (`src/cli/`)
 - `hyxclaw start` — Start web server
-- `hyxclaw config` — Show config location and settings
-- `hyxclaw init` — Initialize config.json
-- `hyxclaw sessions` — List all sessions
-- `hyxclaw session:create [title]` — Create a new session
-- `hyxclaw chat [sessionId]` — Placeholder (redirects to web UI)
-- `hyxclaw status` — System status check
+- `hyxclaw init` — Initialize the data directory and templates
+- `hyxclaw status` — Check configuration, data directory and startup readiness
 
 ### 3.2 Server (`src/server/`)
 - **HTTP**: plain `node:http` server, no framework (no Express/Hono at runtime).
@@ -381,7 +377,7 @@ The browser UI uses native ES modules without a frontend framework or bundler. `
 
 ### 7.2 API Keys
 - Stored in `config.json`, loaded by server at startup
-- Never logged; masked in `hyxclaw config` output (`***SET***`)
+- Never logged; `hyxclaw status` only reports whether an API key is set
 
 ### 7.3 Network
 - Server binds `127.0.0.1` by default (localhost only)

@@ -7,9 +7,8 @@
 import { Command } from "commander";
 import { getLogger } from "../logger/index.js";
 import { startServer } from "../server/index.js";
-import { initConfig, loadConfig, getDefaultProviderCredential } from "../config/index.js";
-import { listSessions, createSession, getInitialSession } from "../session/index.js";
-import { getPaths } from "../config/paths.js";
+import { initConfig, loadConfigWithoutApiKey, getDefaultProviderCredential } from "../config/index.js";
+import { getPaths, pathExists } from "../config/paths.js";
 
 const program = new Command();
 
@@ -97,38 +96,6 @@ program
   });
 
 /**
- * Config command - shows config location and current settings
- */
-program
-  .command("config")
-  .description("Show configuration location and current settings")
-  .action(async () => {
-    const paths = getPaths();
-    const logger = getLogger(paths.logs);
-    try {
-      const config = await loadConfig();
-
-      console.log("\n=== hyxClaw Configuration ===");
-      console.log(`User Data Directory: ${paths.base}`);
-      console.log(`Config File: ${paths.config}`);
-      console.log(`Conversations: ${paths.conversations}`);
-      console.log("");
-      console.log("--- Current Settings ---");
-      const defaultCredential = config.providers[config.defaultProvider];
-      console.log(`LLM Provider: ${config.defaultProvider}`);
-      console.log(`LLM Model: ${config.defaultModel}`);
-      console.log(`API Key: ${defaultCredential?.apiKey ? "***SET***" : "***NOT SET***"}`);
-      console.log(`Base URL: ${defaultCredential?.baseUrl || ""}`);
-      console.log("");
-      console.log(`Server Port: ${config.server.port}`);
-      console.log(`Server Host: ${config.server.host}`);
-    } catch (error) {
-      logger.error(`Failed to load config: ${(error as Error).message}`);
-      process.exit(1);
-    }
-  });
-
-/**
  * Init command - initialize config
  */
 program
@@ -149,130 +116,38 @@ program
   });
 
 /**
- * Sessions command - list sessions
- */
-program
-  .command("sessions")
-  .description("List all chat sessions")
-  .action(async () => {
-    const paths = getPaths();
-    const logger = getLogger(paths.logs);
-    try {
-      const sessions = await listSessions();
-
-      console.log(`\n=== Sessions (${sessions.length}) ===`);
-      if (sessions.length === 0) {
-        console.log("No sessions found. Create one with 'hyxclaw chat' or 'hyxclaw session:create'");
-      } else {
-        for (const session of sessions) {
-          const updatedAt = new Date(session.updatedAt).toLocaleString();
-          const messageCount = session.messages.length;
-          console.log(`\n  ${session.title}`);
-          console.log(`    ID: ${session.id}`);
-          console.log(`    Messages: ${messageCount}`);
-          console.log(`    Updated: ${updatedAt}`);
-        }
-      }
-      console.log("");
-    } catch (error) {
-      logger.error(`Failed to list sessions: ${(error as Error).message}`);
-      process.exit(1);
-    }
-  });
-
-/**
- * Session:create command - create a new session
- */
-program
-  .command("session:create")
-  .description("Create a new chat session")
-  .argument("[title]", "Session title", "New Chat")
-  .action(async (title) => {
-    const paths = getPaths();
-    const logger = getLogger(paths.logs);
-    try {
-      const session = await createSession(title);
-      console.log(`\nSession created: ${session.title}`);
-      console.log(`ID: ${session.id}`);
-      console.log(`\nStart chatting with 'hyxclaw chat ${session.id}'`);
-    } catch (error) {
-      logger.error(`Failed to create session: ${(error as Error).message}`);
-      process.exit(1);
-    }
-  });
-
-/**
- * Chat command - start an interactive chat session (TBD)
- */
-program
-  .command("chat")
-  .description("Start an interactive chat session")
-  .argument("[session]", "Session ID to use (optional)")
-  .action(async (sessionId) => {
-    const paths = getPaths();
-    const logger = getLogger(paths.logs);
-    try {
-      // Check if API key is set
-      const config = await loadConfig();
-      if (!getDefaultProviderCredential(config).apiKey) {
-        logger.error("API Key not set! Please edit config.json and set your LLM API key.");
-        logger.error("Run 'hyxclaw config' to see config location.");
-        process.exit(1);
-      }
-
-      // Get or create session
-      let session;
-      if (sessionId) {
-        const sessions = await listSessions();
-        session = sessions.find((s) => s.id === sessionId);
-        if (!session) {
-          logger.error(`Session not found: ${sessionId}`);
-          process.exit(1);
-        }
-      } else {
-        session = await getInitialSession();
-      }
-
-      console.log(`\n=== Chat: ${session.title} ===`);
-      console.log("Interactive chat is not yet implemented.");
-      console.log("Please use the web interface: 'hyxclaw start'\n");
-      console.log(`Session ID: ${session.id}`);
-    } catch (error) {
-      logger.error(`Failed to start chat: ${(error as Error).message}`);
-      process.exit(1);
-    }
-  });
-
-/**
- * Status command - check system status
+ * Status command - check startup readiness
  */
 program
   .command("status")
-  .description("Check system status")
+  .description("Check configuration and startup readiness")
   .action(async () => {
     const paths = getPaths();
     const logger = getLogger(paths.logs);
     try {
-      const config = await loadConfig();
-      const sessions = await listSessions();
+      const configExists = await pathExists(paths.config);
+      const config = await loadConfigWithoutApiKey();
+      const apiKeySet = Boolean(config.providers[config.defaultProvider]?.apiKey);
 
       console.log("\n=== hyxClaw Status ===");
+      console.log(`Data directory: ${paths.base}`);
+      console.log(`Config file: ${configExists ? paths.config : `${paths.config} (not initialized)`}`);
+      console.log(`Provider: ${config.defaultProvider}`);
+      console.log(`Model: ${config.defaultModel}`);
+      console.log(`API key: ${apiKeySet ? "set" : "not set"}`);
+      console.log(`Web UI: http://${config.server.host}:${config.server.port}`);
       console.log("");
-      console.log("Configuration:");
-      console.log(`  ✓ Config file exists`);
-      console.log(`  ✓ API Key ${config.providers[config.defaultProvider]?.apiKey ? "set" : "NOT SET"}`);
-      console.log("");
-      console.log("Data:");
-      console.log(`  ✓ ${sessions.length} session(s)`);
-      console.log("");
-      console.log("Server:");
-      console.log(`  - Port: ${config.server.port}`);
-      console.log(`  - Host: ${config.server.host}`);
-      console.log("");
-      console.log(`Ready to start! Run 'hyxclaw start' to launch the server.`);
+
+      if (!configExists) {
+        console.log("Run 'hyxclaw init' to create the default configuration.");
+      } else if (!apiKeySet) {
+        console.log(`Set the API key in ${paths.config} before starting the server.`);
+      } else {
+        console.log("Ready to start. Run 'hyxclaw start'.");
+      }
     } catch (error) {
       logger.error(`Status check failed: ${(error as Error).message}`);
-      process.exit(1);
+      process.exitCode = 1;
     }
   });
 
