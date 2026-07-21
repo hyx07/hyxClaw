@@ -97,7 +97,7 @@
       </div>
       <div class="usage-header-actions">
         <div id="usage-tabs">
-          <button class="usage-tab active" type="button" data-tab="daily">按时间</button>
+          <button class="usage-tab active" type="button" data-tab="daily">每日</button>
           <button class="usage-tab" type="button" data-tab="total">总量</button>
         </div>
         <button id="usage-close-btn" class="icon-button" type="button" title="关闭" aria-label="关闭">
@@ -259,7 +259,7 @@
       <p>顶部工具栏右侧实时显示当前会话最后一次 LLM 请求的 token 摘要（In / Out / All）：In 为输入 token，Out 为不含 reasoning 的最终输出 token，All = In + Out。reasoning token 不包含在 Out 和 All 中。All 可作为当前会话上下文的近似参考。数值小于等于 100 时显示实际整数，超过 100 时以一位小数的 k 显示。背景色随 All 值变化：超过 10 万变黄，超过 20 万变红，提示上下文长度变化。</p>
       <p>点击工具栏的 📊 按钮可打开完整用量与费用统计面板：</p>
       <ul>
-        <li><strong>按时间</strong>：7 天或 30 天的堆叠柱状图，按模型和 Provider 分色展示每日 Token 用量；可切换到费用视图查看每日费用</li>
+        <li><strong>每日</strong>：7 天或 30 天的堆叠柱状图，按模型和 Provider 分色展示每日 Token 用量；可切换到费用视图查看每日费用</li>
         <li><strong>总量</strong>：按模型 + Provider 汇总输入、输出、Thinking token 和总费用</li>
       </ul>
       <p>费用按模型配置中的 <code>cost</code> 单价计算；未配置单价的模型费用记为 0。统计数据持久化在 <code>files/usage_daily.json</code> 和 <code>files/usage_total.json</code> 中。</p>
