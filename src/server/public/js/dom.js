@@ -1,33 +1,44 @@
 import { escHtml } from "./format.js";
 import { clearChatElements } from "./state.js";
 
+const WORKSPACE_MODE_STORAGE_KEY = "hyxclaw-workspace-mode";
+
 export function createChatView({ state, documents, pickers, permissions, actions }) {
   let toolbarMenuOutsideClickBound = false;
+  let workspaceResizeBound = false;
 
   function renderChatArea() {
     const main = document.getElementById("main");
     const title = state.sessions.find((session) => session.id === state.currentSessionId)?.title || "";
     if (!state.currentSessionId) {
-      main.innerHTML = `<div id="main-shell"><div id="chat-panel"><div id="no-session"><div class="empty-state"><div class="empty-state-icon"><i data-lucide="message-circle"></i></div><p class="empty-state-title">欢迎回来</p><p class="empty-state-copy">选择一个会话或新建一个开始对话</p></div></div></div>${documents.getRightPanelHTML()}</div>`;
+      main.innerHTML = `<div id="main-shell" data-workspace-mode="${getWorkspaceMode()}"><div id="chat-panel"><div id="chat-content"><div id="no-session"><div class="empty-state"><div class="empty-state-icon"><i data-lucide="message-circle"></i></div><p class="empty-state-title">欢迎回来</p><p class="empty-state-copy">选择一个会话或新建一个开始对话</p></div></div></div><section id="document-stage" aria-label="文档预览"></section></div>${documents.getRightPanelHTML()}</div>`;
       clearChatElements(state);
       documents.initRightPanel();
+      initWorkspaceMode();
       window.lucide?.createIcons();
       return;
     }
 
     const railCollapsed = localStorage.getItem("docRailCollapsed") === "true";
     main.innerHTML = `
-      <div id="main-shell">
+      <div id="main-shell" data-workspace-mode="${getWorkspaceMode()}">
         <div id="chat-panel">
           <div id="chat-header">
-            <div id="chat-title">${escHtml(title)}</div>
-            <span id="token-display"></span>
+            <div id="chat-meta">
+              <div id="chat-title">${escHtml(title)}</div>
+              <span id="token-display"></span>
+            </div>
+            <div id="workspace-mode-control" role="group" aria-label="工作区模式">
+              <button class="workspace-mode-btn" type="button" data-workspace-mode="chat" title="聊天模式" aria-label="聊天模式" aria-pressed="false">聊天</button>
+              <button class="workspace-mode-btn" type="button" data-workspace-mode="document" title="阅读模式" aria-label="阅读模式" aria-pressed="false">阅读</button>
+            </div>
             <div id="chat-actions">
               <button class="header-icon-btn" id="usage-btn" title="Token 统计" aria-label="Token 统计"><i data-lucide="bar-chart-3"></i></button>
               <button class="header-icon-btn" id="knowledge-btn" title="知识库" aria-label="知识库"><i data-lucide="book-open"></i></button>
               <button class="header-icon-btn" id="doc-rail-toggle" title="${railCollapsed ? "展开文件浏览器" : "收起文件浏览器"}" aria-label="${railCollapsed ? "展开文件浏览器" : "收起文件浏览器"}" aria-expanded="${!railCollapsed}"><i data-lucide="${railCollapsed ? "panel-right-open" : "panel-right-close"}"></i></button>
             </div>
           </div>
+          <div id="chat-content">
           <div id="messages"><div id="empty-state" class="empty-state"><div class="empty-state-icon"><i data-lucide="message-circle"></i></div><p class="empty-state-title">发送消息开始对话</p></div></div>
           <div id="input-area">
             <div id="composer">
@@ -64,6 +75,8 @@ export function createChatView({ state, documents, pickers, permissions, actions
               </div>
             </div>
           </div>
+          </div>
+          <section id="document-stage" aria-label="文档预览"></section>
         </div>
         ${documents.getRightPanelHTML({ showToggle: false })}
       </div>`;
@@ -72,6 +85,7 @@ export function createChatView({ state, documents, pickers, permissions, actions
     actions.bindScrollListener();
     bindComposerEvents();
     documents.initRightPanel();
+    initWorkspaceMode();
     syncModelControls();
     pickers.bindComposer();
     permissions.init();
@@ -80,6 +94,65 @@ export function createChatView({ state, documents, pickers, permissions, actions
 
     // Trigger lucide icon rendering for dynamically added elements
     window.lucide?.createIcons();
+  }
+
+  function getWorkspaceMode() {
+    const preferred = localStorage.getItem(WORKSPACE_MODE_STORAGE_KEY);
+    return preferred === "document" ? "document" : "chat";
+  }
+
+  function initWorkspaceMode() {
+    document.querySelectorAll(".workspace-mode-btn").forEach((button) => {
+      if (button.dataset.initialized) return;
+      button.dataset.initialized = "true";
+      button.addEventListener("click", () => {
+        const mode = button.dataset.workspaceMode;
+        if (mode !== "chat" && mode !== "document") return;
+        localStorage.setItem(WORKSPACE_MODE_STORAGE_KEY, mode);
+        applyWorkspaceMode(getWorkspaceMode());
+      });
+    });
+
+    if (!workspaceResizeBound) {
+      workspaceResizeBound = true;
+      window.addEventListener("resize", () => applyWorkspaceMode(getWorkspaceMode()));
+    }
+
+    applyWorkspaceMode(getWorkspaceMode());
+  }
+
+  function applyWorkspaceMode(mode) {
+    const shell = document.getElementById("main-shell");
+    const chatPanel = document.getElementById("chat-panel");
+    const chatHeader = document.getElementById("chat-header");
+    const chatContent = document.getElementById("chat-content");
+    const documentStage = document.getElementById("document-stage");
+    const previewPanel = document.getElementById("doc-preview-panel");
+    const previewToolbar = document.getElementById("doc-preview-toolbar");
+    const previewContent = document.getElementById("doc-preview-content");
+    if (!shell || !chatPanel || !chatContent || !documentStage || !previewPanel || !previewToolbar || !previewContent) return;
+
+    if (mode === "document") {
+      documentStage.appendChild(previewContent);
+      previewPanel.appendChild(chatContent);
+    } else {
+      if (chatHeader) chatHeader.after(chatContent);
+      else chatPanel.insertBefore(chatContent, documentStage);
+      previewToolbar.after(previewContent);
+    }
+
+    shell.dataset.workspaceMode = mode;
+    syncWorkspaceModeControls(mode);
+    window.lucide?.createIcons();
+  }
+
+  function syncWorkspaceModeControls(mode) {
+    document.querySelectorAll(".workspace-mode-btn").forEach((button) => {
+      const active = button.dataset.workspaceMode === mode;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+      button.title = button.dataset.workspaceMode === "document" ? "阅读模式" : "聊天模式";
+    });
   }
 
   function captureElements() {
