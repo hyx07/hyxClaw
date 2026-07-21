@@ -323,28 +323,29 @@ pnpm type-check       # 仅进行类型检查
 
 ```text
 {HYXCLAW_DATA_DIR}/
-├── .gitignore
-├── config.json
-├── conversations/              # 会话 JSONL 文件
-├── conversation_archive/       # 会话压缩前的归档
-├── inputs/                     # 导入资料
-├── knowledge_base/             # Markdown 知识库和说明
-│   ├── index.md
-│   ├── instructions.md
-│   └── 示例/
-│       ├── index.md
-│       └── 寄生机器的悖论.md
-├── files/
-│   ├── app_state.json
-│   ├── commands.md
-│   ├── project_operation_manual.md
-│   ├── usage_temp.json
-│   ├── usage_daily.json
-│   ├── usage_total.json
-│   └── prompts/
-│       ├── agent_system_prompt.txt
-│       └── compaction_prompt.txt
-└── logs/
+├── .gitignore                         # 数据目录自身的 Git 忽略规则：排除日志和会话压缩归档
+├── .installed_templates.json           # 已安装的示例模板记录；删除过的示例不会在下次 init 时重新创建
+├── config.json                         # 应用配置：模型提供商、API Key、默认模型、文件访问范围及服务设置
+├── conversations/                      # 当前会话目录；每个会话保存为 <sessionId>.jsonl 文件
+├── conversation_archive/               # 对话压缩前的完整会话归档，文件名包含会话 ID 和归档时间
+├── inputs/                             # 待处理的外部资料和图片；可在右侧文件栏浏览并供 AI 读取
+├── knowledge_base/                     # Markdown 知识库根目录，可按主题建立子知识库
+│   ├── index.md                        # 知识库总索引，列出各知识库的名称、说明与入口
+│   ├── instructions.md                 # 知识库的维护规范，供 AI 创建和整理知识时参考
+│   └── 示例/                           # 初始化提供的示例知识库；可参考其结构或删除
+│       ├── index.md                    # 示例知识库的索引与文件清单
+│       └── 寄生机器的悖论.md            # 示例知识文档
+├── files/                              # AI 可访问的辅助工作目录，默认包含命令、说明、统计和提示词文件
+│   ├── app_state.json                  # 服务端保存的界面状态，如上次打开的会话 ID
+│   ├── commands.md                     # Slash 命令模板；在输入框键入 / 时可搜索并插入其中的 prompt
+│   ├── project_operation_manual.md     # 内置操作说明，供 AI 回答产品使用方式；每次 init 会按模板更新
+│   ├── usage_temp.json                 # 尚未归档的逐次模型调用 Token 用量记录
+│   ├── usage_daily.json                # 按日期、模型和提供商汇总的 Token 用量及费用统计
+│   ├── usage_total.json                # 按模型和提供商累计的 Token 用量及费用统计
+│   └── prompts/                        # 可自行修改的提示词文件目录
+│       ├── agent_system_prompt.txt      # 对话的系统提示词，用于定义 AI 的行为规则和回答风格
+│       └── compaction_prompt.txt        # 压缩长对话时使用的摘要提示词
+└── logs/                               # 服务运行日志
 ```
 
 更多设计和数据格式见 [架构文档](docs/architecture.md)、[初始化说明](docs/init_method.md)、[知识库说明](docs/knowledge_base.md) 与 [Token 统计说明](docs/token_stats.md)。
