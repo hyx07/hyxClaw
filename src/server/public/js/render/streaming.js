@@ -162,6 +162,10 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
 }
 
 function markLatestProcessStep(bubble, step) {
+  // Content emitted before a later reasoning/tool event belongs to that
+  // intermediate round, not to the final reply.
+  const segments = bubble.querySelectorAll(".text-segment");
+  segments[segments.length - 1]?.classList.add("process-step");
   bubble.closest(".message")?.classList.remove("has-response");
   bubble.querySelector(".process-latest")?.classList.remove("process-latest");
   step.classList.add("process-step", "process-latest");

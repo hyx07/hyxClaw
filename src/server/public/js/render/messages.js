@@ -42,7 +42,7 @@ export function createMessageRenderer({ state, streaming, onRestart, scrollToBot
       }
 
       if (message.tool_calls) {
-        if (message.content) appendTextBlock(assistantBubble, message.content);
+        if (message.content) appendTextBlock(assistantBubble, message.content, { process: true });
         for (const toolCall of message.tool_calls) {
           // after:false → insert before .message-content so chronological order
           // is preserved when later blocks (text / tool) are added.
@@ -84,9 +84,9 @@ export function createMessageRenderer({ state, streaming, onRestart, scrollToBot
 
   /** Append a completed text block before .message-content so it stays in
    *  chronological order relative to reasoning / tool blocks already there. */
-  function appendTextBlock(bubble, content) {
+  function appendTextBlock(bubble, content, { process = false } = {}) {
     const segment = document.createElement("div");
-    segment.className = "text-segment markdown-body";
+    segment.className = `text-segment markdown-body${process ? " process-step" : ""}`;
     segment.dataset.raw = content;
     const rendered = formatMessageContent(content);
     renderContent(segment, rendered);
