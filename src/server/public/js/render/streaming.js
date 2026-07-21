@@ -75,6 +75,8 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
     if (!content) return null;
     const dots = document.createElement("div");
     dots.className = "typing-dots";
+    dots.setAttribute("role", "status");
+    dots.setAttribute("aria-label", "Working");
     dots.innerHTML = "<span></span><span></span><span></span>";
     content.appendChild(dots);
     scrollToBottom();
