@@ -428,7 +428,7 @@ input:focus-visible {
   color: var(--text1);
 }
 .settings-option.active {
-  color: #3b82f6;
+  color: var(--accent);
   font-weight: var(--weight-semibold);
 }
 .settings-option:hover {
