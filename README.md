@@ -15,7 +15,7 @@ pnpm install
 
 在项目根目录创建 .env，并指定用户数据目录
 ```
-HYXCLAW_DATA_DIR=C:\MyData
+HYXCLAW_DATA_DIR=D:\MyData
 ```
 
 复制模板、创建所需目录，并生成配置文件
