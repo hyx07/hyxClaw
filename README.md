@@ -11,6 +11,7 @@
 
 ```powershell
 pnpm install
+```
 
 在项目根目录创建 .env，并指定用户数据目录
 ```
@@ -18,10 +19,13 @@ HYXCLAW_DATA_DIR=C:\MyData
 ```
 
 # 复制模板、创建所需目录，并生成配置文件
+```
 pnpm dev init
+```
 
 # 编辑 ${HYXCLAW_DATA_DIR}\config.json，填入模型提供商和搜索提供商的 API Key；默认模型提供商API Key必填，否则无法启动，其他API Key不填则相应功能禁用。
 
+```
 pnpm build
 pnpm start
 ```
