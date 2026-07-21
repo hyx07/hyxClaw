@@ -320,7 +320,7 @@ export function createChatFeature({
     if (state.streamingBubble) {
       const msgEl = state.streamingBubble.closest(".message");
       if (msgEl) {
-        msgEl.classList.add("message-new");
+        msgEl.classList.add("is-streaming", "message-new");
         msgEl.addEventListener("animationend", () => msgEl.classList.remove("message-new"), { once: true });
       }
     }
@@ -419,6 +419,7 @@ export function createChatFeature({
     setSendDisabled(false);
     state.inputEl?.focus();
     streaming.removeTypingDots();
+    if (state.streamingBubble) streaming.finishStreaming(state.streamingBubble);
     state.streamingBubble = null;
     state.streamingReasoningBlock = null;
     state.typingPlaceholder = null;

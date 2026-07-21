@@ -48,6 +48,17 @@ export function initSettings() {
   }
   setFontSize(size);
 
+  const setShowProcess = (showProcess) => {
+    document.documentElement.dataset.showProcess = String(showProcess);
+    localStorage.setItem("hyxclaw-show-process", String(showProcess));
+    const checkbox = document.getElementById("show-process-checkbox");
+    if (checkbox) checkbox.checked = showProcess;
+  };
+  setShowProcess(localStorage.getItem("hyxclaw-show-process") !== "false");
+  document.getElementById("show-process-checkbox")?.addEventListener("change", (event) => {
+    setShowProcess(event.currentTarget.checked);
+  });
+
   const dropdown = document.getElementById("settings-dropdown");
   document.getElementById("settings-btn")?.addEventListener("click", (event) => {
     event.stopPropagation();

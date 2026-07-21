@@ -29,6 +29,7 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
     const content = document.createElement("div");
     content.className = "reasoning-content";
     details.appendChild(content);
+    markLatestProcessStep(bubble, details);
     insertBeforeMessageContent(bubble, details);
     return details;
   }
@@ -61,6 +62,7 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
     caret.textContent = "›";
     summary.appendChild(caret);
     details.appendChild(summary);
+    markLatestProcessStep(bubble, details);
     if (opts.after) {
       bubble.appendChild(details);
     } else {
@@ -89,6 +91,7 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
   }
 
   function appendChunk(bubble, chunk) {
+    bubble.closest(".message")?.classList.add("has-response");
     // Create or reuse a text segment element placed in chronological order
     // (before .message-content, just like reasoning/tool blocks)
     let segment = state.currentTextSegment;
@@ -129,6 +132,7 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
 
   function finishStreaming(bubble) {
     state.currentTextSegment = null;
+    bubble.closest(".message")?.classList.remove("is-streaming");
     // Render final markdown on each complete text segment
     const segments = bubble.querySelectorAll(".text-segment");
     for (const segment of segments) {
@@ -157,6 +161,12 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
   };
 }
 
+function markLatestProcessStep(bubble, step) {
+  bubble.closest(".message")?.classList.remove("has-response");
+  bubble.querySelector(".process-latest")?.classList.remove("process-latest");
+  step.classList.add("process-step", "process-latest");
+}
+
 function insertBeforeMessageContent(bubble, node) {
   const content = bubble.querySelector(".message-content");
   if (content) bubble.insertBefore(node, content);
@@ -170,6 +180,7 @@ function appendReasoningChunk(details, chunk) {
 function fillToolResult(details, content, isError) {
   details.classList.toggle("done", !isError);
   details.classList.toggle("error", Boolean(isError));
+  if (isError) details.open = true;
   const result = document.createElement("div");
   result.className = "tool-block-result";
   result.textContent = content;

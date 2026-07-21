@@ -77,6 +77,25 @@
     .tool-block:has(+ .reasoning-block)         { margin-bottom: 12px; }
     .tool-block + .reasoning-block              { margin-top: 12px; }
 
+    /* In concise mode, retain the latest live process step only.  Completed
+       process steps are kept in the DOM so the full view can be restored. */
+    html[data-show-process="false"] .message.assistant:not(.is-streaming) .process-step {
+      display: none;
+    }
+
+    html[data-show-process="false"] .message.assistant.is-streaming .process-step:not(.process-latest),
+    html[data-show-process="false"] .message.assistant.is-streaming.has-response .process-step {
+      display: none;
+    }
+
+    html[data-show-process="false"] .message.assistant.is-streaming .process-latest ~ .message-content .typing-dots {
+      display: none;
+    }
+
+    html[data-show-process="false"] .message.assistant .tool-block.process-step.error {
+      display: block;
+    }
+
     /* Prevent .markdown-body p { margin: 0.58em 0 } (layout.css L272) from
        creating phantom blank lines inside text areas.  Use a compound
        selector to beat the single-class specificity (0,2,1 > 0,1,1). */

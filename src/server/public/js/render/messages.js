@@ -99,7 +99,7 @@ export function createMessageRenderer({ state, streaming, onRestart, scrollToBot
    *  the streaming rendering style. */
   function appendReasoningBlock(bubble, content) {
     const details = document.createElement("details");
-    details.className = "reasoning-block";
+    details.className = "reasoning-block process-step";
     const summary = document.createElement("summary");
     const dot = document.createElement("span");
     dot.className = "bullet-dot";
