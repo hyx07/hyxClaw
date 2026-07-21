@@ -84,12 +84,23 @@
     }
 
     html[data-show-process="false"] .message.assistant.is-streaming .process-step:not(.process-latest),
-    html[data-show-process="false"] .message.assistant.is-streaming.has-response .process-step {
+    html[data-show-process="false"] .message.assistant .reasoning-block.process-step {
       display: none;
     }
 
+    /* Keep all concise-mode status states on the same baseline. */
+    html[data-show-process="false"] .message.assistant.is-streaming .process-latest,
+    html[data-show-process="false"] .message.assistant.is-streaming .message-content .typing-dots {
+      margin: 0;
+    }
+
     html[data-show-process="false"] .message.assistant.is-streaming .process-latest ~ .message-content .typing-dots {
-      display: none;
+      margin: 8px 0 0;
+    }
+
+    /* Summary labels use a smaller type size than streamed reply text. */
+    html[data-show-process="false"] .message.assistant.is-streaming .text-segment.process-latest {
+      padding-top: 2px;
     }
 
     html[data-show-process="false"] .message.assistant .tool-block.process-step.error {

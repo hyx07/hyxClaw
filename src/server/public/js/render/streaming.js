@@ -1,6 +1,11 @@
 import { renderContent } from "../markdown.js";
 
 export function createStreamingRenderer({ state, scrollToBottom }) {
+  let visibleProcessStep = null;
+  let pendingProcessStep = null;
+  let visibleProcessSince = 0;
+  let processTimer = null;
+
   function setBubbleContent(bubble, content) {
     const contentDiv = bubble.querySelector(".message-content");
     if (!contentDiv) return;
@@ -11,7 +16,7 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
 
   function appendReasoningBlock(bubble) {
     const details = document.createElement("details");
-    details.className = "reasoning-block";
+    details.className = "reasoning-block process-step";
     const summary = document.createElement("summary");
     const dot = document.createElement("span");
     dot.className = "bullet-dot";
@@ -29,7 +34,6 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
     const content = document.createElement("div");
     content.className = "reasoning-content";
     details.appendChild(content);
-    markLatestProcessStep(bubble, details);
     insertBeforeMessageContent(bubble, details);
     return details;
   }
@@ -62,7 +66,7 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
     caret.textContent = "›";
     summary.appendChild(caret);
     details.appendChild(summary);
-    markLatestProcessStep(bubble, details);
+    queueProcessStep(details);
     if (opts.after) {
       bubble.appendChild(details);
     } else {
@@ -91,19 +95,20 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
   }
 
   function appendChunk(bubble, chunk) {
-    bubble.closest(".message")?.classList.add("has-response");
-    // Create or reuse a text segment element placed in chronological order
-    // (before .message-content, just like reasoning/tool blocks)
+    // A streamed text segment remains provisional until the round completes.
+    // If a later tool call arrives, it is process text; otherwise it becomes
+    // the final reply in finishStreaming().
     let segment = state.currentTextSegment;
     if (!segment) {
       segment = document.createElement("div");
-      segment.className = "text-segment";
+      segment.className = "text-segment process-step";
       segment.dataset.raw = "";
       segment.dataset.blanks = "0";
       const contentDiv = bubble.querySelector(".message-content");
       if (contentDiv) bubble.insertBefore(segment, contentDiv);
       else bubble.appendChild(segment);
       state.currentTextSegment = segment;
+      queueProcessStep(segment);
     }
     // Accumulate raw text
     const prevBlanks = parseInt(segment.dataset.blanks || "0", 10);
@@ -131,10 +136,19 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
   }
 
   function finishStreaming(bubble) {
+    clearProcessTimer();
+    pendingProcessStep = null;
     state.currentTextSegment = null;
     bubble.closest(".message")?.classList.remove("is-streaming");
-    // Render final markdown on each complete text segment
+    // The last text segment belongs to the completed response. Earlier
+    // segments remain process content from preceding tool rounds.
     const segments = bubble.querySelectorAll(".text-segment");
+    const finalSegment = segments[segments.length - 1];
+    finalSegment?.classList.remove("process-step", "process-latest");
+    bubble.querySelector(".process-latest")?.classList.remove("process-latest");
+    visibleProcessStep = null;
+    visibleProcessSince = 0;
+    // Render final markdown on each complete text segment
     for (const segment of segments) {
       if (segment.dataset.raw) {
         segment.classList.add("markdown-body");
@@ -148,6 +162,48 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
     }
   }
 
+  function queueProcessStep(step) {
+    // Pending steps must be classified immediately so concise-mode CSS hides
+    // concurrent tool calls while the one-second display window is active.
+    step.classList.add("process-step");
+
+    if (document.documentElement.dataset.showProcess !== "false") {
+      showProcessStep(step);
+      return;
+    }
+
+    if (!visibleProcessStep) {
+      showProcessStep(step);
+      return;
+    }
+
+    const remaining = 1000 - (Date.now() - visibleProcessSince);
+    if (remaining <= 0) {
+      showProcessStep(step);
+      return;
+    }
+
+    pendingProcessStep = step;
+    clearProcessTimer();
+    processTimer = window.setTimeout(() => {
+      if (pendingProcessStep) showProcessStep(pendingProcessStep);
+    }, remaining);
+  }
+
+  function showProcessStep(step) {
+    visibleProcessStep?.classList.remove("process-latest");
+    step.classList.add("process-step", "process-latest");
+    visibleProcessStep = step;
+    pendingProcessStep = null;
+    visibleProcessSince = Date.now();
+    clearProcessTimer();
+  }
+
+  function clearProcessTimer() {
+    if (processTimer !== null) window.clearTimeout(processTimer);
+    processTimer = null;
+  }
+
   return {
     appendChunk,
     appendReasoningBlock,
@@ -159,16 +215,6 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
     removeTypingDots,
     setBubbleContent,
   };
-}
-
-function markLatestProcessStep(bubble, step) {
-  // Content emitted before a later reasoning/tool event belongs to that
-  // intermediate round, not to the final reply.
-  const segments = bubble.querySelectorAll(".text-segment");
-  segments[segments.length - 1]?.classList.add("process-step");
-  bubble.closest(".message")?.classList.remove("has-response");
-  bubble.querySelector(".process-latest")?.classList.remove("process-latest");
-  step.classList.add("process-step", "process-latest");
 }
 
 function insertBeforeMessageContent(bubble, node) {

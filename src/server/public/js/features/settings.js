@@ -1,4 +1,6 @@
 const THEMES = new Set(["light", "daylight", "monochrome"]);
+const SHOW_PROCESS_STORAGE_KEY = "hyxclaw-show-process-enabled";
+const LEGACY_SHOW_PROCESS_STORAGE_KEY = "hyxclaw-show-process";
 
 const FONT_MAP = {
   system: "system-ui, -apple-system, sans-serif",
@@ -50,11 +52,13 @@ export function initSettings() {
 
   const setShowProcess = (showProcess) => {
     document.documentElement.dataset.showProcess = String(showProcess);
-    localStorage.setItem("hyxclaw-show-process", String(showProcess));
+    if (showProcess) localStorage.setItem(SHOW_PROCESS_STORAGE_KEY, "true");
+    else localStorage.removeItem(SHOW_PROCESS_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_SHOW_PROCESS_STORAGE_KEY);
     const checkbox = document.getElementById("show-process-checkbox");
     if (checkbox) checkbox.checked = showProcess;
   };
-  setShowProcess(localStorage.getItem("hyxclaw-show-process") !== "false");
+  setShowProcess(localStorage.getItem(SHOW_PROCESS_STORAGE_KEY) === "true");
   document.getElementById("show-process-checkbox")?.addEventListener("change", (event) => {
     setShowProcess(event.currentTarget.checked);
   });
