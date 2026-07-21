@@ -348,4 +348,4 @@ pnpm type-check       # 仅进行类型检查
 └── logs/                               # 服务运行日志
 ```
 
-更多设计和数据格式见 [架构文档](docs/architecture.md)、[初始化说明](docs/init_method.md)、[知识库说明](docs/knowledge_base.md) 与 [Token 统计说明](docs/token_stats.md)。
+更多设计和数据格式见 [架构文档](docs/architecture.md)、[初始化说明](docs/init_method.md)、[知识库说明](docs/knowledge_base.md) 与 [Token 统计说明](docs/token_cost_stats.md)。
