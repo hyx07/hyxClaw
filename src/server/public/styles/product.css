@@ -1323,7 +1323,7 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
-.git-sync-operation:disabled { cursor: wait; opacity: 0.6; }
+.git-sync-operation:disabled { cursor: not-allowed; opacity: 0.6; }
 .git-sync-operation-head {
   display: inline-flex;
   align-items: center;
