@@ -35,6 +35,7 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
     content.className = "reasoning-content";
     details.appendChild(content);
     insertBeforeMessageContent(bubble, details);
+    queueProcessStep(details);
     return details;
   }
 

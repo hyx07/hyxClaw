@@ -175,9 +175,9 @@ export function buildUserMessageContent(text, images) {
 }
 
 export function extractUserText(content) {
-  if (typeof content === "string") return content;
+  if (typeof content === "string") return extractDisplayUserText(content);
   if (!Array.isArray(content)) return "";
-  return content.filter((part) => part.type === "text").map((part) => part.text).join("\n");
+  return content.filter((part) => part.type === "text").map((part) => extractDisplayUserText(part.text)).join("\n");
 }
 
 function formatMessageContent(content) {

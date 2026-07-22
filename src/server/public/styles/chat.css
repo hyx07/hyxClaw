@@ -83,8 +83,7 @@
       display: none;
     }
 
-    html[data-show-process="false"] .message.assistant.is-streaming .process-step:not(.process-latest),
-    html[data-show-process="false"] .message.assistant .reasoning-block.process-step {
+    html[data-show-process="false"] .message.assistant.is-streaming .process-step:not(.process-latest) {
       display: none;
     }
 
