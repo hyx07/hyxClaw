@@ -2,6 +2,7 @@ import * as documents from "./features/documents.js";
 import { closeKnowledgeModal } from "./features/knowledge.js";
 import { closeUsageModal } from "./features/usage.js";
 import { initSettings } from "./features/settings.js";
+import { closeGitSyncModal } from "./features/git-sync.js";
 import { createChatFeature } from "./features/chat.js";
 import { createPermissionFeature } from "./features/permissions.js";
 import { createPickerFeature } from "./features/pickers.js";
@@ -69,11 +70,15 @@ function bindGlobalEvents() {
   document.getElementById("help-close-btn").addEventListener("click", closeHelpModal);
   document.getElementById("usage-close-btn").addEventListener("click", closeUsageModal);
   document.getElementById("knowledge-close-btn").addEventListener("click", closeKnowledgeModal);
+  document.getElementById("git-sync-close-btn").addEventListener("click", closeGitSyncModal);
   document.getElementById("usage-modal").addEventListener("click", (event) => {
     if (event.target.id === "usage-modal") closeUsageModal();
   });
   document.getElementById("knowledge-modal").addEventListener("click", (event) => {
     if (event.target.id === "knowledge-modal") closeKnowledgeModal();
+  });
+  document.getElementById("git-sync-modal").addEventListener("click", (event) => {
+    if (event.target.id === "git-sync-modal") closeGitSyncModal();
   });
   document.getElementById("help-modal").addEventListener("click", (event) => {
     if (event.target.id === "help-modal") closeHelpModal();

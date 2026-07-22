@@ -1,5 +1,6 @@
 import { escHtml } from "./format.js";
 import { clearChatElements } from "./state.js";
+import { initGitSync } from "./features/git-sync.js";
 
 const WORKSPACE_MODE_STORAGE_KEY = "hyxclaw-workspace-mode";
 
@@ -26,16 +27,19 @@ export function createChatView({ state, documents, pickers, permissions, actions
           <div id="chat-header">
             <div id="chat-meta">
               <div id="chat-title">${escHtml(title)}</div>
-              <span id="token-display"></span>
             </div>
             <div id="workspace-mode-control" role="group" aria-label="工作区模式">
               <button class="workspace-mode-btn" type="button" data-workspace-mode="chat" title="聊天模式" aria-label="聊天模式" aria-pressed="false">聊天</button>
               <button class="workspace-mode-btn" type="button" data-workspace-mode="document" title="阅读模式" aria-label="阅读模式" aria-pressed="false">阅读</button>
             </div>
-            <div id="chat-actions">
-              <button class="header-icon-btn" id="usage-btn" title="Token 统计" aria-label="Token 统计"><i data-lucide="bar-chart-3"></i></button>
-              <button class="header-icon-btn" id="knowledge-btn" title="知识库" aria-label="知识库"><i data-lucide="book-open"></i></button>
-              <button class="header-icon-btn" id="doc-rail-toggle" title="${railCollapsed ? "展开文件浏览器" : "收起文件浏览器"}" aria-label="${railCollapsed ? "展开文件浏览器" : "收起文件浏览器"}" aria-expanded="${!railCollapsed}"><i data-lucide="${railCollapsed ? "panel-right-open" : "panel-right-close"}"></i></button>
+            <div id="chat-toolbar">
+              <span id="token-display"></span>
+              <div id="chat-actions">
+                <button class="header-icon-btn" id="usage-btn" title="Token 统计" aria-label="Token 统计"><i data-lucide="bar-chart-3"></i></button>
+                <button class="header-icon-btn" id="knowledge-btn" title="知识库" aria-label="知识库"><i data-lucide="book-open"></i></button>
+                ${state.gitSyncEnabled ? '<button class="header-icon-btn" id="git-sync-btn" title="同步" aria-label="同步"><i data-lucide="git-compare-arrows"></i></button>' : ""}
+                <button class="header-icon-btn" id="doc-rail-toggle" title="${railCollapsed ? "展开文件浏览器" : "收起文件浏览器"}" aria-label="${railCollapsed ? "展开文件浏览器" : "收起文件浏览器"}" aria-expanded="${!railCollapsed}"><i data-lucide="${railCollapsed ? "panel-right-open" : "panel-right-close"}"></i></button>
+              </div>
             </div>
           </div>
           <div id="chat-content">
@@ -85,6 +89,7 @@ export function createChatView({ state, documents, pickers, permissions, actions
     actions.bindScrollListener();
     bindComposerEvents();
     documents.initRightPanel();
+    initGitSync();
     initWorkspaceMode();
     syncModelControls();
     pickers.bindComposer();

@@ -159,6 +159,50 @@
   </div>
 </div>
 
+<!-- ===== Git Sync Modal ===== -->
+<div id="git-sync-modal" role="dialog" aria-modal="true" aria-labelledby="git-sync-title">
+  <div id="git-sync-panel">
+    <div id="git-sync-panel-header">
+      <div class="modal-title-group">
+        <span class="modal-title-icon"><i data-lucide="git-compare-arrows"></i></span>
+        <strong id="git-sync-title">数据同步</strong>
+      </div>
+      <button id="git-sync-close-btn" class="icon-button" type="button" title="关闭" aria-label="关闭">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="git-sync-panel-body">
+      <div class="git-sync-status-card">
+        <div class="git-sync-status-row"><span>数据目录</span><code id="git-sync-data-dir">加载中...</code></div>
+        <div class="git-sync-status-row"><span>分支</span><code id="git-sync-branch">加载中...</code></div>
+        <div class="git-sync-status-row"><span>上游</span><code id="git-sync-upstream">加载中...</code></div>
+      </div>
+      <div class="git-sync-status-card">
+        <div class="git-sync-status-row"><span>工作区</span><span id="git-sync-worktree" class="git-sync-state">加载中...</span></div>
+      </div>
+      <h2 class="git-sync-section-title">同步操作</h2>
+      <p class="git-sync-hint">同步内容由数据目录的 <code>.gitignore</code> 决定。操作只执行显示的 Git 命令；遇到冲突、分叉或认证问题会立即停止，请在终端手动处理。</p>
+      <div class="git-sync-operations">
+        <button id="git-sync-pull-btn" class="git-sync-operation" type="button">
+          <span class="git-sync-operation-head"><i data-lucide="download"></i><strong class="git-sync-operation-name">拉取更新</strong></span>
+          <span>仅在工作区干净时拉取远端的快进更新。</span>
+          <code>git pull --ff-only</code>
+        </button>
+        <button id="git-sync-push-btn" class="git-sync-operation" type="button">
+          <span class="git-sync-operation-head"><i data-lucide="upload"></i><strong class="git-sync-operation-name">提交并推送</strong></span>
+          <span>暂存未忽略的变更，创建提交并推送到上游。</span>
+          <code>git add -A; commit; push</code>
+        </button>
+      </div>
+      <div id="git-sync-result" class="git-sync-result" aria-live="polite">
+        <div class="git-sync-result-header"><strong id="git-sync-result-title"></strong><button id="git-sync-copy-btn" type="button">复制结果</button></div>
+        <pre id="git-sync-result-output"></pre>
+      </div>
+      <p id="git-sync-manual-note" class="git-sync-manual-note" hidden>操作已停止，未自动处理。请在数据目录的终端中检查并解决问题后再试。</p>
+    </div>
+  </div>
+</div>
+
 <!-- ===== Knowledge Modal ===== -->
 <div id="knowledge-modal" role="dialog" aria-modal="true" aria-label="知识库">
   <div id="knowledge-panel">
@@ -265,6 +309,14 @@
       <p>费用按模型配置中的 <code>cost</code> 单价计算；未配置单价的模型费用记为 0。统计数据持久化在 <code>files/usage_daily.json</code> 和 <code>files/usage_total.json</code> 中。</p>
       <h3>知识库浏览</h3>
       <p>顶部工具栏的 📖 按钮可打开知识库总览面板，列出所有知识库及其包含的文件。每个知识库卡片显示名称、描述和文件列表，超过 5 个文件时可点击展开查看全部。</p>
+
+      <h3>Git 数据同步</h3>
+      <p>顶部工具栏的同步按钮可打开数据同步面板。数据目录必须是已配置远端和上游分支的 Git 工作树；同步范围完全由数据目录中的 <code>.gitignore</code> 决定。</p>
+      <ul>
+        <li><strong>拉取更新</strong>：工作区干净时拉取远程更新，工作区有任何未提交修改时立即停止。历史分叉、冲突、认证和网络错误均不会自动处理。</li>
+        <li><strong>提交并推送</strong>：依次自动执行 <code>git add -A</code>、检查暂存区、创建带时间戳的提交，然后执行 <code>git push</code>。没有变更时不会创建空提交；推送失败时已创建的本地提交会保留。</li>
+      </ul>
+      <p>程序不会自动 stash、merge、rebase、force push 或覆盖文件。遇到异常请在数据目录的终端中手动处理。非回环地址监听时，同步按钮和 Git 接口都会隐藏/禁用。</p>
 
       <h2>右边栏</h2>
       <h3>工具栏按钮</h3>

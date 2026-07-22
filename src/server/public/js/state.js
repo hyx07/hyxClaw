@@ -15,6 +15,7 @@ export function createAppState() {
     currentProvider: "zai",
     currentModel: "glm-4.7",
     currentThinkingEffort: "none",
+    gitSyncEnabled: false,
 
     isStreaming: false,
     streamingBubble: null,

@@ -447,6 +447,9 @@ input:focus-visible {
 /* Main chat */
 #chat-header {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   min-height: 60px;
   padding: var(--space-3) var(--space-5);
   background: var(--chat-header-bg);
@@ -465,22 +468,35 @@ input:focus-visible {
   color: var(--text1);
   font-weight: var(--weight-semibold);
 }
-#chat-meta #token-display {
-  position: absolute;
-  top: 50%;
-  right: calc(var(--space-5) + 118px);
-  min-width: 0;
-  max-width: calc(50% - 70px);
+#chat-toolbar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0;
+  margin-left: auto;
+}
+#token-display {
+  width: 200px;
+  display: block;
+  flex: 0 0 200px;
+  margin-right: 0;
+  padding: 4px 8px 4px 42px;
   overflow: hidden;
+  color: var(--text2);
+  font-size: 12px;
+  text-align: left;
   text-overflow: ellipsis;
-  transform: translateY(-50%);
+  white-space: nowrap;
+  visibility: hidden;
+}
+#token-display:not(:empty) {
+  visibility: visible;
 }
 #chat-actions {
-  position: absolute;
-  top: 50%;
-  right: var(--space-5);
+  position: static;
+  flex: 0 0 auto;
   margin-left: 0;
-  transform: translateY(-50%);
+  transform: none;
 }
 .header-icon-btn {
   width: 34px;
@@ -1069,6 +1085,7 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
    no full-screen hit-testing layer can block underlying UI. */
 #usage-modal,
 #knowledge-modal,
+#git-sync-modal,
 #help-modal,
 #compact-modal {
   position: static;
@@ -1082,6 +1099,7 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
 }
 #usage-modal.open,
 #knowledge-modal.open,
+#git-sync-modal.open,
 #help-modal.open,
 #compact-modal.open {
   position: fixed;
@@ -1096,6 +1114,7 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
   transition-delay: 0s;
 }
 #knowledge-modal.open,
+#git-sync-modal.open,
 #help-modal.open {
   align-items: center;
   justify-content: center;
@@ -1103,6 +1122,7 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
 }
 #usage-panel,
 #knowledge-panel,
+#git-sync-panel,
 #help-panel,
 #compact-panel {
   border-radius: var(--radius-lg);
@@ -1113,12 +1133,14 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
 }
 #usage-modal.open #usage-panel,
 #knowledge-modal.open #knowledge-panel,
+#git-sync-modal.open #git-sync-panel,
 #help-modal.open #help-panel,
 #compact-modal.open #compact-panel {
   transform: none;
 }
 #usage-panel-header,
 #knowledge-panel-header,
+#git-sync-panel-header,
 #help-panel-header,
 #compact-panel-header {
   margin-bottom: var(--space-4);
@@ -1134,6 +1156,7 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
   border: 1px solid var(--border);
 }
 #knowledge-panel-header,
+#git-sync-panel-header,
 #help-panel-header {
   display: flex;
   align-items: center;
@@ -1166,6 +1189,7 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
   height: 18px;
 }
 #knowledge-panel-header strong,
+#git-sync-panel-header strong,
 #help-panel-header strong {
   overflow: hidden;
   color: var(--text1);
@@ -1176,11 +1200,13 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
 }
 #usage-close-btn,
 #knowledge-close-btn,
+#git-sync-close-btn,
 #help-close-btn {
   border: 0;
   background: transparent;
 }
 #knowledge-close-btn,
+#git-sync-close-btn,
 #help-close-btn {
   width: 32px;
   height: 32px;
@@ -1188,6 +1214,191 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
 }
 #knowledge-panel .panel-scroll-body {
   padding: var(--space-5);
+}
+#git-sync-panel {
+  width: min(560px, calc(100vw - 40px));
+  max-height: min(720px, calc(100vh - 40px));
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+#git-sync-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+#git-sync-panel-header strong {
+  color: var(--text1);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+}
+#git-sync-close-btn {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  color: var(--text2);
+  background: transparent;
+}
+#git-sync-close-btn:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+.git-sync-panel-body {
+  padding: var(--space-5);
+  overflow-y: auto;
+}
+.git-sync-status-card {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+.git-sync-status-card + .git-sync-status-card { margin-top: var(--space-3); }
+.git-sync-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.git-sync-status-row + .git-sync-status-row { margin-top: var(--space-2); }
+.git-sync-status-row code,
+.git-sync-state {
+  overflow: hidden;
+  color: var(--text1);
+  font-size: var(--text-sm);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.git-sync-status-row code,
+.git-sync-hint code,
+.git-sync-operation code {
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.git-sync-state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.git-sync-state::before {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  content: "";
+}
+.git-sync-state.warning::before { background: var(--token-warn-bg); }
+.git-sync-section-title {
+  margin: var(--space-6) 0 var(--space-2);
+  color: var(--text1);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+.git-sync-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
+.git-sync-operations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.git-sync-operation {
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  background: var(--bg-surface);
+  font-size: var(--text-xs);
+  line-height: 1.55;
+  text-align: left;
+}
+.git-sync-operation:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.git-sync-operation:disabled { cursor: wait; opacity: 0.6; }
+.git-sync-operation-head {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text1);
+  font-size: var(--text-sm);
+}
+.git-sync-operation code {
+  margin-top: auto;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+  background: var(--bg3);
+  font-size: 12px;
+  letter-spacing: 0.01em;
+}
+.git-sync-result {
+  display: none;
+  margin-top: var(--space-5);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.git-sync-result.show { display: block; }
+.git-sync-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  color: var(--text1);
+  background: var(--bg-surface);
+  font-size: var(--text-xs);
+}
+.git-sync-result.success { border-color: color-mix(in srgb, var(--success) 45%, var(--border)); }
+.git-sync-result.success .git-sync-result-header { color: var(--success); background: var(--success-soft); }
+.git-sync-result.error { border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); }
+.git-sync-result.error .git-sync-result-header { color: var(--danger); background: var(--danger-soft); }
+.git-sync-result-header button {
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  background: transparent;
+  font-size: 11px;
+}
+.git-sync-result-header button:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+.git-sync-result pre {
+  max-height: 160px;
+  margin: 0;
+  padding: var(--space-3);
+  overflow: auto;
+  color: var(--text2);
+  background: var(--bg-surface);
+  font-family: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+.git-sync-manual-note {
+  margin: var(--space-3) 0 0;
+  color: var(--danger);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+@media (max-width: 520px) {
+  .git-sync-operations { grid-template-columns: 1fr; }
 }
 #knowledge-list {
   gap: var(--space-3);
@@ -1552,7 +1763,6 @@ html[data-theme="light"] #usage-table th {
     max-width: calc(50% - 62px);
   }
   #chat-actions {
-    right: var(--space-3);
     gap: 4px;
   }
   .header-icon-btn {

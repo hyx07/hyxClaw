@@ -4,7 +4,7 @@ import { flushUsage, getDailyStats, getUsageStats } from "../services/usage-stor
 import type { RouteHandler } from "../http-types.js";
 import { sendJson } from "../http-types.js";
 
-export const handleSystemRoutes: RouteHandler = async ({ req, res, url, config }) => {
+export const handleSystemRoutes: RouteHandler = async ({ req, res, url, config, gitSyncEnabled }) => {
   if (url.pathname === "/health" && req.method === "GET") {
     sendJson(res, { status: "ok" });
     return true;
@@ -19,6 +19,7 @@ export const handleSystemRoutes: RouteHandler = async ({ req, res, url, config }
       defaultProvider: config.defaultProvider,
       defaultModel: config.defaultModel,
       defaultThinkingEffort: config.defaultThinkingEffort,
+      gitSyncEnabled,
     });
     return true;
   }

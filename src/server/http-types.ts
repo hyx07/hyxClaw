@@ -9,6 +9,7 @@ export type HttpContext = {
   res: ServerResponse;
   url: URL;
   config: Config;
+  gitSyncEnabled: boolean;
   logger: ReturnType<typeof getLogger>;
   broadcast: (message: ServerMessage) => void;
 };

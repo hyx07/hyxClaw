@@ -3,9 +3,14 @@ import type { Config } from "../config/index.js";
 import type { getLogger } from "../logger/index.js";
 import type { ServerMessage } from "./protocol.js";
 import { handleContentRoutes } from "./routes/content.js";
+import { handleGitSyncRoutes } from "./routes/git-sync.js";
 import { handleSessionRoutes } from "./routes/sessions.js";
 import { handleSystemRoutes } from "./routes/system.js";
 import { handleStaticRequest } from "./static-assets.js";
+
+function isLoopbackHost(host: string): boolean {
+  return host === "127.0.0.1" || host === "::1" || host.toLowerCase() === "localhost";
+}
 
 export function createHttpHandler(options: {
   host: string;
@@ -15,13 +20,14 @@ export function createHttpHandler(options: {
   broadcast: (message: ServerMessage) => void;
 }): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const { host, port, config, logger, broadcast } = options;
-  const routes = [handleSystemRoutes, handleSessionRoutes, handleContentRoutes];
+  const gitSyncEnabled = isLoopbackHost(host);
+  const routes = [handleSystemRoutes, handleGitSyncRoutes, handleSessionRoutes, handleContentRoutes];
 
   return async (req, res) => {
     try {
       const url = new URL(req.url || "", `http://${host}:${port}`);
       for (const route of routes) {
-        if (await route({ req, res, url, config, logger, broadcast })) return;
+        if (await route({ req, res, url, config, gitSyncEnabled, logger, broadcast })) return;
       }
       if (url.pathname.startsWith("/api/")) {
         res.statusCode = 404;

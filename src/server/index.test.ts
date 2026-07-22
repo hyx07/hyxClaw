@@ -181,6 +181,7 @@ describe("server", () => {
       defaultProvider: string;
       defaultModel: string;
       defaultThinkingEffort: string;
+      gitSyncEnabled: boolean;
       providers: Record<string, { models: Array<{ id: string; label: string; modal?: string; thinking?: Array<{ id: string }> }> }>;
     };
 
@@ -188,6 +189,7 @@ describe("server", () => {
     expect(data.defaultProvider).toBe("zai");
     expect(data.defaultModel).toBe("GLM-4.7");
     expect(data.defaultThinkingEffort).toBe("low");
+    expect(data.gitSyncEnabled).toBe(true);
     expect(data.providers.zai.models[0].id).toBe("GLM-4.5-Air");
     expect(data.providers.zai.models[1].thinking?.map((option) => option.id)).toEqual(["enabled"]);
     expect(data.providers.dashscope.models.some((model) => model.modal === "vl")).toBe(true);
