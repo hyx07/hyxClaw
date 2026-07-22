@@ -1,5 +1,8 @@
 import { requestJson, jsonRequest } from "../api.js";
 
+let operationActive = false;
+let modalEventsInitialized = false;
+
 function setStatus(data) {
   const dataDir = document.getElementById("git-sync-data-dir");
   const branch = document.getElementById("git-sync-branch");
@@ -57,6 +60,8 @@ export function closeGitSyncModal() {
 }
 
 async function runOperation(action) {
+  if (operationActive) return;
+  operationActive = true;
   setBusy(true, action);
   try {
     const { response, data } = await requestJson(`/api/git/${action}`, jsonRequest("POST"));
@@ -69,15 +74,20 @@ async function runOperation(action) {
   } catch (error) {
     showResult("error", "同步失败", error.message || "网络请求失败。", true);
   } finally {
+    operationActive = false;
     setBusy(false, action);
   }
 }
 
 export function initGitSync() {
   const entry = document.getElementById("git-sync-btn");
-  if (!entry || entry.dataset.initialized) return;
-  entry.dataset.initialized = "true";
-  entry.addEventListener("click", () => void openGitSyncModal());
+  if (entry && !entry.dataset.initialized) {
+    entry.dataset.initialized = "true";
+    entry.addEventListener("click", () => void openGitSyncModal());
+  }
+
+  if (modalEventsInitialized) return;
+  modalEventsInitialized = true;
   document.getElementById("git-sync-pull-btn")?.addEventListener("click", () => void runOperation("pull"));
   document.getElementById("git-sync-push-btn")?.addEventListener("click", () => void runOperation("push"));
   document.getElementById("git-sync-copy-btn")?.addEventListener("click", async () => {
