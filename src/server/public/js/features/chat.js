@@ -166,11 +166,6 @@ export function createChatFeature({
   function syncCompactButton() {
     if (!state.compactBtnEl) return;
     state.compactBtnEl.disabled = !state.currentSessionId || state.currentSessionMessageCount < 2 || state.isStreaming || state.isCompacting;
-    if (state.isCompacting) {
-      state.compactBtnEl.classList.add("is-loading");
-    } else {
-      state.compactBtnEl.classList.remove("is-loading");
-    }
   }
 
   function showError(message) {
