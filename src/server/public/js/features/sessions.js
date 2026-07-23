@@ -237,7 +237,7 @@ export function createSessionFeature({ state, socket, renderer, pickers, actions
     }
     list.innerHTML = state.sessions.map((session) => `
       <div class="session-item ${session.id === state.currentSessionId ? "active" : ""}" data-id="${session.id}">
-        <div class="session-item-content"><div class="session-title" title="双击重命名">${escHtml(session.title)}</div><div class="session-meta">${session.messages ? session.messages.length : 0} 条消息</div></div>
+        <div class="session-item-content"><div class="session-title" title="双击重命名">${escHtml(session.title)}</div><div class="session-meta">${session.messages?.filter((message) => message.role === "user").length || 0} 条消息</div></div>
         <button class="session-delete-btn" data-id="${session.id}" title="删除对话" aria-label="删除对话"><i data-lucide="trash-2"></i></button>
       </div>`).join("");
     window.lucide?.createIcons();
