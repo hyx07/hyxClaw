@@ -534,6 +534,50 @@ input:focus-visible {
   border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg);
   box-shadow: none;
 }
+.message.user .message-bubble.is-collapsible {
+  position: relative;
+}
+.message.user .message-bubble.is-collapsible .message-content {
+  padding-bottom: 34px;
+}
+.message.user .message-bubble.is-collapsed .message-content {
+  max-height: 16em;
+  overflow: hidden;
+}
+.message.user .message-bubble.is-collapsed .message-content::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 48px;
+  content: "";
+  background: linear-gradient(transparent, var(--user-bg));
+  pointer-events: none;
+}
+.user-message-toggle {
+  position: absolute;
+  right: 8px;
+  bottom: 7px;
+  min-width: 46px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  color: var(--text2);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+}
+.user-message-toggle:hover {
+  background: var(--bg2);
+  color: var(--text1);
+}
+.user-message-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .message.assistant .message-bubble {
   padding: 0;
   color: var(--text);
@@ -1069,7 +1113,8 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
   background: var(--hover-bg);
 }
 #workspace-mode-control .workspace-mode-btn.active {
-  color: var(--accent);
+  color: var(--text1);
+  font-weight: var(--weight-bold);
 }
 
 /* Popovers and dialogs */
@@ -1511,7 +1556,7 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
 }
 .file-picker-item.focused,
 .command-picker-item.focused {
-  background: var(--accent-soft);
+  background: var(--hover-bg);
 }
 .usage-tab,
 .usage-range-btn,

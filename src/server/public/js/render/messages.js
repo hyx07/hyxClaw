@@ -1,5 +1,7 @@
 import { renderContent } from "../markdown.js";
 
+const USER_MESSAGE_COLLAPSE_THRESHOLD = 800;
+
 export function createMessageRenderer({ state, streaming, onRestart, scrollToBottom }) {
   function renderMessages(messages) {
     if (!state.messagesEl) return;
@@ -143,6 +145,10 @@ export function createMessageRenderer({ state, streaming, onRestart, scrollToBot
     }
     bubble.appendChild(contentDiv);
 
+    if (role === "user" && shouldCollapseUserMessage(content)) {
+      appendUserMessageToggle(bubble, contentDiv);
+    }
+
     if (role === "user" && messageId) {
       const restart = document.createElement("button");
       restart.className = "restart-round-btn";
@@ -203,6 +209,28 @@ function extractDisplayUserText(text) {
   const normalized = String(text || "").replace(/\r\n/g, "\n");
   const match = /^<系统提示>\n[\s\S]*?\n<\/系统提示>\n用户消息：([\s\S]*)$/.exec(normalized);
   return match ? match[1] : normalized;
+}
+
+function shouldCollapseUserMessage(content) {
+  return Array.from(extractUserText(content)).length > USER_MESSAGE_COLLAPSE_THRESHOLD;
+}
+
+function appendUserMessageToggle(bubble, contentDiv) {
+  bubble.classList.add("is-collapsible", "is-collapsed");
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "user-message-toggle";
+  toggle.textContent = "展开";
+  toggle.setAttribute("aria-expanded", "false");
+  toggle.setAttribute("aria-label", "展开完整用户消息");
+  toggle.addEventListener("click", () => {
+    const isCollapsed = bubble.classList.toggle("is-collapsed");
+    toggle.textContent = isCollapsed ? "展开" : "收起";
+    toggle.setAttribute("aria-expanded", String(!isCollapsed));
+    toggle.setAttribute("aria-label", isCollapsed ? "展开完整用户消息" : "收起用户消息");
+    if (isCollapsed) contentDiv.scrollIntoView({ block: "nearest" });
+  });
+  bubble.appendChild(toggle);
 }
 
 function getToolCallName(toolCall) {
