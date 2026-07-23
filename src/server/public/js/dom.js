@@ -137,6 +137,7 @@ export function createChatView({ state, documents, pickers, permissions, actions
     const previewContent = document.getElementById("doc-preview-content");
     if (!shell || !chatPanel || !chatContent || !documentStage || !previewPanel || !previewToolbar || !previewContent) return;
 
+    const modeChanged = shell.dataset.workspaceMode !== mode;
     if (mode === "document") {
       documentStage.appendChild(previewContent);
       previewPanel.appendChild(chatContent);
@@ -147,6 +148,13 @@ export function createChatView({ state, documents, pickers, permissions, actions
     }
 
     shell.dataset.workspaceMode = mode;
+    if (modeChanged) {
+      requestAnimationFrame(() => {
+        if (shell.dataset.workspaceMode !== mode || !state.messagesEl) return;
+        state.userScrolledUp = false;
+        state.messagesEl.scrollTop = state.messagesEl.scrollHeight;
+      });
+    }
     syncWorkspaceModeControls(mode);
     window.lucide?.createIcons();
   }
