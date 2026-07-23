@@ -1733,6 +1733,17 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
 #usage-table tbody tr:hover {
   background: var(--hover-bg);
 }
+#usage-table tfoot th,
+#usage-table tfoot td {
+  border-top: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text1);
+  font-weight: var(--weight-semibold);
+}
+#usage-table tfoot th {
+  text-align: left;
+  font-weight: var(--weight-bold);
+}
 
 /* Keep the statistics surface aligned with the khaki theme. */
 html:not([data-theme]) #usage-panel,
@@ -1744,6 +1755,10 @@ html[data-theme="light"] #usage-table {
 html:not([data-theme]) #usage-table th,
 html[data-theme="light"] #usage-table th {
   background: var(--bg4);
+}
+html:not([data-theme]) #usage-table tfoot th,
+html[data-theme="light"] #usage-table tfoot th {
+  background: transparent;
 }
 
 @media (max-width: 720px) {

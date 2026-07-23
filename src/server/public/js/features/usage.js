@@ -153,9 +153,11 @@ async function loadUsageTotal() {
   const empty = document.getElementById("usage-empty");
   const table = document.getElementById("usage-table");
   const body = document.getElementById("usage-table-body");
+  const foot = document.getElementById("usage-table-foot");
   showEmptyLoading(empty);
   table.style.display = "none";
   body.innerHTML = "";
+  foot.innerHTML = "";
   const response = await fetch("/api/usage/stats");
   const rows = await response.json();
   if (!Array.isArray(rows) || rows.length === 0) {
@@ -163,6 +165,13 @@ async function loadUsageTotal() {
     return;
   }
   rows.sort((a, b) => `${a.provider}${a.model}`.localeCompare(`${b.provider}${b.model}`));
+  const totals = rows.reduce((summary, row) => {
+    summary.inputTokens += Number(row.inputTokens) || 0;
+    summary.billingOutputTokens += Number(row.billingOutputTokens ?? row.outputTokens) || 0;
+    summary.thinkingTokens += Number(row.thinkingTokens) || 0;
+    summary.cost += Number(row.cost) || 0;
+    return summary;
+  }, { inputTokens: 0, billingOutputTokens: 0, thinkingTokens: 0, cost: 0 });
   body.innerHTML = rows.map((row) => `
     <tr>
       <td>${escHtml(row.model || "")}</td>
@@ -173,6 +182,15 @@ async function loadUsageTotal() {
       <td>${formatCost(row.cost)}</td>
     </tr>
   `).join("");
+  foot.innerHTML = `
+    <tr>
+      <th scope="row" colspan="2">总计</th>
+      <td>${formatTokens(totals.inputTokens)}</td>
+      <td>${formatTokens(totals.billingOutputTokens)}</td>
+      <td>${formatTokens(totals.thinkingTokens)}</td>
+      <td>${formatCost(totals.cost)}</td>
+    </tr>
+  `;
   empty.style.display = "none";
   table.style.display = "table";
 }
