@@ -241,6 +241,22 @@ type LoopEvent =
   | { type: "toolCall"; name: string; input: Record<string, unknown>; callId: string }
   | { type: "toolResult"; name: string; content: string; isError: boolean; callId: string };
 
+interface AgenticLoopResult {
+  extraMessages: Message[];
+  finalText: string | null;
+  finalReasoning?: string | null;
+  accumulatedUsage: NormalizedUsage | null;
+  contextUsage: NormalizedUsage | null;
+  denied?: boolean;
+  cancelled?: boolean;
+  maxToolCallsReached?: boolean;
+}
+
+function resolveFinalAssistantContent(finalText: string | null, maxToolCallsReached: boolean): string {
+  if (finalText?.trim()) return finalText;
+  return maxToolCallsReached ? "（已达到最大工具调用次数）" : "（模型未返回可见文本）";
+}
+
 /** Ensure every assistant(tool_calls) in extraMessages has matching tool results.
  *  If cancelled mid-round, the last assistant may have tool_calls without results. */
 function fixUnmatchedToolCalls(msgs: Message[]): void {
@@ -277,7 +293,7 @@ async function* runAgenticLoop(
   supportsImages: boolean,
   checkPermission?: (toolName: string, input: Record<string, unknown>) => Promise<boolean>,
   signal?: AbortSignal,
-): AsyncGenerator<LoopEvent, { extraMessages: Message[]; finalText: string | null; finalReasoning?: string | null; accumulatedUsage: NormalizedUsage | null; contextUsage: NormalizedUsage | null; denied?: boolean; cancelled?: boolean }, unknown> {
+): AsyncGenerator<LoopEvent, AgenticLoopResult, unknown> {
   const extraMessages: Message[] = [];
   let toolCallCount = 0;
   const llmTools = toLLMTools(tools);
@@ -390,7 +406,7 @@ async function* runAgenticLoop(
   }
 
   logger.warn(`Max tool calls (${maxToolCalls}) reached`);
-  return { extraMessages, finalText: null, accumulatedUsage, contextUsage };
+  return { extraMessages, finalText: null, accumulatedUsage, contextUsage, maxToolCallsReached: true };
 }
 
 async function* runAgenticLoopStreaming(
@@ -405,7 +421,7 @@ async function* runAgenticLoopStreaming(
   supportsImages: boolean,
   checkPermission?: (toolName: string, input: Record<string, unknown>) => Promise<boolean>,
   signal?: AbortSignal,
-): AsyncGenerator<LoopEvent, { extraMessages: Message[]; finalText: string | null; finalReasoning?: string | null; accumulatedUsage: NormalizedUsage | null; contextUsage: NormalizedUsage | null; denied?: boolean; cancelled?: boolean }, unknown> {
+): AsyncGenerator<LoopEvent, AgenticLoopResult, unknown> {
   const extraMessages: Message[] = [];
   let toolCallCount = 0;
   const llmTools = toLLMTools(tools);
@@ -538,7 +554,7 @@ async function* runAgenticLoopStreaming(
   }
 
   logger.warn(`Max tool calls (${maxToolCalls}) reached`);
-  return { extraMessages, finalText: null, accumulatedUsage, contextUsage };
+  return { extraMessages, finalText: null, accumulatedUsage, contextUsage, maxToolCallsReached: true };
 }
 
 export async function chat(
@@ -592,6 +608,7 @@ export async function chat(
   let finalReasoning: string | null | undefined = null;
   let accumulatedUsage: NormalizedUsage | null = null;
   let contextUsage: NormalizedUsage | null = null;
+  let maxToolCallsReached = false;
   const loopGen = runAgenticLoop(provider, run.apiKey, messagesForContext, tools, sessionId, session.title, config.maxToolCalls, llmOptions, supportsImages, options.checkPermission, options.signal);
 
   while (true) {
@@ -602,6 +619,7 @@ export async function chat(
       finalReasoning = value.finalReasoning;
       accumulatedUsage = value.accumulatedUsage;
       contextUsage = value.contextUsage;
+      maxToolCallsReached = value.maxToolCallsReached ?? false;
       if (value.cancelled) {
         // Persist partial messages, mark the assistant reply as cancelled
         fixUnmatchedToolCalls(extraMessages);
@@ -629,7 +647,7 @@ export async function chat(
   const assistantMessage: Message = {
     id: generateId(),
     role: "assistant",
-    content: finalText ?? "（已达到最大工具调用次数）",
+    content: resolveFinalAssistantContent(finalText, maxToolCallsReached),
     timestamp: new Date().toISOString(),
     ...(finalReasoning ? { reasoning_content: finalReasoning } : {}),
   };
@@ -700,6 +718,7 @@ export async function* chatStream(
   let finalReasoning: string | null | undefined = null;
   let accumulatedUsage: NormalizedUsage | null = null;
   let contextUsage: NormalizedUsage | null = null;
+  let maxToolCallsReached = false;
   let hasStreamedText = false;
   const loopGen = runAgenticLoopStreaming(provider, run.apiKey, messagesForContext, tools, sessionId, session.title, config.maxToolCalls, llmOptions, supportsImages, options.checkPermission, options.signal);
 
@@ -711,6 +730,7 @@ export async function* chatStream(
       finalReasoning = value.finalReasoning;
       accumulatedUsage = value.accumulatedUsage;
       contextUsage = value.contextUsage;
+      maxToolCallsReached = value.maxToolCallsReached ?? false;
       if (value.cancelled) {
         // Persist BEFORE yielding — the consumer may stop iterating after seeing cancelled
         fixUnmatchedToolCalls(extraMessages);
@@ -751,7 +771,7 @@ export async function* chatStream(
   const assistantMessage: Message = {
     id: generateId(),
     role: "assistant",
-    content: finalText ?? "（已达到最大工具调用次数）",
+    content: resolveFinalAssistantContent(finalText, maxToolCallsReached),
     timestamp: new Date().toISOString(),
     ...(finalReasoning ? { reasoning_content: finalReasoning } : {}),
   };

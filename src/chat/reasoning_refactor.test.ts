@@ -6,8 +6,9 @@ import type { Config } from "../config/index.js";
 import { createSession, loadSession } from "../session/index.js";
 import { clearTools, registerTool } from "../tools/registry.js";
 
-const { completeMock } = vi.hoisted(() => ({
+const { completeMock, streamMock } = vi.hoisted(() => ({
   completeMock: vi.fn(),
+  streamMock: vi.fn(),
 }));
 
 vi.mock("../llm/index.js", async () => {
@@ -16,12 +17,12 @@ vi.mock("../llm/index.js", async () => {
     ...actual,
     createProvider: () => ({
       complete: completeMock,
-      stream: vi.fn(),
+      stream: streamMock,
     }),
   };
 });
 
-const { chat } = await import("./index.js");
+const { chat, chatStream } = await import("./index.js");
 
 const mockConfig: Config = {
   providers: {
@@ -86,6 +87,7 @@ describe("reasoning refactor", () => {
     await mkdir(path.join(testDir, "files", "prompts"), { recursive: true });
     clearTools();
     completeMock.mockReset();
+    streamMock.mockReset();
   });
 
   afterEach(async () => {
@@ -154,5 +156,74 @@ describe("reasoning refactor", () => {
     expect(finalAssistant?.reasoning_content).toBe("根据工具结果组织最终回答");
 
     expect(completeMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not report a tool limit when the model returns only reasoning", async () => {
+    const session = await createSession("Reasoning Only Test", testDir);
+    completeMock.mockResolvedValueOnce({
+      content: null,
+      finish_reason: "stop",
+      reasoning_content: "已完成文件修改。",
+      usage: undefined,
+    });
+
+    const result = await chat(session.id, "修改文件", mockConfig);
+    expect(result.assistantMessage.content).toBe("（模型未返回可见文本）");
+    expect(result.assistantMessage.reasoning_content).toBe("已完成文件修改。");
+
+    const persisted = await loadSession(session.id, testDir);
+    const finalAssistant = persisted.messages.at(-1);
+    expect(finalAssistant?.content).toBe("（模型未返回可见文本）");
+    expect(finalAssistant?.reasoning_content).toBe("已完成文件修改。");
+  });
+
+  it("does not report a tool limit for a streaming reasoning-only response", async () => {
+    const session = await createSession("Streaming Reasoning Only Test", testDir);
+    streamMock.mockImplementationOnce(async function* () {
+      yield { type: "reasoning" as const, text: "已完成文件修改。" };
+      return { finish_reason: "stop" };
+    });
+
+    const stream = chatStream(session.id, "修改文件", mockConfig);
+    const chunks: Array<{ chunk: string; done: boolean; reasoning?: boolean }> = [];
+    while (true) {
+      const item = await stream.next();
+      if (item.done) break;
+      chunks.push(item.value);
+    }
+
+    expect(chunks).toContainEqual({ chunk: "已完成文件修改。", done: false, reasoning: true });
+    expect(chunks).toContainEqual({ chunk: "（模型未返回可见文本）", done: false });
+
+    const persisted = await loadSession(session.id, testDir);
+    const finalAssistant = persisted.messages.at(-1);
+    expect(finalAssistant?.content).toBe("（模型未返回可见文本）");
+    expect(finalAssistant?.reasoning_content).toBe("已完成文件修改。");
+  });
+
+  it("reports the tool limit only when the loop actually reaches it", async () => {
+    const session = await createSession("Tool Limit Test", testDir);
+    registerTool({
+      name: "get_weather",
+      description: "Get weather",
+      inputSchema: { type: "object", properties: {} },
+      async execute() {
+        return { content: "晴天" };
+      },
+    });
+    completeMock.mockResolvedValueOnce({
+      content: null,
+      finish_reason: "tool_calls",
+      tool_calls: [{
+        id: "tool-1",
+        type: "function",
+        function: { name: "get_weather", arguments: "{}" },
+      }],
+      usage: undefined,
+    });
+
+    const result = await chat(session.id, "查天气", { ...mockConfig, maxToolCalls: 1 });
+    expect(result.assistantMessage.content).toBe("（已达到最大工具调用次数）");
+    expect(completeMock).toHaveBeenCalledTimes(1);
   });
 });
