@@ -476,21 +476,18 @@ input:focus-visible {
   margin-left: auto;
 }
 #token-display {
-  width: 200px;
-  display: block;
-  flex: 0 0 200px;
-  margin-right: 0;
-  padding: 4px 8px 4px 12px;
-  overflow: hidden;
+  display: none;
+  align-items: center;
+  height: 32px;
+  margin-left: 4px;
+  padding: 0 2px;
   color: var(--text2);
   font-size: 12px;
-  text-align: left;
-  text-overflow: ellipsis;
+  line-height: 1;
   white-space: nowrap;
-  visibility: hidden;
 }
 #token-display:not(:empty) {
-  visibility: visible;
+  display: inline-flex;
 }
 #chat-actions {
   position: static;
@@ -551,6 +548,7 @@ input:focus-visible {
   left: 0;
   height: 48px;
   content: "";
+  border-radius: 0 0 var(--radius-sm) var(--radius-lg);
   background: linear-gradient(transparent, var(--user-bg));
   pointer-events: none;
 }
@@ -1820,9 +1818,6 @@ html[data-theme="light"] #usage-table tfoot th {
   .header-icon-btn {
     width: 30px;
     height: 30px;
-  }
-  #token-display {
-    display: none !important;
   }
   .toolbar-select {
     max-width: 96px;

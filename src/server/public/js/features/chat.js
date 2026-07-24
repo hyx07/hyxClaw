@@ -1,5 +1,5 @@
 import { requestJson, jsonRequest } from "../api.js";
-import { escHtml, formatK } from "../format.js";
+import { escHtml } from "../format.js";
 import { buildUserMessageContent, extractUserText } from "../render/messages.js";
 
 export function createChatFeature({
@@ -148,19 +148,23 @@ export function createChatFeature({
 
   function formatContextTokens(value) {
     const number = Number(value || 0);
-    return Math.abs(number) <= 100 ? String(Math.round(number)) : formatK(number);
+    const absolute = Math.abs(number);
+    if (absolute <= 1000) return String(Math.round(number));
+    if (absolute < 10000) return `${(number / 1000).toFixed(1)}k`;
+    return `${(number / 10000).toFixed(1)}W`;
   }
 
   function updateTokenDisplay(usage) {
-    if (!state.tokenDisplayEl || !usage) return;
+    if (!state.tokenDisplayEl) return;
+    if (!usage) {
+      state.tokenDisplayEl.textContent = "";
+      state.tokenDisplayEl.style.display = "none";
+      return;
+    }
     const input = usage.inputTokens || 0;
-    const output = usage.outputTokens || 0;
-    const total = input + output;
-    state.tokenDisplayEl.textContent = `IN: ${formatContextTokens(input)} OUT: ${formatContextTokens(output)} ALL: ${formatContextTokens(total)}`;
-    state.tokenDisplayEl.title = "当前上下文估计：最后一次 LLM 请求的输入和最终输出";
-    state.tokenDisplayEl.style.display = "inline-block";
-    state.tokenDisplayEl.style.background = total > 100000 ? (total > 200000 ? "var(--token-warn-bg)" : "var(--token-caution-bg)") : "";
-    state.tokenDisplayEl.style.color = "var(--text2)";
+    const output = usage.billingOutputTokens ?? usage.outputTokens ?? 0;
+    state.tokenDisplayEl.textContent = formatContextTokens(input + output);
+    state.tokenDisplayEl.style.display = "inline-flex";
   }
 
   function syncCompactButton() {
@@ -267,6 +271,7 @@ export function createChatFeature({
     if (session.id !== state.currentSessionId) return;
     const local = state.sessions.find((item) => item.id === state.currentSessionId);
     if (local) Object.assign(local, session);
+    actions.renderSessionList();
     actions.applySessionRuntimeState(session);
     const cached = state.sessionCache.get(state.currentSessionId);
     const serverCount = session.messages.length;
@@ -372,13 +377,7 @@ export function createChatFeature({
     state.currentTextSegment = null;
     state.pendingToolBlocks = {};
     state.typingPlaceholder = null;
-    const session = state.sessions.find((item) => item.id === state.currentSessionId);
-    if (session) {
-      state.currentSessionMessageCount = session.messages.length + 2;
-      session.lastProvider = state.currentProvider;
-      session.lastModel = state.currentModel;
-      actions.renderSessionList();
-    }
+    void actions.refreshSessionSummary(message.sessionId);
     updateCurrentCache();
     syncCompactButton();
   }
@@ -396,15 +395,7 @@ export function createChatFeature({
     state.typingPlaceholder = null;
     if (message.contextUsage || message.usage) state.latestUsage = message.contextUsage || message.usage;
     updateTokenDisplay(state.latestUsage);
-    const session = state.sessions.find((item) => item.id === state.currentSessionId);
-    if (session) {
-      session.messages ||= [];
-      session.messages.push({}, {});
-      session.lastProvider = state.currentProvider;
-      session.lastModel = state.currentModel;
-      state.currentSessionMessageCount = session.messages.length;
-      actions.renderSessionList();
-    }
+    void actions.refreshSessionSummary(message.sessionId);
     updateCurrentCache();
     syncCompactButton();
   }
@@ -434,10 +425,15 @@ export function createChatFeature({
 
   function updateBackgroundSession(message) {
     const cached = state.sessionCache.get(message.sessionId);
-    if (!cached) return;
-    if (message.type === "chatStart") cached.isStreaming = true;
-    if (message.type === "chatEnd") clearCachedStreaming(message.sessionId);
-    if (message.type === "chatCancelled") clearCachedStreaming(message.sessionId);
+    if (cached && message.type === "chatStart") cached.isStreaming = true;
+    if (cached && message.type === "chatEnd") {
+      cached.latestUsage = message.contextUsage || message.usage || cached.latestUsage;
+      clearCachedStreaming(message.sessionId);
+    }
+    if (cached && message.type === "chatCancelled") clearCachedStreaming(message.sessionId);
+    if (message.type === "chatEnd" || message.type === "chatCancelled") {
+      void actions.refreshSessionSummary(message.sessionId);
+    }
   }
 
   function clearCachedStreaming(sessionId) {

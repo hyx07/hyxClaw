@@ -99,6 +99,24 @@ export function createSessionFeature({ state, socket, renderer, pickers, actions
     actions.syncModelControls();
   }
 
+  async function refreshSessionSummary(id) {
+    const { response, data } = await requestJson(`/api/sessions/${id}`);
+    if (!response.ok || !data.session) return;
+    const session = state.sessions.find((item) => item.id === id);
+    if (!session) return;
+    Object.assign(session, data.session);
+    if (id === state.currentSessionId) {
+      state.currentSessionMessageCount = data.session.messages.length;
+      state.currentMessages = data.session.messages;
+    }
+    const cached = state.sessionCache.get(id);
+    if (cached) {
+      cached.currentSessionMessageCount = data.session.messages.length;
+      cached.currentMessages = data.session.messages;
+    }
+    renderSessionList();
+  }
+
   function saveSessionState(sessionId) {
     if (!sessionId || !state.messagesEl) return;
     const childNodes = [];
@@ -268,6 +286,7 @@ export function createSessionFeature({ state, socket, renderer, pickers, actions
     loadClientConfig,
     loadSession,
     loadSessions,
+    refreshSessionSummary,
     renderSessionList,
     selectSession,
   };

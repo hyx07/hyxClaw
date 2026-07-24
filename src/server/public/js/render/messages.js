@@ -1,6 +1,7 @@
 import { renderContent } from "../markdown.js";
 
 const USER_MESSAGE_COLLAPSE_THRESHOLD = 800;
+const USER_MESSAGE_COLLAPSE_LINE_THRESHOLD = 10;
 
 export function createMessageRenderer({ state, streaming, onRestart, scrollToBottom }) {
   function renderMessages(messages) {
@@ -212,7 +213,9 @@ function extractDisplayUserText(text) {
 }
 
 function shouldCollapseUserMessage(content) {
-  return Array.from(extractUserText(content)).length > USER_MESSAGE_COLLAPSE_THRESHOLD;
+  const text = extractUserText(content);
+  return Array.from(text).length > USER_MESSAGE_COLLAPSE_THRESHOLD
+    || text.split(/\r?\n/).length > USER_MESSAGE_COLLAPSE_LINE_THRESHOLD;
 }
 
 function appendUserMessageToggle(bubble, contentDiv) {

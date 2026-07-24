@@ -33,7 +33,6 @@ export function createChatView({ state, documents, pickers, permissions, actions
               <button class="workspace-mode-btn" type="button" data-workspace-mode="document" title="阅读模式" aria-label="阅读模式" aria-pressed="false">阅读</button>
             </div>
             <div id="chat-toolbar">
-              <span id="token-display"></span>
               <div id="chat-actions">
                 <button class="header-icon-btn" id="usage-btn" title="Token 统计" aria-label="Token 统计"><i data-lucide="bar-chart-3"></i></button>
                 <button class="header-icon-btn" id="knowledge-btn" title="知识库" aria-label="知识库"><i data-lucide="book-open"></i></button>
@@ -69,6 +68,7 @@ export function createChatView({ state, documents, pickers, permissions, actions
                   <button id="compact-btn" class="composer-action-btn" title="压缩会话" aria-label="压缩会话" disabled>
                     <i data-lucide="archive"></i>
                   </button>
+                  <span id="token-display" title="当前上下文长度"></span>
                 </div>
                 <div class="composer-right">
                   <div class="toolbar-menu-control"><select id="provider-select" hidden></select><button id="provider-select-trigger" class="toolbar-select" type="button" title="Provider" aria-label="Provider" aria-haspopup="listbox" aria-expanded="false" aria-controls="provider-select-menu"><span class="toolbar-select-value"></span><i data-lucide="chevron-down"></i></button><div id="provider-select-menu" class="toolbar-select-menu" role="listbox" aria-label="Provider"></div></div>
