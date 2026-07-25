@@ -338,7 +338,7 @@ pnpm type-check       # 仅进行类型检查
 
 ```text
 {HYXCLAW_DATA_DIR}/
-├── .gitignore                         # 数据目录自身的 Git 忽略规则：排除日志和会话压缩归档
+├── .gitignore                         # 数据目录自身的 Git 忽略规则：排除日志、会话压缩归档和高频变化的界面状态
 ├── .installed_templates.json           # 已安装的示例模板记录；删除过的示例不会在下次 init 时重新创建
 ├── config.json                         # 应用配置：模型提供商、API Key、默认模型、文件访问范围及服务设置
 ├── conversations/                      # 当前会话目录；每个会话保存为 <sessionId>.jsonl 文件
