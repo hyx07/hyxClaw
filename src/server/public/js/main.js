@@ -92,10 +92,16 @@ function bindGlobalEvents() {
 
 async function boot() {
   initSettings();
-  documents.configureDocuments({ showError: actions.showError });
+  documents.configureDocuments({
+    showError: actions.showError,
+    onRecentPreviewFilesChange: (files) => {
+      state.recentPreviewFiles = files;
+    },
+  });
   bindGlobalEvents();
   await actions.loadClientConfig();
   await actions.loadAppState();
+  documents.setRecentPreviewFiles(state.recentPreviewFiles);
   await actions.loadSessions();
   socket.connect();
 }

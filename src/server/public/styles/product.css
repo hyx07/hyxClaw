@@ -1005,17 +1005,32 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
     background 0.12s ease,
     color 0.12s ease;
 }
-.doc-entry:hover {
+.doc-entry:hover,
+.doc-recent-entry:hover {
   background: var(--hover-bg);
 }
-.doc-entry.active {
+.doc-entry.active,
+.doc-recent-entry.active {
   background: var(--toolbar-menu-selected-bg);
   color: var(--text1);
   box-shadow: none;
 }
-.doc-entry .lucide {
+.doc-entry .lucide,
+.doc-recent-entry .lucide {
   width: 14px;
   height: 14px;
+}
+.doc-recent-files {
+  padding: var(--space-1);
+  border-top-color: var(--border);
+  background: var(--bg4);
+}
+.doc-recent-entry {
+  border: 0;
+  border-radius: 0;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
 }
 #doc-preview-toolbar {
   min-height: 52px;

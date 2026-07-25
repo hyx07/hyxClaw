@@ -8,8 +8,10 @@ import { getDocSelectionSummary, getSourceLineNumberFromOffset } from "./documen
 export { initSidebarResizeHandle } from "./document-layout.js";
 
 let reportError = (message) => console.error(message);
+let onRecentPreviewFilesChange = () => {};
 export function configureDocuments(options) {
   reportError = options.showError;
+  onRecentPreviewFilesChange = options.onRecentPreviewFilesChange || (() => {});
 }
 
 const DOC_BROWSER_ROOTS = ["knowledge_base", "inputs"];
@@ -19,6 +21,7 @@ let docSecondActivePath = null;
 let docThirdEntries = [];
 let docThirdDirPath = null;
 let docThirdActivePath = null;
+let recentPreviewFiles = [];
 let docPreviewPath = "";
 let docPreviewContent = "";
 let docPreviewSupported = true;
@@ -40,8 +43,20 @@ function getDocEntryIcon(kind) {
     : '<i data-lucide="file" class="doc-entry-icon"></i>';
 }
 
+function buildRecentPreviewFiles(paths) {
+  if (!paths.length) return "";
+  return `
+    <div class="doc-recent-files" aria-label="最近预览文件">
+      ${paths.map((path) => {
+        const name = path.split("/").pop() || path;
+        return `<button class="doc-recent-entry ${path === docPreviewPath ? "active" : ""}" data-recent-doc-path="${escHtml(path)}" type="button" title="${escHtml(path)}" aria-label="打开最近预览文件 ${escHtml(path)}"><i data-lucide="file-clock" class="doc-entry-icon"></i><span class="doc-recent-entry-label">${escHtml(name)}</span></button>`;
+      }).join("")}
+    </div>
+  `;
+}
+
 function buildDocColumn(title, entries, activePath, options = {}) {
-  const { showBack = false, backDisabled = true } = options;
+  const { showBack = false, backDisabled = true, recentPaths = [] } = options;
   return `
     <div class="doc-column">
       <div class="doc-column-header">
@@ -56,6 +71,7 @@ function buildDocColumn(title, entries, activePath, options = {}) {
           </button>
         `).join("") : '<div class="doc-empty">暂无内容</div>'}
       </div>
+      ${buildRecentPreviewFiles(recentPaths)}
     </div>
   `;
 }
@@ -104,6 +120,38 @@ async function fetchDocContent(path) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "读取文件失败");
   return data;
+}
+
+export function setRecentPreviewFiles(paths) {
+  recentPreviewFiles = Array.isArray(paths)
+    ? [...new Set(paths.filter((path) => typeof path === "string" && path))].slice(0, 3)
+    : [];
+  onRecentPreviewFilesChange(recentPreviewFiles);
+  renderDocColumns();
+}
+
+async function recordRecentPreview(path) {
+  const res = await fetch("/api/app-state/recent-preview-files", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "更新最近文件失败");
+  setRecentPreviewFiles(data.recentPreviewFiles);
+}
+
+async function removeRecentPreview(path) {
+  try {
+    const res = await fetch(`/api/app-state/recent-preview-files?path=${encodeURIComponent(path)}`, { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "更新最近文件失败");
+    setRecentPreviewFiles(data.recentPreviewFiles);
+  } catch {
+    recentPreviewFiles = recentPreviewFiles.filter((item) => item !== path);
+    onRecentPreviewFilesChange(recentPreviewFiles);
+    renderDocColumns();
+  }
 }
 
 export function clearPreviewSelection() {
@@ -272,9 +320,15 @@ async function openDocPreview(path) {
     docPreviewSupported = data.supported !== false;
     docPreviewKind = data.kind || (docPreviewSupported ? "text" : "unsupported");
     docEditMode = false;
+    try {
+      await recordRecentPreview(docPreviewPath);
+    } catch {
+      // A persistence error must not prevent an otherwise successful preview.
+    }
     clearPreviewSelection();
     updateDocPreviewPanel();
   } catch (error) {
+    if (recentPreviewFiles.includes(path)) void removeRecentPreview(path);
     reportError((error && error.message) ? error.message : "读取文件失败");
   }
 }
@@ -284,7 +338,7 @@ function renderDocColumns() {
   if (!container) return;
   const scrollTops = Array.from(container.querySelectorAll(".doc-column-body")).map((el) => el.scrollTop);
   container.innerHTML = [
-    buildDocColumn("根目录", DOC_BROWSER_ROOTS.map((root) => ({ name: root, path: root, kind: "directory" })), docRootPath),
+    buildDocColumn("根目录", DOC_BROWSER_ROOTS.map((root) => ({ name: root, path: root, kind: "directory" })), docRootPath, { recentPaths: recentPreviewFiles }),
     '<div class="doc-column-resizer" data-column-resizer="0" title="拖拽调整文件树列宽"></div>',
     buildDocColumn(docRootPath || "", docSecondEntries, docSecondActivePath),
     '<div class="doc-column-resizer" data-column-resizer="1" title="拖拽调整文件树列宽"></div>',
@@ -348,6 +402,15 @@ function renderDocColumns() {
     });
   });
 
+  container.querySelectorAll(".doc-recent-entry").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const path = button.dataset.recentDocPath;
+      if (!path) return;
+      await openDocPreview(path);
+      renderDocColumns();
+    });
+  });
+
   document.getElementById("doc-back-btn")?.addEventListener("click", async () => {
     if (!docThirdDirPath || docThirdDirPath === docSecondActivePath) return;
     const parts = docThirdDirPath.split("/");
@@ -394,11 +457,13 @@ export async function refreshDocBrowser() {
         docPreviewSupported = data.supported !== false;
         docPreviewKind = data.kind || (docPreviewSupported ? "text" : "unsupported");
       } catch {
+        const missingPath = docPreviewPath;
         docPreviewPath = "";
         docPreviewContent = "";
         docPreviewSupported = true;
         docPreviewKind = "text";
         clearPreviewSelection();
+        if (missingPath) void removeRecentPreview(missingPath);
       }
     }
 

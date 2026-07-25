@@ -22,8 +22,10 @@ export function createSessionFeature({ state, socket, renderer, pickers, actions
     try {
       const { data } = await requestJson("/api/app-state");
       state.lastActiveSessionId = data?.lastActiveSessionId || null;
+      state.recentPreviewFiles = Array.isArray(data?.recentPreviewFiles) ? data.recentPreviewFiles : [];
     } catch {
       state.lastActiveSessionId = null;
+      state.recentPreviewFiles = [];
     }
   }
 

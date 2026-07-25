@@ -398,6 +398,51 @@
     }
 
 
+    .doc-recent-files {
+      display: flex;
+      flex: 0 0 auto;
+      flex-direction: column;
+      gap: 4px;
+      padding: 6px;
+      border-top: 1px solid var(--border);
+    }
+
+    .doc-recent-entry {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      width: 100%;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 7px 10px;
+      text-align: left;
+    }
+
+    .doc-recent-entry:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .doc-recent-entry.active {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.55);
+      font-weight: 500;
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    .doc-recent-entry-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+
     .doc-empty {
       padding: 10px;
       font-size: 12px;

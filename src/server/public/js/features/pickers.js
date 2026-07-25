@@ -118,8 +118,15 @@ export function createPickerFeature({ state, autoResizeInput, updateSendAvailabi
     closeCommandPicker();
     clearTimeout(fileDebounceTimer);
     fileDebounceTimer = setTimeout(async () => {
-      const { data } = await requestJson(`/api/files?q=${encodeURIComponent(match[1])}`);
-      filePickerFiles = Array.isArray(data?.files) ? data.files : [];
+      const query = match[1];
+      const { data } = await requestJson(`/api/files?q=${encodeURIComponent(query)}`);
+      const normalizedQuery = query.toLocaleLowerCase();
+      const recentFiles = (state.recentPreviewFiles || [])
+        .filter((filePath) => filePath.toLocaleLowerCase().includes(normalizedQuery))
+        .map((filePath) => ({ path: filePath }));
+      const recentPaths = new Set(recentFiles.map((file) => file.path));
+      const matchedFiles = Array.isArray(data?.files) ? data.files : [];
+      filePickerFiles = [...recentFiles, ...matchedFiles.filter((file) => !recentPaths.has(file.path))];
       fileFocusIndex = filePickerFiles.length ? 0 : -1;
       buildFileList();
       updateFileState();

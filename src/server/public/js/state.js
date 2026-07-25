@@ -3,6 +3,7 @@ export function createAppState() {
     currentSessionId: null,
     sessions: [],
     lastActiveSessionId: null,
+    recentPreviewFiles: [],
     sessionCache: new Map(),
     currentSessionMessageCount: 0,
     currentMessages: [],
