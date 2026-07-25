@@ -76,6 +76,7 @@ export function handleWebSocketConnection(
           thinkingEffort: message.thinkingEffort,
           previewPath: message.previewPath,
           selectedPreviewText: message.selectedPreviewText,
+          previewSelectionEstimated: message.previewSelectionEstimated,
           pendingPermissions,
           config,
           logger,

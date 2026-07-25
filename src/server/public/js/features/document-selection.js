@@ -19,6 +19,55 @@ export function getLineNumberFromOffset(root, targetNode, targetOffset) {
   return (prefix.match(/\n/g)?.length || 0) + 1;
 }
 
+export function getSourceLineInfoFromOffset(root, targetNode, targetOffset, edge = "start") {
+  const sourceLine = getMappedSourceLine(root, targetNode, targetOffset, edge);
+  if (sourceLine !== null) return { line: sourceLine, estimated: false };
+  return { line: getLineNumberFromOffset(root, targetNode, targetOffset), estimated: true };
+}
+
+function getMappedSourceLine(root, targetNode, targetOffset, edge) {
+  const directLine = getLineFromNodeOrAncestor(root, targetNode);
+  if (directLine !== null) return directLine;
+  if (targetNode.nodeType !== Node.ELEMENT_NODE) return null;
+
+  const children = [...targetNode.childNodes];
+  if (!children.length) return null;
+  let index = edge === "end"
+    ? Math.min(Math.max(targetOffset - 1, 0), children.length - 1)
+    : Math.min(Math.max(targetOffset, 0), children.length - 1);
+  const step = edge === "end" ? -1 : 1;
+  while (index >= 0 && index < children.length) {
+    const line = getLineFromNodeOrDescendant(root, children[index], edge);
+    if (line !== null) return line;
+    index += step;
+  }
+  return null;
+}
+
+function getLineFromNodeOrAncestor(root, node) {
+  let element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+  while (element && root.contains(element)) {
+    const value = Number.parseInt(element.getAttribute?.("data-source-line") || "", 10);
+    if (Number.isInteger(value) && value > 0) return value;
+    if (element === root) break;
+    element = element.parentElement;
+  }
+  return null;
+}
+
+function getLineFromNodeOrDescendant(root, node, edge) {
+  const ownLine = getLineFromNodeOrAncestor(root, node);
+  if (ownLine !== null) return ownLine;
+  if (node.nodeType !== Node.ELEMENT_NODE) return null;
+  const children = [...node.childNodes];
+  if (edge === "end") children.reverse();
+  for (const child of children) {
+    const line = getLineFromNodeOrDescendant(root, child, edge);
+    if (line !== null) return line;
+  }
+  return null;
+}
+
 function getPreviewTextOffset(root, targetNode, targetOffset) {
   let text = "";
   let result = null;

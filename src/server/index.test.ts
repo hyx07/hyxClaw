@@ -106,6 +106,82 @@ function connectWs(port: number): Promise<{ ws: WebSocket; recv: () => Promise<u
   });
 }
 
+describe("document preview source lines", () => {
+  it("preserves physical lines across consecutive blank lines", async () => {
+    const modulePath = "./public/js/markdown.js";
+    const { renderMarkdown } = await import(modulePath) as { renderMarkdown: (text: string) => string };
+
+    const html = renderMarkdown("标题\n\n\n\n正文");
+
+    expect(html).toContain('<span data-source-line="1">标题</span>');
+    expect(html).toContain('<span data-source-line="5">正文</span>');
+  });
+
+  it("marks source lines for structured markdown and fenced code", async () => {
+    const modulePath = "./public/js/markdown.js";
+    const { renderMarkdown } = await import(modulePath) as { renderMarkdown: (text: string) => string };
+    const source = [
+      "# heading",
+      "",
+      "first",
+      "second",
+      "",
+      "> quote",
+      "- item",
+      "",
+      "| A |",
+      "| --- |",
+      "| cell |",
+      "",
+      "```",
+      "alpha",
+      "beta",
+      "```",
+      "",
+      "after",
+    ].join("\n");
+
+    const html = renderMarkdown(source);
+
+    expect(html).toContain('<h1 data-source-line="1">heading</h1>');
+    expect(html).toContain('<span data-source-line="4">second</span>');
+    expect(html).toContain('<p data-source-line="6">quote</p>');
+    expect(html).toContain('<li data-source-line="7">item</li>');
+    expect(html).toContain('<td data-source-line="11">cell</td>');
+    expect(html).toContain('<span data-source-line="14">alpha</span>');
+    expect(html).toContain('<span data-source-line="15">beta</span>');
+    expect(html).toContain('<span data-source-line="18">after</span>');
+    expect(html).toContain("<pre><code>");
+    expect(html).not.toContain("<p><pre>");
+  });
+
+  it("resolves a selection endpoint from source-line metadata", async () => {
+    const modulePath = "./public/js/features/document-selection.js";
+    const { getSourceLineInfoFromOffset } = await import(modulePath) as {
+      getSourceLineInfoFromOffset: (root: unknown, node: unknown, offset: number) => { line: number; estimated: boolean };
+    };
+    const runtime = globalThis as typeof globalThis & { Node?: { ELEMENT_NODE: number; TEXT_NODE: number } };
+    const previousNode = runtime.Node;
+    runtime.Node = { ELEMENT_NODE: 1, TEXT_NODE: 3 };
+    const root: Record<string, unknown> = {};
+    const span: Record<string, unknown> = {
+      nodeType: 1,
+      parentElement: root,
+      getAttribute: (name: string) => name === "data-source-line" ? "5" : null,
+      childNodes: [],
+    };
+    const textNode = { nodeType: 3, parentElement: span };
+    root.contains = (node: unknown) => node === root || node === span;
+
+    try {
+      expect(getSourceLineInfoFromOffset(root, textNode, 3)).toEqual({ line: 5, estimated: false });
+    } finally {
+      if (previousNode) runtime.Node = previousNode;
+      else delete runtime.Node;
+    }
+  });
+});
+
 describe("server", () => {
   let state: Awaited<ReturnType<typeof startServer>>;
   let testDir: string;
@@ -287,6 +363,19 @@ describe("server", () => {
     expect(result.persistedUserContent).toBe(expected);
     expect(result.llmUserContent).toBe(expected);
     expect(result.latestUserTextForLog).toBe(expected);
+  });
+
+  it("omits the estimate hint for source-mapped line numbers", () => {
+    const result = buildAugmentedUserContent(
+      "请帮我分析这段内容",
+      undefined,
+      "knowledge_base/example/a.md",
+      "已选中源文件第 5 行到第 5 行：\n正文",
+      false,
+    );
+
+    expect(String(result.llmUserContent)).toContain("已选中源文件第 5 行到第 5 行");
+    expect(String(result.llmUserContent)).not.toContain("注意：行号基于估算");
   });
 
   it("omits line-number hint when there is no selected preview text", () => {
