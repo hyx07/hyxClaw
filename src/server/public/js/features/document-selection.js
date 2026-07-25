@@ -19,10 +19,9 @@ export function getLineNumberFromOffset(root, targetNode, targetOffset) {
   return (prefix.match(/\n/g)?.length || 0) + 1;
 }
 
-export function getSourceLineInfoFromOffset(root, targetNode, targetOffset, edge = "start") {
+export function getSourceLineNumberFromOffset(root, targetNode, targetOffset, edge = "start") {
   const sourceLine = getMappedSourceLine(root, targetNode, targetOffset, edge);
-  if (sourceLine !== null) return { line: sourceLine, estimated: false };
-  return { line: getLineNumberFromOffset(root, targetNode, targetOffset), estimated: true };
+  return sourceLine ?? getLineNumberFromOffset(root, targetNode, targetOffset);
 }
 
 function getMappedSourceLine(root, targetNode, targetOffset, edge) {

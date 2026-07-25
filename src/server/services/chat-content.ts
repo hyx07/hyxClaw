@@ -13,11 +13,7 @@ function buildUserContent(content: string, images?: Array<{ url: string; path?: 
   return parts;
 }
 
-export function buildPreviewContextSuffix(
-  previewPath?: string,
-  selectedPreviewText?: string,
-  previewSelectionEstimated = true,
-): string {
+export function buildPreviewContextSuffix(previewPath?: string, selectedPreviewText?: string): string {
   const trimmedPath = String(previewPath || "").trim();
   const trimmedSelection = String(selectedPreviewText || "").trim();
   if (!trimmedPath && !trimmedSelection) return "";
@@ -26,7 +22,6 @@ export function buildPreviewContextSuffix(
   if (trimmedPath) lines.push(`当前用户正在浏览文件：${trimmedPath}`, "");
   if (trimmedSelection) {
     lines.push("选中内容：", "```text", trimmedSelection, "```", "");
-    if (previewSelectionEstimated) lines.push("注意：行号基于估算，读取时可以前后多读两行。");
   }
   lines.push("用户正在浏览的文件不一定与当前对话直接相关，请结合上下文判断是否需要参考。", "</系统提示>");
   return lines.join("\n");
@@ -37,13 +32,12 @@ export function buildAugmentedUserContent(
   images: Array<{ url: string; path?: string }> | undefined,
   previewPath?: string,
   selectedPreviewText?: string,
-  previewSelectionEstimated?: boolean,
 ): {
   llmUserContent: string | MessageContentPart[];
   persistedUserContent: string | MessageContentPart[];
   latestUserTextForLog: string;
 } {
-  const suffix = buildPreviewContextSuffix(previewPath, selectedPreviewText, previewSelectionEstimated);
+  const suffix = buildPreviewContextSuffix(previewPath, selectedPreviewText);
   const augmentedText = suffix ? `${suffix}\n用户消息：${content}` : content;
   const llmUserContent = buildUserContent(augmentedText, images);
   return { llmUserContent, persistedUserContent: llmUserContent, latestUserTextForLog: augmentedText };

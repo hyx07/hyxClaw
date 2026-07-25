@@ -157,8 +157,8 @@ describe("document preview source lines", () => {
 
   it("resolves a selection endpoint from source-line metadata", async () => {
     const modulePath = "./public/js/features/document-selection.js";
-    const { getSourceLineInfoFromOffset } = await import(modulePath) as {
-      getSourceLineInfoFromOffset: (root: unknown, node: unknown, offset: number) => { line: number; estimated: boolean };
+    const { getSourceLineNumberFromOffset } = await import(modulePath) as {
+      getSourceLineNumberFromOffset: (root: unknown, node: unknown, offset: number) => number;
     };
     const runtime = globalThis as typeof globalThis & { Node?: { ELEMENT_NODE: number; TEXT_NODE: number } };
     const previousNode = runtime.Node;
@@ -174,7 +174,7 @@ describe("document preview source lines", () => {
     root.contains = (node: unknown) => node === root || node === span;
 
     try {
-      expect(getSourceLineInfoFromOffset(root, textNode, 3)).toEqual({ line: 5, estimated: false });
+      expect(getSourceLineNumberFromOffset(root, textNode, 3)).toBe(5);
     } finally {
       if (previousNode) runtime.Node = previousNode;
       else delete runtime.Node;
@@ -341,7 +341,7 @@ describe("server", () => {
       "请帮我分析这段内容",
       undefined,
       "knowledge_base/example/a.md",
-      "已选中第 3 行到第 4 行：\n第一行\n第二行",
+      "已选中源文件第 3 行到第 4 行：\n第一行\n第二行",
     );
     const expected = [
       "<系统提示>",
@@ -349,12 +349,11 @@ describe("server", () => {
       "",
       "选中内容：",
       "```text",
-      "已选中第 3 行到第 4 行：",
+      "已选中源文件第 3 行到第 4 行：",
       "第一行",
       "第二行",
       "```",
       "",
-      "注意：行号基于估算，读取时可以前后多读两行。",
       "用户正在浏览的文件不一定与当前对话直接相关，请结合上下文判断是否需要参考。",
       "</系统提示>",
       "用户消息：请帮我分析这段内容",
@@ -363,19 +362,6 @@ describe("server", () => {
     expect(result.persistedUserContent).toBe(expected);
     expect(result.llmUserContent).toBe(expected);
     expect(result.latestUserTextForLog).toBe(expected);
-  });
-
-  it("omits the estimate hint for source-mapped line numbers", () => {
-    const result = buildAugmentedUserContent(
-      "请帮我分析这段内容",
-      undefined,
-      "knowledge_base/example/a.md",
-      "已选中源文件第 5 行到第 5 行：\n正文",
-      false,
-    );
-
-    expect(String(result.llmUserContent)).toContain("已选中源文件第 5 行到第 5 行");
-    expect(String(result.llmUserContent)).not.toContain("注意：行号基于估算");
   });
 
   it("omits line-number hint when there is no selected preview text", () => {
@@ -395,7 +381,6 @@ describe("server", () => {
       "</系统提示>",
       "用户消息：请总结这个文件",
     ].join("\n"));
-    expect(String(result.llmUserContent)).not.toContain("注意：行号基于估算");
   });
 
   it("creates a session", async () => {

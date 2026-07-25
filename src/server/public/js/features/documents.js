@@ -3,7 +3,7 @@ import { renderContent } from "../markdown.js";
 import { openKnowledgeModal } from "./knowledge.js";
 import { openUsageModal, setUsageDays, switchUsageTab, toggleUsageMetric } from "./usage.js";
 import { getDocRailWidth, initDocColumnResize, initDocResizeHandle, initDocVerticalResize, initSidebarResizeHandle } from "./document-layout.js";
-import { getDocSelectionSummary, getSourceLineInfoFromOffset } from "./document-selection.js";
+import { getDocSelectionSummary, getSourceLineNumberFromOffset } from "./document-selection.js";
 
 export { initSidebarResizeHandle } from "./document-layout.js";
 
@@ -28,12 +28,10 @@ let selectedPreviewText = "";
 let selectedPreviewSummary = "";
 let selectedPreviewStartLine = 0;
 let selectedPreviewEndLine = 0;
-let selectedPreviewLineEstimated = true;
 
 function getDocSelectionStatusText() {
   if (!selectedPreviewText || !selectedPreviewStartLine || !selectedPreviewEndLine) return "";
-  const prefix = selectedPreviewLineEstimated ? "已估算选中" : "已选中源文件";
-  return `${prefix}第 ${selectedPreviewStartLine} 行到第 ${selectedPreviewEndLine} 行`;
+  return `已选中源文件第 ${selectedPreviewStartLine} 行到第 ${selectedPreviewEndLine} 行`;
 }
 
 function getDocEntryIcon(kind) {
@@ -113,7 +111,6 @@ export function clearPreviewSelection() {
   selectedPreviewSummary = "";
   selectedPreviewStartLine = 0;
   selectedPreviewEndLine = 0;
-  selectedPreviewLineEstimated = true;
   updateDocSelectionStatus();
 }
 
@@ -205,7 +202,6 @@ export function getPreviewContextPayload() {
   return {
     previewPath: docPreviewPath || undefined,
     selectedPreviewText: getSelectedPreviewPayload(),
-    previewSelectionEstimated: selectedPreviewText ? selectedPreviewLineEstimated : undefined,
   };
 }
 
@@ -227,11 +223,8 @@ export function updateSelectedPreviewTextFromSelection() {
   if (!nextText) return;
   selectedPreviewText = nextText;
   selectedPreviewSummary = getDocSelectionSummary(nextText);
-  const start = getSourceLineInfoFromOffset(preview, range.startContainer, range.startOffset, "start");
-  const end = getSourceLineInfoFromOffset(preview, range.endContainer, range.endOffset, "end");
-  selectedPreviewStartLine = start.line;
-  selectedPreviewEndLine = end.line;
-  selectedPreviewLineEstimated = start.estimated || end.estimated;
+  selectedPreviewStartLine = getSourceLineNumberFromOffset(preview, range.startContainer, range.startOffset, "start");
+  selectedPreviewEndLine = getSourceLineNumberFromOffset(preview, range.endContainer, range.endOffset, "end");
   updateDocSelectionStatus();
 }
 

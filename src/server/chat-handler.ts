@@ -62,16 +62,11 @@ export async function processChatMessage(options: {
   thinkingEffort?: string;
   previewPath?: string;
   selectedPreviewText?: string;
-  previewSelectionEstimated?: boolean;
   pendingPermissions: Map<string, (allowed: boolean) => void>;
   config: Config;
   logger: ReturnType<typeof getLogger>;
 }): Promise<void> {
-  const {
-    client, sessionId, content, images, provider, model, thinkingEffort,
-    previewPath, selectedPreviewText, previewSelectionEstimated,
-    pendingPermissions, config, logger,
-  } = options;
+  const { client, sessionId, content, images, provider, model, thinkingEffort, previewPath, selectedPreviewText, pendingPermissions, config, logger } = options;
   
   // Abort any existing chat for this session
   cancelChat(sessionId);
@@ -95,13 +90,7 @@ export async function processChatMessage(options: {
     }
     const userMessageId = randomUUID();
     sendToClient(client, { type: "chatStart", sessionId, userMessageId });
-    const { llmUserContent, persistedUserContent } = buildAugmentedUserContent(
-      content,
-      normalizedImages,
-      previewPath,
-      selectedPreviewText,
-      previewSelectionEstimated,
-    );
+    const { llmUserContent, persistedUserContent } = buildAugmentedUserContent(content, normalizedImages, previewPath, selectedPreviewText);
     let fullResponse = "";
     let usage: UsageRecord | undefined;
     let contextUsage: UsageRecord | undefined;

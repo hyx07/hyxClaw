@@ -23,7 +23,6 @@ export type ClientMessage =
       thinkingEffort?: string;
       previewPath?: string;
       selectedPreviewText?: string;
-      previewSelectionEstimated?: boolean;
     }
   | { type: "toolPermissionResponse"; requestId: string; allowed: boolean }
   | { type: "setWritePermission"; enabled: boolean }
