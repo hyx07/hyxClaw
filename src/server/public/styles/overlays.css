@@ -262,6 +262,23 @@
       flex-shrink: 0;
     }
 
+    .usage-legend-sep {
+      width: 1px;
+      height: 12px;
+      background: var(--border);
+      flex-shrink: 0;
+      align-self: center;
+    }
+
+    .usage-legend-total {
+      font-weight: 600;
+      color: var(--text1);
+    }
+
+    .usage-legend-total-swatch {
+      background: var(--text) !important;
+    }
+
 
     #knowledge-list {
       display: flex;

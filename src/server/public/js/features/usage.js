@@ -62,10 +62,11 @@ function renderChart(containerId, legendId, data, groupKey, totalKey, formatFn, 
     for (const key of keys) totals[key] += entry[groupKey]?.[key] || 0;
   }
   const renderLegend = (values) => {
+    const total = keys.reduce((sum, key) => sum + (values?.[key] || 0), 0);
     legend.innerHTML = keys.map((key) => {
       const count = values?.[key] || 0;
       return `<span class="usage-legend-item"><span class="usage-legend-swatch" style="background:${colors[key]}"></span>${escHtml(key)}<span style="margin-left:12px">${formatFn(count)}</span></span>`;
-    }).join("");
+    }).join("") + `<span class="usage-legend-sep"></span><span class="usage-legend-item usage-legend-total"><span class="usage-legend-swatch usage-legend-total-swatch"></span>合计<span style="margin-left:12px">${formatFn(total)}</span></span>`;
   };
 
   for (const entry of data) {
