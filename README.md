@@ -1,5 +1,7 @@
 # hyxClaw
 
+介绍视频：https://www.bilibili.com/video/BV1CeKY6SEbw/
+
 本地运行的知识库 AI 助手，提供 Web 对话界面、会话管理、受限文件操作、Markdown 知识库和 Token 用量统计。
 
 ## 环境要求
