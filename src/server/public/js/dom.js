@@ -257,8 +257,10 @@ export function createChatView({ state, documents, pickers, permissions, actions
   function syncThinkingEffortSelect() {
     if (!state.thinkingEffortSelectEl) return;
     const model = getModelsForProvider(state.currentProvider).find((item) => item.id === state.currentModel);
-    const levels = [{ id: "none", label: "none" }, ...(Array.isArray(model?.thinking) ? model.thinking : [])];
-    if (!levels.some((level) => level.id === state.currentThinkingEffort)) state.currentThinkingEffort = "none";
+    const modelThinking = Array.isArray(model?.thinking) ? model.thinking : [];
+    const firstNonNone = modelThinking.find((level) => level.id !== "off");
+    state.currentThinkingEffort = firstNonNone?.id || "off";
+    const levels = [{ id: "off", label: "off" }, ...modelThinking];
     state.thinkingEffortSelectEl.innerHTML = "";
     for (const level of levels) {
       const option = document.createElement("option");

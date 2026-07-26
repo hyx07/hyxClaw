@@ -75,7 +75,7 @@ const mockConfig: Config = {
       maxFetchedChars: 20_000,
     },
   },
-  compaction: { provider: "zai", model: "glm-4.5-air", thinkingEffort: "none", keepRecentRounds: 0 },
+  compaction: { provider: "zai", model: "glm-4.5-air", thinkingEffort: "off", keepRecentRounds: 0 },
 };
 
 describe("reasoning refactor", () => {

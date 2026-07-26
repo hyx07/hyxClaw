@@ -107,7 +107,7 @@ export function sanitizeHistoryForProvider(
   // DeepSeek 模型开启 thinking 时需要历史 reasoning_content 来配对 tool_calls，
   // 否则 API 返回 400。其他情况剥离 reasoning 避免上下文膨胀。
   // 当前轮次的 reasoning_content 在 agent loop 内部的 extraMessages 中保留，不受此影响。
-  const keepReasoning = model?.toLowerCase().startsWith("deepseek") && thinkingEffort && thinkingEffort !== "none";
+  const keepReasoning = model?.toLowerCase().startsWith("deepseek") && thinkingEffort && thinkingEffort !== "off";
   if (keepReasoning) return baseMessages;
 
   return baseMessages.map((message) => {

@@ -12,10 +12,10 @@ export function createAppState() {
     providerConfigs: {},
     defaultProvider: "zai",
     defaultModel: "glm-4.7",
-    defaultThinkingEffort: "none",
+    defaultThinkingEffort: "off",
     currentProvider: "zai",
     currentModel: "glm-4.7",
-    currentThinkingEffort: "none",
+    currentThinkingEffort: "off",
     gitSyncEnabled: false,
 
     isStreaming: false,

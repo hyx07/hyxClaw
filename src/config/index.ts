@@ -23,6 +23,7 @@ import {
   type Config,
   type ProviderName,
   type ProviderCredential,
+  type ThinkingEffort,
   type ThinkingParams,
 } from "./schema.js";
 
@@ -215,7 +216,7 @@ function mergeWithDefaults(userConfig: Partial<Config>): Config {
     compaction: {
       provider: userConfig.compaction?.provider ?? DEFAULT_CONFIG.compaction.provider,
       model: userConfig.compaction?.model ?? DEFAULT_CONFIG.compaction.model,
-      thinkingEffort: userConfig.compaction?.thinkingEffort ?? DEFAULT_CONFIG.compaction.thinkingEffort,
+      thinkingEffort: normalizeEffort(userConfig.compaction?.thinkingEffort) ?? DEFAULT_CONFIG.compaction.thinkingEffort,
       keepRecentRounds: userConfig.compaction?.keepRecentRounds ?? DEFAULT_CONFIG.compaction.keepRecentRounds,
     },
   };
@@ -274,11 +275,23 @@ export function getDefaultProviderCredential(config: Config): ProviderCredential
   return getProviderCredential(config, config.defaultProvider);
 }
 
+function normalizeEffort(value: string | undefined): ThinkingEffort | undefined {
+  if (!value || value === "none") return "off";
+  return value as ThinkingEffort;
+}
+
+function normalizeLegacyEffort(config: Record<string, unknown>): void {
+  // Normalize legacy "none" thinking effort values to "off"
+  if (config.defaultThinkingEffort === "none") (config as Record<string, unknown>).defaultThinkingEffort = "off";
+  const compaction = config.compaction as Record<string, unknown> | undefined;
+  if (compaction?.thinkingEffort === "none") compaction.thinkingEffort = "off";
+}
+
 export function resolveModelThinking(config: Config, provider: ProviderName, model: string, level?: string): { level: string; params: ThinkingParams } {
   const modelConfig = config.providers[provider]?.models.find((item) => item.id === model);
-  if (!level || level === "none") return { level: "none", params: modelConfig?.thinkingOff ?? {} };
+  if (!level || level === "off") return { level: "off", params: modelConfig?.thinkingOff ?? {} };
   const option = modelConfig?.thinking?.find((item) => item.id === level);
-  return option ? { level: option.id, params: option.params } : { level: "none", params: modelConfig?.thinkingOff ?? {} };
+  return option ? { level: option.id, params: option.params } : { level: "off", params: modelConfig?.thinkingOff ?? {} };
 }
 
 export async function loadConfig(userDataDir?: string): Promise<Config> {
@@ -291,6 +304,7 @@ export async function loadConfigWithoutApiKey(userDataDir?: string): Promise<Con
   const paths = getPaths(userDataDir);
   await ensureDirectories(paths);
   const userConfig = await loadConfigFile(paths.config);
+  normalizeLegacyEffort(userConfig);
   return validateConfig(userConfig);
 }
 

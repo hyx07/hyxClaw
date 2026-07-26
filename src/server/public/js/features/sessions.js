@@ -8,7 +8,7 @@ export function createSessionFeature({ state, socket, renderer, pickers, actions
     state.providerConfigs = data?.providers || {};
     state.defaultProvider = data?.defaultProvider || "zai";
     state.defaultModel = data?.defaultModel || "glm-4.7";
-    state.defaultThinkingEffort = data?.defaultThinkingEffort || "none";
+    state.defaultThinkingEffort = data?.defaultThinkingEffort || "off";
     state.gitSyncEnabled = data?.gitSyncEnabled === true;
     state.currentProvider = state.defaultProvider;
     state.currentModel = state.defaultModel;

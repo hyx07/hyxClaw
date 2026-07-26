@@ -53,15 +53,15 @@ describe("config", () => {
       level: "max",
       params: { thinking: { type: "enabled" }, reasoning_effort: "max" },
     });
-    expect(resolveModelThinking(config, "deepseek", "deepseek-v4-flash", "none")).toEqual({
-      level: "none",
+    expect(resolveModelThinking(config, "deepseek", "deepseek-v4-flash", "off")).toEqual({
+      level: "off",
       params: { thinking: { type: "disabled" } },
     });
     expect(config.providers.zai.baseUrl).toBe("https://open.bigmodel.cn/api/paas/v4");
     expect(config.compaction).toEqual({
       provider: "deepseek",
       model: "deepseek-v4-flash",
-      thinkingEffort: "none",
+      thinkingEffort: "off",
       keepRecentRounds: 0,
     });
     expect(config.server.port).toBe(3000);
@@ -198,7 +198,7 @@ describe("config", () => {
       providers: {
         zai: {
           apiKey: "zai-key",
-          models: [{ id: "GLM-4.7", label: "GLM-4.7", thinking: [{ id: "none", params: {} }] }],
+          models: [{ id: "GLM-4.7", label: "GLM-4.7", thinking: [{ id: "off", params: {} }] }],
         },
       },
       defaultProvider: "zai",

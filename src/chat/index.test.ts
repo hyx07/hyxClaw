@@ -62,7 +62,7 @@ const mockConfig: Config = {
       maxFetchedChars: 20_000,
     },
   },
-  compaction: { provider: "zai", model: "glm-4.5-air", thinkingEffort: "none", keepRecentRounds: 0 },
+  compaction: { provider: "zai", model: "glm-4.5-air", thinkingEffort: "off", keepRecentRounds: 0 },
 };
 
 describe("chat", () => {
@@ -126,7 +126,7 @@ describe("chat", () => {
     expect(deepseekMessages[3].reasoning_content).toBe("整理结果");
 
     // deepseek model without thinking: strip reasoning
-    const deepseekNoThinking = sanitizeHistoryForProvider([...messages], "deepseek", "none", true, "deepseek-v4-flash");
+    const deepseekNoThinking = sanitizeHistoryForProvider([...messages], "deepseek", "off", true, "deepseek-v4-flash");
     expect(deepseekNoThinking[1].reasoning_content).toBeUndefined();
 
     // non-deepseek model: strip reasoning regardless

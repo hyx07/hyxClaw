@@ -61,7 +61,7 @@ const mockConfig: Config = {
       maxFetchedChars: 20_000,
     },
   },
-  compaction: { provider: "zai", model: "GLM-4.5-Air", thinkingEffort: "none", keepRecentRounds: 0 },
+  compaction: { provider: "zai", model: "GLM-4.5-Air", thinkingEffort: "off", keepRecentRounds: 0 },
 };
 
 function testLogger(testDir: string): Logger {

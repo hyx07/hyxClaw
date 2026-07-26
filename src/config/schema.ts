@@ -5,7 +5,7 @@
 import { z } from "zod";
 
 export const SUPPORTED_PROVIDERS = ["zai", "dashscope", "deepseek"] as const;
-export const THINKING_EFFORTS = ["none", "minimal", "low", "medium", "high"] as const;
+export const THINKING_EFFORTS = ["off", "minimal", "low", "medium", "high"] as const;
 export const TAVILY_SEARCH_DEPTHS = ["basic", "advanced", "fast", "ultra-fast"] as const;
 export const TAVILY_FETCH_DEPTHS = ["basic", "advanced"] as const;
 export const TAVILY_FETCH_FORMATS = ["markdown", "text"] as const;
@@ -19,7 +19,7 @@ export const TavilyFetchFormatSchema = z.enum(TAVILY_FETCH_FORMATS);
 export const ThinkingParamsSchema = z.record(z.string(), z.unknown());
 
 export const ThinkingOptionSchema = z.object({
-  id: z.string().min(1).refine((value) => value !== "none", {
+  id: z.string().min(1).refine((value) => value !== "off", {
     message: "'none' is added by the system and must not be configured on a model",
   }),
   label: z.string().min(1).optional(),
@@ -81,7 +81,7 @@ export const DEFAULT_TOOLS_CONFIG = {
 export const CompactionConfigSchema = z.object({
   provider: ProviderNameSchema.default("zai"),
   model: z.string().min(1).default("glm-4.5-air"),
-  thinkingEffort: ThinkingEffortSchema.default("none"),
+  thinkingEffort: ThinkingEffortSchema.default("off"),
   keepRecentRounds: z.number().int().min(0).max(10).default(0),
 });
 
@@ -159,7 +159,7 @@ export const DEFAULT_CONFIG = {
   compaction: {
     provider: "zai" as const,
     model: "glm-4.5-air",
-    thinkingEffort: "none" as const,
+    thinkingEffort: "off" as const,
     keepRecentRounds: 0,
   },
 };

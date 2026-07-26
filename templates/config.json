@@ -119,6 +119,6 @@
   "compaction": {
     "provider": "deepseek",
     "model": "deepseek-v4-flash",
-    "thinkingEffort": "none"
+    "thinkingEffort": "off"
   }
 }
