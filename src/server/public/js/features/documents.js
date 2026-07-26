@@ -127,7 +127,9 @@ export function setRecentPreviewFiles(paths) {
     ? [...new Set(paths.filter((path) => typeof path === "string" && path))].slice(0, 3)
     : [];
   onRecentPreviewFilesChange(recentPreviewFiles);
-  renderDocColumns();
+  // Note: caller is responsible for calling renderDocColumns after state changes.
+  // Rendering here would cause a double render during click handling (once via
+  // recordRecentPreview -> setRecentPreviewFiles, once via the click handler).
 }
 
 async function recordRecentPreview(path) {
@@ -347,11 +349,14 @@ function renderDocColumns() {
       backDisabled: !docThirdDirPath || docThirdDirPath === docSecondActivePath,
     }),
   ].join("");
+  window.lucide?.createIcons();
+  initDocColumnResize();
+  // Restore scroll after all DOM modifications (createIcons, column resize)
+  // so that layout shifts from icon replacement or width changes don't
+  // invalidate the scroll position.
   container.querySelectorAll(".doc-column-body").forEach((el, index) => {
     el.scrollTop = scrollTops[index] || 0;
   });
-  window.lucide?.createIcons();
-  initDocColumnResize();
 
   container.querySelectorAll(".doc-entry").forEach((button) => {
     button.addEventListener("click", async () => {
