@@ -22,6 +22,9 @@ export function renderMarkdown(text, imageBase = "") {
   let paragraph = [];
   let list = null;
   let quote = [];
+  let inMathBlock = false;
+  let mathBlockLines = [];
+  let mathBlockStartLine = 0;
 
   const renderInline = (value) => {
     const codes = [];
@@ -69,6 +72,26 @@ export function renderMarkdown(text, imageBase = "") {
     const trimmed = lines[i].trim();
     if (!trimmed) {
       flushAll();
+      continue;
+    }
+    // Keep multiline $$ math blocks as a single text node so that
+    // KaTeX's renderMathInElement can find matching delimiter pairs.
+    if (trimmed === "$$") {
+      if (!inMathBlock) {
+        flushAll();
+        inMathBlock = true;
+        mathBlockLines = [trimmed];
+        mathBlockStartLine = i + 1;
+      } else {
+        mathBlockLines.push(trimmed);
+        inMathBlock = false;
+        html.push(`<p><span data-source-line="${mathBlockStartLine}">${renderInline(mathBlockLines.join("\n"))}</span></p>`);
+        mathBlockLines = [];
+      }
+      continue;
+    }
+    if (inMathBlock) {
+      mathBlockLines.push(trimmed);
       continue;
     }
     if (/^\u0000CODE\d+\u0000$/.test(trimmed)) {
@@ -121,6 +144,10 @@ export function renderMarkdown(text, imageBase = "") {
     flushList();
     flushQuote();
     paragraph.push({ line: i + 1, text: trimmed });
+  }
+  // Flush any unclosed math block (e.g. cancelled mid-formula)
+  if (inMathBlock && mathBlockLines.length) {
+    html.push(`<p><span data-source-line="${mathBlockStartLine}">${renderInline(mathBlockLines.join("\n"))}</span></p>`);
   }
   flushAll();
   return html.join("").replace(/\u0000CODE(\d+)\u0000/g, (_, index) => blocks[Number(index)] || "");
