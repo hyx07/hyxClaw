@@ -10,6 +10,9 @@ export function createChatView({ state, documents, pickers, permissions, actions
 
   function renderChatArea() {
     const main = document.getElementById("main");
+    // Save document preview scroll position before DOM rebuild so it can be
+    // restored after the new preview panel is rendered.
+    documents.saveDocPreviewScrollPosition();
     const title = state.sessions.find((session) => session.id === state.currentSessionId)?.title || "";
     if (!state.currentSessionId) {
       main.innerHTML = `<div id="main-shell" data-workspace-mode="${getWorkspaceMode()}"><div id="chat-panel"><div id="chat-content"><div id="no-session"><div class="empty-state"><div class="empty-state-icon"><i data-lucide="message-circle"></i></div><p class="empty-state-title">欢迎回来</p><p class="empty-state-copy">选择一个会话或新建一个开始对话</p></div></div></div><section id="document-stage" aria-label="文档预览"></section></div>${documents.getRightPanelHTML({ showToggle: false })}</div>`;

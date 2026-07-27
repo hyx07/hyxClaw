@@ -31,6 +31,7 @@ let selectedPreviewText = "";
 let selectedPreviewSummary = "";
 let selectedPreviewStartLine = 0;
 let selectedPreviewEndLine = 0;
+let savedDocPreviewScrollTop = 0;
 
 function getDocSelectionStatusText() {
   if (!selectedPreviewText || !selectedPreviewStartLine || !selectedPreviewEndLine) return "";
@@ -154,6 +155,11 @@ async function removeRecentPreview(path) {
     onRecentPreviewFilesChange(recentPreviewFiles);
     renderDocColumns();
   }
+}
+
+export function saveDocPreviewScrollPosition() {
+  const el = document.getElementById("doc-preview-content");
+  if (el) savedDocPreviewScrollTop = el.scrollTop;
 }
 
 export function clearPreviewSelection() {
@@ -312,6 +318,19 @@ function updateDocPreviewPanel() {
   content.classList.add("markdown-body");
   const basePath = docPreviewPath ? docPreviewPath.replace(/[^/\\]*$/, "") : "";
   renderContent(content, docPreviewContent, basePath);
+  if (savedDocPreviewScrollTop > 0) {
+    // Restore scroll position preserved across DOM rebuilds (e.g. session switch).
+    const targetScroll = savedDocPreviewScrollTop;
+    savedDocPreviewScrollTop = 0;
+    requestAnimationFrame(() => {
+      content.scrollTop = Math.min(targetScroll, content.scrollHeight - content.clientHeight);
+    });
+  } else {
+    // Normal file open (not a session switch): reset to top.
+    // The browser preserves scrollTop across innerHTML changes on the same
+    // element, so a new file would otherwise inherit the previous file's position.
+    content.scrollTop = 0;
+  }
 }
 
 async function openDocPreview(path) {
