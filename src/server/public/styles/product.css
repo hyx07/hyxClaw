@@ -1584,6 +1584,7 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
 }
 #usage-panel {
   width: min(1040px, calc(100vw - 40px));
+  height: min(760px, calc(100vh - 40px));
   max-height: min(760px, calc(100vh - 40px));
   padding: 0;
   overflow: hidden;
@@ -1780,6 +1781,7 @@ html[data-theme="light"] #usage-table tfoot th {
   }
   #usage-panel {
     width: min(100%, calc(100vw - 24px));
+    height: calc(100vh - 24px);
     max-height: calc(100vh - 24px);
   }
   #usage-panel-header {
