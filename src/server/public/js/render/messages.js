@@ -1,7 +1,7 @@
 import { renderContent } from "../markdown.js";
 
-const USER_MESSAGE_COLLAPSE_THRESHOLD = 800;
-const USER_MESSAGE_COLLAPSE_LINE_THRESHOLD = 10;
+const USER_MESSAGE_COLLAPSE_THRESHOLD = 400;
+const USER_MESSAGE_COLLAPSE_LINE_THRESHOLD = 5;
 
 export function createMessageRenderer({ state, streaming, onRestart, scrollToBottom }) {
   function renderMessages(messages) {

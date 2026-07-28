@@ -18,10 +18,10 @@
       "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
       "models": [
         {
-          "id": "qwen3.6-flash",
-          "label": "qwen3.6-flash",
+          "id": "qwen3.7-flash",
+          "label": "qwen3.7-flash",
           "modal": "vl",
-          "cost": { "input": 1.2, "output": 7.2 },
+          "cost": { "input": 0.2, "output": 0.8, "cachedRead": 0.04},
           "thinking": [
             { "id": "512", "params": { "enable_thinking": true, "thinking_budget": 512 } },
             { "id": "1024", "params": { "enable_thinking": true, "thinking_budget": 1024 } },

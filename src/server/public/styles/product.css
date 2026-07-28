@@ -538,7 +538,7 @@ input:focus-visible {
   padding-bottom: 34px;
 }
 .message.user .message-bubble.is-collapsed .message-content {
-  max-height: 16em;
+  max-height: 8em;
   overflow: hidden;
 }
 .message.user .message-bubble.is-collapsed .message-content::after {
