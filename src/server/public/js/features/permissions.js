@@ -2,32 +2,41 @@ import { escapeHtml } from "../format.js";
 
 export function createPermissionFeature({ send }) {
   let writePermOpen = localStorage.getItem("toolWritePermOpen") === "true";
-  let permissionResolve = null;
+  /** Map<requestId, permission message> — requests survive session switches. */
+  const pendingRequests = new Map();
+  /** The requestId currently displayed in the dialog */
+  let activeRequestId = null;
+
+  let _escapeBound = false;
 
   function init() {
     const checkbox = document.getElementById("write-perm-checkbox");
+    if (!checkbox) return;
     checkbox.checked = writePermOpen;
     checkbox.addEventListener("change", () => {
       writePermOpen = checkbox.checked;
       localStorage.setItem("toolWritePermOpen", String(writePermOpen));
       sync();
     });
-    document.getElementById("tool-permission-allow").addEventListener("click", () => resolve(true));
-    document.getElementById("tool-permission-deny").addEventListener("click", () => resolve(false));
-    // Esc to deny
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && document.getElementById("tool-permission-dialog")?.classList.contains("open")) {
-        event.preventDefault();
-        resolve(false);
-      }
-    });
+    document.getElementById("tool-permission-allow")?.addEventListener("click", () => resolve(true));
+    document.getElementById("tool-permission-deny")?.addEventListener("click", () => resolve(false));
+    // Esc to deny — bind only once since it's on document, not on a recreated element
+    if (!_escapeBound) {
+      _escapeBound = true;
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && document.getElementById("tool-permission-dialog")?.classList.contains("open")) {
+          event.preventDefault();
+          resolve(false);
+        }
+      });
+    }
   }
 
   function sync() {
     send({ type: "setWritePermission", enabled: writePermOpen });
   }
 
-  function show(message) {
+  function renderDialog(message) {
     const titleEl = document.getElementById("tool-permission-title");
     const bodyEl = document.getElementById("tool-permission-body");
     const dialog = document.getElementById("tool-permission-dialog");
@@ -54,22 +63,59 @@ export function createPermissionFeature({ send }) {
     bodyEl.innerHTML = rows.map((row) =>
       `<div class="perm-row"><span class="perm-label">${row.label}</span><span class="perm-value">${escapeHtml(row.value)}</span></div>`,
     ).join("");
-
-    permissionResolve = (allowed) => {
-      dialog.classList.remove("open");
-      permissionResolve = null;
-      send({ type: "toolPermissionResponse", requestId: message.requestId, allowed });
-    };
     dialog.classList.add("open");
   }
 
+  function show(message) {
+    const dialog = document.getElementById("tool-permission-dialog");
+    pendingRequests.set(message.requestId, message);
+    dialog.classList.remove("open");
+    activeRequestId = message.requestId;
+    renderDialog(message);
+  }
+
   function resolve(allowed) {
-    permissionResolve?.(allowed);
+    if (!activeRequestId) return;
+    const requestId = activeRequestId;
+    pendingRequests.delete(requestId);
+    activeRequestId = null;
+    document.getElementById("tool-permission-dialog")?.classList.remove("open");
+    send({ type: "toolPermissionResponse", requestId, allowed });
+  }
+
+  /** Hide the dialog without resolving its server-side permission request. */
+  function hideActive() {
+    document.getElementById("tool-permission-dialog")?.classList.remove("open");
+    activeRequestId = null;
+  }
+
+  function showForSession(sessionId) {
+    for (const message of pendingRequests.values()) {
+      if (message.sessionId === sessionId) {
+        show(message);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function clearForSession(sessionId) {
+    for (const [requestId, message] of pendingRequests) {
+      if (message.sessionId === sessionId) pendingRequests.delete(requestId);
+    }
+    if (activeRequestId && !pendingRequests.has(activeRequestId)) {
+      activeRequestId = null;
+      document.getElementById("tool-permission-dialog")?.classList.remove("open");
+    }
   }
 
   return {
     init,
     show,
     sync,
+    hideActive,
+    showForSession,
+    clearForSession,
+    pendingCount: () => pendingRequests.size,
   };
 }

@@ -16,22 +16,30 @@ export function requiresToolPermission(client: Pick<Client, "writePermOpen">, to
   return WRITE_PERMISSION_TOOLS.has(toolName) && !client.writePermOpen;
 }
 
-/** Active AbortControllers for in-flight chat operations, keyed by sessionId. */
-const activeChats = new Map<string, AbortController>();
+/** Active chat operations, keyed by sessionId. */
+const activeChats = new Map<string, { controller: AbortController; runId: string }>();
 
-export function cancelChat(sessionId: string, pendingPermissions?: Map<string, (allowed: boolean) => void>): boolean {
-  const controller = activeChats.get(sessionId);
-  if (controller) {
-    controller.abort();
+export function cancelChat(
+  sessionId: string,
+  pendingPermissions?: Map<string, { resolve: (allowed: boolean) => void; sessionId: string }>,
+): boolean {
+  const activeChat = activeChats.get(sessionId);
+  let cancelled = false;
+  if (activeChat) {
+    activeChat.controller.abort();
     activeChats.delete(sessionId);
-    // Resolve any pending permission promises so checkPermission doesn't hang
-    if (pendingPermissions) {
-      for (const resolve of pendingPermissions.values()) resolve(false);
-      pendingPermissions.clear();
-    }
-    return true;
+    cancelled = true;
   }
-  return false;
+  if (pendingPermissions) {
+    for (const [requestId, entry] of pendingPermissions) {
+      if (entry.sessionId === sessionId) {
+        entry.resolve(false);
+        pendingPermissions.delete(requestId);
+        cancelled = true;
+      }
+    }
+  }
+  return cancelled;
 }
 
 function getModelModal(config: Config, provider: ProviderName, model: string): "l" | "vl" {
@@ -62,16 +70,21 @@ export async function processChatMessage(options: {
   thinkingEffort?: string;
   previewPath?: string;
   selectedPreviewText?: string;
-  pendingPermissions: Map<string, (allowed: boolean) => void>;
+  pendingPermissions: Map<string, { resolve: (allowed: boolean) => void; sessionId: string }>;
   config: Config;
   logger: ReturnType<typeof getLogger>;
 }): Promise<void> {
   const { client, sessionId, content, images, provider, model, thinkingEffort, previewPath, selectedPreviewText, pendingPermissions, config, logger } = options;
   
   // Abort any existing chat for this session
-  cancelChat(sessionId);
+  cancelChat(sessionId, pendingPermissions);
+  const runId = randomUUID();
   const controller = new AbortController();
-  activeChats.set(sessionId, controller);
+  activeChats.set(sessionId, { controller, runId });
+  let sequence = 0;
+  const sendChatEvent = <T extends { type: string }>(event: T): void => {
+    sendToClient(client, { ...event, sessionId, runId, sequence: ++sequence } as Parameters<typeof sendToClient>[1]);
+  };
 
   try {
     if (images?.length && getModelModal(config, provider, model) !== "vl") {
@@ -89,7 +102,7 @@ export async function processChatMessage(options: {
       return;
     }
     const userMessageId = randomUUID();
-    sendToClient(client, { type: "chatStart", sessionId, userMessageId });
+    sendChatEvent({ type: "chatStart", userMessageId });
     const { llmUserContent, persistedUserContent } = buildAugmentedUserContent(content, normalizedImages, previewPath, selectedPreviewText);
     let fullResponse = "";
     let usage: UsageRecord | undefined;
@@ -102,30 +115,29 @@ export async function processChatMessage(options: {
       persistedUserContent,
       userMessageId,
       signal: controller.signal,
-      onToolCall: (name, input, callId) => sendToClient(client, { type: "toolCall", sessionId, name, input, callId }),
-      onToolResult: (name, resultContent, isError, callId) => sendToClient(client, { type: "toolResult", sessionId, name, content: resultContent, isError, callId }),
+      onToolCall: (name, input, callId) => sendChatEvent({ type: "toolCall", name, input, callId }),
+      onToolResult: (name, resultContent, isError, callId) => sendChatEvent({ type: "toolResult", name, content: resultContent, isError, callId }),
       checkPermission: async (toolName, input) => {
         if (!requiresToolPermission(client, toolName)) return true;
         const requestId = randomUUID();
-        sendToClient(client, {
+        sendChatEvent({
           type: "toolPermissionRequest",
-          sessionId,
           requestId,
           toolName,
           details: buildPermissionDetails(toolName, input),
         });
-        return new Promise<boolean>((resolve) => pendingPermissions.set(requestId, resolve));
+        return new Promise<boolean>((resolve) => pendingPermissions.set(requestId, { resolve, sessionId }));
       },
     })) {
       if (!result.done) {
-        if (result.reasoning) sendToClient(client, { type: "chatReasoning", sessionId, chunk: result.chunk });
+        if (result.reasoning) sendChatEvent({ type: "chatReasoning", chunk: result.chunk });
         else {
           fullResponse += result.chunk;
-          sendToClient(client, { type: "chatChunk", sessionId, chunk: result.chunk });
+          sendChatEvent({ type: "chatChunk", chunk: result.chunk });
         }
       } else {
         if (result.cancelled) {
-          sendToClient(client, { type: "chatCancelled", sessionId, fullResponse });
+          sendChatEvent({ type: "chatCancelled", fullResponse });
           return;
         }
         usage = result.usage;
@@ -145,12 +157,12 @@ export async function processChatMessage(options: {
       cachedWriteTokens: record.cachedWriteTokens,
       cost: record.cost,
     } : undefined;
-    sendToClient(client, { type: "chatEnd", sessionId, fullResponse, usage: summarize(usage), contextUsage: summarize(contextUsage) });
+    sendChatEvent({ type: "chatEnd", fullResponse, usage: summarize(usage), contextUsage: summarize(contextUsage) });
     logger.info(`Chat completed: ${(await loadSession(sessionId)).title}`);
   } catch (error) {
     logger.error(`Chat processing error: ${(error as Error).message}`);
-    sendToClient(client, { type: "error", sessionId, message: `Chat failed: ${(error as Error).message}` });
+    sendToClient(client, { type: "error", sessionId, runId, sequence: ++sequence, message: `Chat failed: ${(error as Error).message}` });
   } finally {
-    activeChats.delete(sessionId);
+    if (activeChats.get(sessionId)?.runId === runId) activeChats.delete(sessionId);
   }
 }

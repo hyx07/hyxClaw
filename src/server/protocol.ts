@@ -12,7 +12,7 @@ export type Client = {
 
 export type ClientMessage =
   | { type: "ping" }
-  | { type: "joinSession"; sessionId: string }
+  | { type: "joinSession"; sessionId: string; requestId?: string }
   | {
       type: "chatMessage";
       sessionId: string;
@@ -39,6 +39,7 @@ export type ServerMessage =
   | { type: "pong" }
   | {
       type: "sessionLoaded";
+      requestId?: string;
       session: {
         id: string;
         title: string;
@@ -48,12 +49,12 @@ export type ServerMessage =
         lastThinkingEffort?: string;
       };
     }
-  | { type: "chatStart"; sessionId: string; userMessageId?: string }
-  | { type: "chatChunk"; sessionId: string; chunk: string }
-  | { type: "chatReasoning"; sessionId: string; chunk: string }
-  | { type: "chatEnd"; sessionId: string; fullResponse: string; usage?: UsageSummary; contextUsage?: UsageSummary }
-  | { type: "chatCancelled"; sessionId: string; fullResponse: string }
-  | { type: "toolCall"; sessionId: string; name: string; input: Record<string, unknown>; callId: string }
-  | { type: "toolResult"; sessionId: string; name: string; content: string; isError: boolean; callId: string }
-  | { type: "toolPermissionRequest"; sessionId: string; requestId: string; toolName: string; details: Record<string, string> }
-  | { type: "error"; message: string; sessionId?: string };
+  | { type: "chatStart"; sessionId: string; runId: string; sequence: number; userMessageId?: string }
+  | { type: "chatChunk"; sessionId: string; runId: string; sequence: number; chunk: string }
+  | { type: "chatReasoning"; sessionId: string; runId: string; sequence: number; chunk: string }
+  | { type: "chatEnd"; sessionId: string; runId: string; sequence: number; fullResponse: string; usage?: UsageSummary; contextUsage?: UsageSummary }
+  | { type: "chatCancelled"; sessionId: string; runId: string; sequence: number; fullResponse: string }
+  | { type: "toolCall"; sessionId: string; runId: string; sequence: number; name: string; input: Record<string, unknown>; callId: string }
+  | { type: "toolResult"; sessionId: string; runId: string; sequence: number; name: string; content: string; isError: boolean; callId: string }
+  | { type: "toolPermissionRequest"; sessionId: string; runId: string; sequence: number; requestId: string; toolName: string; details: Record<string, string> }
+  | { type: "error"; message: string; sessionId?: string; runId?: string; sequence?: number };

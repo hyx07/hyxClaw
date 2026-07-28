@@ -130,7 +130,7 @@ export class DeepSeekProvider implements LLMProvider {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    }, timeout);
+    }, timeout, options.signal);
 
     if (!res.body) throw new LLMError("响应 body 为空", { code: "llm_empty_response" });
 
@@ -144,6 +144,8 @@ export class DeepSeekProvider implements LLMProvider {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        // Honour external abort signal between chunks
+        if (options.signal?.aborted) break;
         buf += decoder.decode(value, { stream: true });
         const lines = buf.split("\n");
         buf = lines.pop() ?? "";

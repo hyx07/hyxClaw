@@ -560,10 +560,11 @@ describe("server", () => {
 
     const { ws, recv } = await connectWs(port);
     await recv();
-    ws.send(JSON.stringify({ type: "joinSession", sessionId: session.id }));
-    const loaded = await recv() as { type: string; session: { id: string } };
+    ws.send(JSON.stringify({ type: "joinSession", sessionId: session.id, requestId: "join-test-1" }));
+    const loaded = await recv() as { type: string; requestId?: string; session: { id: string } };
     expect(loaded.type).toBe("sessionLoaded");
     expect(loaded.session.id).toBe(session.id);
+    expect(loaded.requestId).toBe("join-test-1");
     ws.close();
 
     const appStateRes = await fetch(`http://127.0.0.1:${port}/api/app-state`);

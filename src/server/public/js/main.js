@@ -35,7 +35,7 @@ const pickers = createPickerFeature({
 });
 const view = createChatView({ state, documents, pickers, permissions, actions });
 const chat = createChatFeature({ state, socket, renderer, streaming, pickers, permissions, documents, actions });
-const sessions = createSessionFeature({ state, socket, renderer, pickers, actions });
+const sessions = createSessionFeature({ state, socket, renderer, pickers, permissions, actions });
 
 Object.assign(actions, view, chat, sessions, {
   appendTypingDots: streaming.appendTypingDots,

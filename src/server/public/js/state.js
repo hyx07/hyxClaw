@@ -19,6 +19,8 @@ export function createAppState() {
     gitSyncEnabled: false,
 
     isStreaming: false,
+    currentRunId: null,
+    lastStreamSequence: 0,
     streamingBubble: null,
     streamingReasoningBlock: null,
     currentTextSegment: null,
@@ -32,6 +34,11 @@ export function createAppState() {
     pendingImages: [],
     disconnectNotified: false,
     userScrolledUp: false,
+    sessionLoadRequestId: null,
+    visibleProcessStep: null,
+    pendingProcessStep: null,
+    visibleProcessSince: 0,
+    processTimer: null,
 
     messagesEl: null,
     inputEl: null,

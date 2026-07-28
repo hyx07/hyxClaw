@@ -1,11 +1,6 @@
 import { renderContent } from "../markdown.js";
 
 export function createStreamingRenderer({ state, scrollToBottom }) {
-  let visibleProcessStep = null;
-  let pendingProcessStep = null;
-  let visibleProcessSince = 0;
-  let processTimer = null;
-
   function setBubbleContent(bubble, content) {
     const contentDiv = bubble.querySelector(".message-content");
     if (!contentDiv) return;
@@ -138,7 +133,7 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
 
   function finishStreaming(bubble) {
     clearProcessTimer();
-    pendingProcessStep = null;
+    state.pendingProcessStep = null;
     state.currentTextSegment = null;
     bubble.closest(".message")?.classList.remove("is-streaming");
     // The last text segment belongs to the completed response. Earlier
@@ -147,8 +142,8 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
     const finalSegment = segments[segments.length - 1];
     finalSegment?.classList.remove("process-step", "process-latest");
     bubble.querySelector(".process-latest")?.classList.remove("process-latest");
-    visibleProcessStep = null;
-    visibleProcessSince = 0;
+    state.visibleProcessStep = null;
+    state.visibleProcessSince = 0;
     // Render final markdown on each complete text segment
     for (const segment of segments) {
       if (segment.dataset.raw) {
@@ -173,36 +168,36 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
       return;
     }
 
-    if (!visibleProcessStep) {
+    if (!state.visibleProcessStep) {
       showProcessStep(step);
       return;
     }
 
-    const remaining = 1000 - (Date.now() - visibleProcessSince);
+    const remaining = 1000 - (Date.now() - state.visibleProcessSince);
     if (remaining <= 0) {
       showProcessStep(step);
       return;
     }
 
-    pendingProcessStep = step;
+    state.pendingProcessStep = step;
     clearProcessTimer();
-    processTimer = window.setTimeout(() => {
-      if (pendingProcessStep) showProcessStep(pendingProcessStep);
+    state.processTimer = window.setTimeout(() => {
+      if (state.pendingProcessStep) showProcessStep(state.pendingProcessStep);
     }, remaining);
   }
 
   function showProcessStep(step) {
-    visibleProcessStep?.classList.remove("process-latest");
+    state.visibleProcessStep?.classList.remove("process-latest");
     step.classList.add("process-step", "process-latest");
-    visibleProcessStep = step;
-    pendingProcessStep = null;
-    visibleProcessSince = Date.now();
+    state.visibleProcessStep = step;
+    state.pendingProcessStep = null;
+    state.visibleProcessSince = Date.now();
     clearProcessTimer();
   }
 
   function clearProcessTimer() {
-    if (processTimer !== null) window.clearTimeout(processTimer);
-    processTimer = null;
+    if (state.processTimer !== null) window.clearTimeout(state.processTimer);
+    state.processTimer = null;
   }
 
   return {

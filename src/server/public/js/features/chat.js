@@ -213,22 +213,23 @@ export function createChatFeature({
   }
 
   function handleServerMessage(message) {
-    const scopedTypes = ["chatStart", "chatChunk", "chatReasoning", "chatEnd", "chatCancelled", "toolCall", "toolResult"];
+    const scopedTypes = ["chatStart", "chatChunk", "chatReasoning", "chatEnd", "chatCancelled", "toolCall", "toolResult", "toolPermissionRequest"];
     if (scopedTypes.includes(message.type) && message.sessionId && message.sessionId !== state.currentSessionId) {
       updateBackgroundSession(message);
       return;
     }
     if (message.type === "error" && message.sessionId && message.sessionId !== state.currentSessionId) {
-      clearCachedStreaming(message.sessionId);
+      updateBackgroundSession(message);
       return;
     }
+    if (scopedTypes.includes(message.type) && !acceptStreamEvent(message)) return;
 
     switch (message.type) {
       case "connected":
         if (state.currentSessionId) actions.joinSession(state.currentSessionId);
         break;
       case "sessionLoaded":
-        handleSessionLoaded(message.session);
+        handleSessionLoaded(message.session, message.requestId);
         break;
       case "chatStart":
         handleChatStart(message);
@@ -267,8 +268,9 @@ export function createChatFeature({
     }
   }
 
-  function handleSessionLoaded(session) {
+  function handleSessionLoaded(session, requestId) {
     if (session.id !== state.currentSessionId) return;
+    if (requestId && requestId !== state.sessionLoadRequestId) return;
     const local = state.sessions.find((item) => item.id === state.currentSessionId);
     if (local) Object.assign(local, session);
     actions.renderSessionList();
@@ -377,6 +379,7 @@ export function createChatFeature({
     state.currentTextSegment = null;
     state.pendingToolBlocks = {};
     state.typingPlaceholder = null;
+    permissions.clearForSession(message.sessionId);
     void actions.refreshSessionSummary(message.sessionId);
     updateCurrentCache();
     syncCompactButton();
@@ -393,6 +396,7 @@ export function createChatFeature({
     state.currentTextSegment = null;
     state.pendingToolBlocks = {};
     state.typingPlaceholder = null;
+    permissions.clearForSession(message.sessionId);
     if (message.contextUsage || message.usage) state.latestUsage = message.contextUsage || message.usage;
     updateTokenDisplay(state.latestUsage);
     void actions.refreshSessionSummary(message.sessionId);
@@ -408,7 +412,10 @@ export function createChatFeature({
     if (state.streamingBubble) streaming.finishStreaming(state.streamingBubble);
     state.streamingBubble = null;
     state.streamingReasoningBlock = null;
+    state.currentTextSegment = null;
+    state.pendingToolBlocks = {};
     state.typingPlaceholder = null;
+    if (message.sessionId) permissions.clearForSession(message.sessionId);
     if (state.pendingSubmission) {
       state.inputEl.value = state.pendingSubmission.content || "";
       state.pendingImages = state.pendingSubmission.images || [];
@@ -425,15 +432,37 @@ export function createChatFeature({
 
   function updateBackgroundSession(message) {
     const cached = state.sessionCache.get(message.sessionId);
-    if (cached && message.type === "chatStart") cached.isStreaming = true;
-    if (cached && message.type === "chatEnd") {
-      cached.latestUsage = message.contextUsage || message.usage || cached.latestUsage;
-      clearCachedStreaming(message.sessionId);
+    if (cached) {
+      cached.pendingEvents ||= [];
+      cached.pendingEvents.push(message);
     }
-    if (cached && message.type === "chatCancelled") clearCachedStreaming(message.sessionId);
     if (message.type === "chatEnd" || message.type === "chatCancelled") {
       void actions.refreshSessionSummary(message.sessionId);
     }
+  }
+
+  /**
+   * A single WebSocket preserves send order, but an old run can still finish
+   * after a replacement run has started. runId and sequence make that stale
+   * event harmless instead of letting it mutate the visible session.
+   */
+  function acceptStreamEvent(message) {
+    if (message.type === "chatStart") {
+      state.currentRunId = message.runId;
+      state.lastStreamSequence = message.sequence;
+      return true;
+    }
+    if (!state.isStreaming || message.runId !== state.currentRunId || message.sequence <= state.lastStreamSequence) return false;
+    state.lastStreamSequence = message.sequence;
+    return true;
+  }
+
+  /** Apply events received while this session's DOM was detached. */
+  function replaySessionEvents() {
+    const cached = state.sessionCache.get(state.currentSessionId);
+    if (!cached?.pendingEvents?.length) return;
+    const events = cached.pendingEvents.splice(0);
+    for (const event of events) handleServerMessage(event);
   }
 
   function clearCachedStreaming(sessionId) {
@@ -459,6 +488,7 @@ export function createChatFeature({
     compactCurrentSession,
     bindScrollListener,
     handleServerMessage,
+    replaySessionEvents,
     restartFromMessage,
     scrollToBottom,
     sendMessage,

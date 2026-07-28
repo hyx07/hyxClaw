@@ -14,7 +14,7 @@ export function handleWebSocketConnection(
   logger: ReturnType<typeof getLogger>,
 ): void {
   const client: Client = { ws, sessionId: undefined, isAlive: true, writePermOpen: false };
-  const pendingPermissions = new Map<string, (allowed: boolean) => void>();
+  const pendingPermissions = new Map<string, { resolve: (allowed: boolean) => void; sessionId: string }>();
   clients.set(ws, client);
   logger.info(`WebSocket client connected (${clients.size} total)`);
   sendToClient(client, { type: "connected", message: "Connected to hyxClaw" });
@@ -27,10 +27,10 @@ export function handleWebSocketConnection(
         return;
       }
       if (message.type === "toolPermissionResponse") {
-        const resolvePermission = pendingPermissions.get(message.requestId);
-        if (resolvePermission) {
+        const entry = pendingPermissions.get(message.requestId);
+        if (entry) {
           pendingPermissions.delete(message.requestId);
-          resolvePermission(message.allowed);
+          entry.resolve(message.allowed);
         }
         return;
       }
@@ -45,6 +45,7 @@ export function handleWebSocketConnection(
           await setLastActiveSession(message.sessionId);
           sendToClient(client, {
             type: "sessionLoaded",
+            requestId: message.requestId,
             session: {
               id: session.id,
               title: session.title,

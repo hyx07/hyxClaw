@@ -1,7 +1,7 @@
 import { requestJson, jsonRequest } from "../api.js";
 import { escHtml } from "../format.js";
 
-export function createSessionFeature({ state, socket, renderer, pickers, actions }) {
+export function createSessionFeature({ state, socket, renderer, pickers, permissions, actions }) {
   async function loadClientConfig() {
     const { data } = await requestJson("/api/config");
     state.availableProviders = Array.isArray(data?.availableProviders) ? data.availableProviders : ["zai"];
@@ -80,7 +80,8 @@ export function createSessionFeature({ state, socket, renderer, pickers, actions
   }
 
   function joinSession(id) {
-    socket.send({ type: "joinSession", sessionId: id });
+    state.sessionLoadRequestId = `${id}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    socket.send({ type: "joinSession", sessionId: id, requestId: state.sessionLoadRequestId });
   }
 
   async function loadSession(id) {
@@ -121,14 +122,23 @@ export function createSessionFeature({ state, socket, renderer, pickers, actions
 
   function saveSessionState(sessionId) {
     if (!sessionId || !state.messagesEl) return;
+    // Timers close over the mutable current session state. Stop them before
+    // switching so a delayed callback cannot update another session's DOM.
+    if (state.processTimer !== null) {
+      clearTimeout(state.processTimer);
+      state.processTimer = null;
+    }
     const childNodes = [];
     while (state.messagesEl.firstChild) childNodes.push(state.messagesEl.removeChild(state.messagesEl.firstChild));
+    const existing = state.sessionCache.get(sessionId);
     state.sessionCache.set(sessionId, {
       childNodes,
-      scrollTop: state.messagesEl.scrollTop,
       isStreaming: state.isStreaming,
+      currentRunId: state.currentRunId,
+      lastStreamSequence: state.lastStreamSequence,
       streamingBubble: state.streamingBubble,
       streamingReasoningBlock: state.streamingReasoningBlock,
+      currentTextSegment: state.currentTextSegment,
       pendingToolBlocks: { ...state.pendingToolBlocks },
       typingPlaceholder: state.typingPlaceholder,
       compactingBubble: state.compactingBubble,
@@ -142,6 +152,11 @@ export function createSessionFeature({ state, socket, renderer, pickers, actions
       currentModel: state.currentModel,
       currentThinkingEffort: state.currentThinkingEffort,
       isCompacting: state.isCompacting,
+      userScrolledUp: state.userScrolledUp,
+      visibleProcessStep: state.visibleProcessStep,
+      pendingProcessStep: state.pendingProcessStep,
+      visibleProcessSince: state.visibleProcessSince,
+      pendingEvents: existing?.pendingEvents || [],
     });
   }
 
@@ -151,8 +166,11 @@ export function createSessionFeature({ state, socket, renderer, pickers, actions
     while (state.messagesEl.firstChild) state.messagesEl.removeChild(state.messagesEl.firstChild);
     for (const node of cached.childNodes) state.messagesEl.appendChild(node);
     state.isStreaming = cached.isStreaming;
+    state.currentRunId = cached.currentRunId || null;
+    state.lastStreamSequence = cached.lastStreamSequence || 0;
     state.streamingBubble = cached.streamingBubble;
     state.streamingReasoningBlock = cached.streamingReasoningBlock;
+    state.currentTextSegment = cached.currentTextSegment || null;
     state.pendingToolBlocks = cached.pendingToolBlocks;
     state.typingPlaceholder = cached.typingPlaceholder;
     state.compactingBubble = cached.compactingBubble;
@@ -166,11 +184,17 @@ export function createSessionFeature({ state, socket, renderer, pickers, actions
     state.currentModel = cached.currentModel;
     state.currentThinkingEffort = cached.currentThinkingEffort;
     state.isCompacting = cached.isCompacting;
+    state.userScrolledUp = cached.userScrolledUp || false;
+    state.visibleProcessStep = cached.visibleProcessStep || null;
+    state.pendingProcessStep = cached.pendingProcessStep || null;
+    state.visibleProcessSince = cached.visibleProcessSince || 0;
+    state.processTimer = null;
     return true;
   }
 
   function selectSession(id) {
     const target = state.sessions.find((session) => session.id === id);
+    permissions.hideActive();
     saveSessionState(state.currentSessionId);
     state.currentSessionId = id;
     const inputSnapshot = state.inputEl?.value ?? "";
@@ -203,13 +227,17 @@ export function createSessionFeature({ state, socket, renderer, pickers, actions
         state.streamingBubble = renderer.appendMessage("assistant", "");
         state.typingPlaceholder = actions.appendTypingDots(state.streamingBubble);
       }
+      actions.replaySessionEvents();
     }
     actions.setSendDisabled(restored ? state.isStreaming : false);
+    permissions.showForSession(id);
     joinSession(id);
   }
 
   function resetRuntimeState(session) {
     state.isStreaming = false;
+    state.currentRunId = null;
+    state.lastStreamSequence = 0;
     state.streamingBubble = null;
     state.streamingReasoningBlock = null;
     state.pendingToolBlocks = {};
@@ -222,6 +250,11 @@ export function createSessionFeature({ state, socket, renderer, pickers, actions
     state.currentSessionMessageCount = 0;
     state.currentMessages = [];
     state.pendingImages = [];
+    state.userScrolledUp = false;
+    state.visibleProcessStep = null;
+    state.pendingProcessStep = null;
+    state.visibleProcessSince = 0;
+    state.processTimer = null;
   }
 
   async function deleteSessionById(id) {
