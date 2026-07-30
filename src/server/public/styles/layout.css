@@ -200,6 +200,8 @@
     .text-segment {
       margin: 0;
       line-height: inherit;
+      font-family: var(--md-font-family);
+      font-size: var(--md-font-size);
     }
 
 
