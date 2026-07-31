@@ -559,22 +559,40 @@ input:focus-visible {
   min-width: 46px;
   height: 26px;
   padding: 0 8px;
-  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text1) 65%, transparent);
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--bg) 78%, transparent);
-  color: var(--text2);
+  background: color-mix(in srgb, var(--text1) 85%, var(--bg3) 15%);
+  color: var(--bg3);
   cursor: pointer;
   font: inherit;
   font-size: 12px;
   line-height: 1;
 }
 .user-message-toggle:hover {
-  background: var(--bg2);
-  color: var(--text1);
+  background: color-mix(in srgb, var(--text) 90%, var(--bg3) 10%);
+  color: var(--bg3);
 }
 .user-message-toggle:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+html[data-theme="daylight"] .user-message-toggle {
+  border-color: var(--border-strong);
+  background: #e1e4e8;
+  color: var(--text1);
+}
+html[data-theme="daylight"] .user-message-toggle:hover {
+  background: #d8dce1;
+  color: var(--text1);
+}
+html[data-theme="monochrome"] .user-message-toggle {
+  border-color: var(--accent-hover);
+  background: var(--accent);
+  color: var(--accent-text);
+}
+html[data-theme="monochrome"] .user-message-toggle:hover {
+  background: var(--accent-hover);
+  color: var(--accent-text);
 }
 .message.assistant .message-bubble {
   padding: 0;
