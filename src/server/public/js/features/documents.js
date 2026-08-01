@@ -50,7 +50,7 @@ function buildRecentPreviewFiles(paths) {
     <div class="doc-recent-files" aria-label="最近预览文件">
       ${paths.map((path) => {
         const name = path.split("/").pop() || path;
-        return `<button class="doc-recent-entry ${path === docPreviewPath ? "active" : ""}" data-recent-doc-path="${escHtml(path)}" type="button" title="${escHtml(path)}" aria-label="打开最近预览文件 ${escHtml(path)}"><i data-lucide="file-clock" class="doc-entry-icon"></i><span class="doc-recent-entry-label">${escHtml(name)}</span></button>`;
+        return `<button class="doc-recent-entry ${path === docPreviewPath ? "active" : ""}" data-recent-doc-path="${escHtml(path)}" type="button" title="${escHtml(path)}" aria-label="打开最近预览文件 ${escHtml(path)}"><i data-lucide="file-clock" class="doc-entry-icon"></i><span class="doc-recent-entry-label">${escHtml(name)}</span><span class="doc-recent-remove" data-remove-recent-doc-path="${escHtml(path)}" role="button" tabindex="-1" title="从最近文件列表移除" aria-label="从最近文件列表移除 ${escHtml(name)}"><i data-lucide="x" class="doc-entry-icon"></i></span></button>`;
       }).join("")}
     </div>
   `;
@@ -432,6 +432,15 @@ function renderDocColumns() {
       if (!path) return;
       await openDocPreview(path);
       renderDocColumns();
+    });
+  });
+
+  container.querySelectorAll(".doc-recent-remove").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const path = button.dataset.removeRecentDocPath;
+      if (!path) return;
+      void removeRecentPreview(path).then(() => renderDocColumns());
     });
   });
 
