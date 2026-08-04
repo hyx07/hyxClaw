@@ -363,7 +363,8 @@ export function createChatView({ state, documents, pickers, permissions, actions
 
     const recent = (state.recentModels || [])
       .filter((entry) => !(entry.provider === state.currentProvider && entry.model === state.currentModel))
-      .slice(0, 2);
+      .slice(0, 2)
+      .reverse();
     if (recent.length) {
       fragments.push(createMenuGroupTitle("最近使用"));
       for (const entry of recent) {
