@@ -8,30 +8,81 @@ import { getDocSelectionSummary, getSourceLineNumberFromOffset } from "./documen
 export { initSidebarResizeHandle } from "./document-layout.js";
 
 let reportError = (message) => console.error(message);
-let onRecentPreviewFilesChange = () => {};
 export function configureDocuments(options) {
   reportError = options.showError;
-  onRecentPreviewFilesChange = options.onRecentPreviewFilesChange || (() => {});
 }
 
 const DOC_BROWSER_ROOTS = ["knowledge_base", "inputs"];
-let docRootPath = null;
+const DOC_ROOT_TAB_KEY = "docRootPath";
+const DOC_TABS_KEY = "docOpenTabs";
+
+let docRootPath = loadDocRootPath();
 let docSecondEntries = [];
 let docSecondActivePath = null;
 let docThirdEntries = [];
 let docThirdDirPath = null;
 let docThirdActivePath = null;
-let recentPreviewFiles = [];
-let docPreviewPath = "";
+
+// 打开的标签页（跨会话/刷新保留）：{ path, editMode }
+let openTabs = loadOpenTabs();
+let activeTabPath = openTabs.length ? openTabs[0].path : null;
+
+// 当前活动标签的内容状态
 let docPreviewContent = "";
 let docPreviewSupported = true;
 let docPreviewKind = "text";
-let docEditMode = false;
 let selectedPreviewText = "";
 let selectedPreviewSummary = "";
 let selectedPreviewStartLine = 0;
 let selectedPreviewEndLine = 0;
 let savedDocPreviewScrollTop = 0;
+
+function loadDocRootPath() {
+  try {
+    const stored = localStorage.getItem(DOC_ROOT_TAB_KEY);
+    if (stored && DOC_BROWSER_ROOTS.includes(stored)) return stored;
+  } catch {
+    // ignore
+  }
+  return DOC_BROWSER_ROOTS[0];
+}
+
+function saveDocRootPath() {
+  try {
+    localStorage.setItem(DOC_ROOT_TAB_KEY, docRootPath);
+  } catch {
+    // ignore
+  }
+}
+
+function loadOpenTabs() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(DOC_TABS_KEY) || "[]");
+    if (!Array.isArray(stored)) return [];
+    return stored
+      .filter((tab) => tab && typeof tab.path === "string" && tab.path)
+      .map((tab) => ({
+        path: tab.path,
+        editMode: tab.editMode === true,
+        // 旧数据没有 sticky 字段，视为常驻标签
+        sticky: tab.sticky !== false,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function saveOpenTabs() {
+  try {
+    localStorage.setItem(DOC_TABS_KEY, JSON.stringify(openTabs));
+  } catch {
+    // ignore
+  }
+}
+
+function getActiveTabEditMode() {
+  return openTabs.find((tab) => tab.path === activeTabPath)?.editMode ?? false;
+}
 
 function getDocSelectionStatusText() {
   if (!selectedPreviewText || !selectedPreviewStartLine || !selectedPreviewEndLine) return "";
@@ -44,20 +95,8 @@ function getDocEntryIcon(kind) {
     : '<i data-lucide="file" class="doc-entry-icon"></i>';
 }
 
-function buildRecentPreviewFiles(paths) {
-  if (!paths.length) return "";
-  return `
-    <div class="doc-recent-files" aria-label="最近预览文件">
-      ${paths.map((path) => {
-        const name = path.split("/").pop() || path;
-        return `<button class="doc-recent-entry ${path === docPreviewPath ? "active" : ""}" data-recent-doc-path="${escHtml(path)}" type="button" title="${escHtml(path)}" aria-label="打开最近预览文件 ${escHtml(path)}"><i data-lucide="file-clock" class="doc-entry-icon"></i><span class="doc-recent-entry-label">${escHtml(name)}</span><span class="doc-recent-remove" data-remove-recent-doc-path="${escHtml(path)}" role="button" tabindex="-1" title="从最近文件列表移除" aria-label="从最近文件列表移除 ${escHtml(name)}"><i data-lucide="x" class="doc-entry-icon"></i></span></button>`;
-      }).join("")}
-    </div>
-  `;
-}
-
 function buildDocColumn(title, entries, activePath, options = {}) {
-  const { showBack = false, backDisabled = true, recentPaths = [] } = options;
+  const { showBack = false, backDisabled = true } = options;
   return `
     <div class="doc-column">
       <div class="doc-column-header">
@@ -72,7 +111,6 @@ function buildDocColumn(title, entries, activePath, options = {}) {
           </button>
         `).join("") : '<div class="doc-empty">暂无内容</div>'}
       </div>
-      ${buildRecentPreviewFiles(recentPaths)}
     </div>
   `;
 }
@@ -87,17 +125,17 @@ export function getRightPanelHTML(opts = {}) {
     <aside id="action-rail" class="${railCollapsed ? "collapsed" : ""}" style="width:${width}px">
       ${toggleHTML}
       <div id="doc-browser">
+        <div id="doc-root-tabs"></div>
         <div id="doc-columns"></div>
         <div id="doc-vertical-resizer"></div>
         <section id="doc-preview-panel">
+          <div id="doc-tabs"></div>
           <div id="doc-preview-toolbar">
             <div id="doc-selection-status">
-              <div class="doc-preview-path"></div>
               <div class="doc-selection-lines"></div>
               <div class="doc-selection-summary"></div>
             </div>
             <div class="doc-toolbar-actions">
-              <button id="doc-clear-selection-btn" class="icon-button" type="button" title="清除选择" aria-label="清除选择"><i data-lucide="x-circle"></i></button>
               <button id="doc-refresh-btn" class="icon-button" type="button" title="刷新" aria-label="刷新"><i data-lucide="refresh-cw"></i></button>
               <button id="doc-edit-btn" class="icon-button" type="button" title="编辑" aria-label="编辑"><i data-lucide="pencil"></i></button>
             </div>
@@ -123,40 +161,6 @@ async function fetchDocContent(path) {
   return data;
 }
 
-export function setRecentPreviewFiles(paths) {
-  recentPreviewFiles = Array.isArray(paths)
-    ? [...new Set(paths.filter((path) => typeof path === "string" && path))].slice(0, 3)
-    : [];
-  onRecentPreviewFilesChange(recentPreviewFiles);
-  // Note: caller is responsible for calling renderDocColumns after state changes.
-  // Rendering here would cause a double render during click handling (once via
-  // recordRecentPreview -> setRecentPreviewFiles, once via the click handler).
-}
-
-async function recordRecentPreview(path) {
-  const res = await fetch("/api/app-state/recent-preview-files", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "更新最近文件失败");
-  setRecentPreviewFiles(data.recentPreviewFiles);
-}
-
-async function removeRecentPreview(path) {
-  try {
-    const res = await fetch(`/api/app-state/recent-preview-files?path=${encodeURIComponent(path)}`, { method: "DELETE" });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "更新最近文件失败");
-    setRecentPreviewFiles(data.recentPreviewFiles);
-  } catch {
-    recentPreviewFiles = recentPreviewFiles.filter((item) => item !== path);
-    onRecentPreviewFilesChange(recentPreviewFiles);
-    renderDocColumns();
-  }
-}
-
 export function saveDocPreviewScrollPosition() {
   const el = document.getElementById("doc-preview-content");
   if (el) savedDocPreviewScrollTop = el.scrollTop;
@@ -170,41 +174,45 @@ export function clearPreviewSelection() {
   updateDocSelectionStatus();
 }
 
-function clearDocPreviewContext() {
-  docEditMode = false;
-  docPreviewPath = "";
-  docPreviewContent = "";
-  docPreviewSupported = true;
-  docPreviewKind = "text";
-  clearPreviewSelection();
-  updateDocPreviewPanel();
+async function saveCurrentTabEdit() {
+  const tab = openTabs.find((item) => item.path === activeTabPath);
+  if (!tab || !tab.editMode || docPreviewKind !== "text") return true;
+  const container = document.getElementById("doc-preview-content");
+  const textarea = container?.querySelector(".doc-edit-textarea");
+  if (!(textarea instanceof HTMLTextAreaElement)) return true;
+  try {
+    const res = await fetch("/api/documents/content", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: activeTabPath, content: textarea.value }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "保存失败");
+    docPreviewContent = textarea.value;
+    return true;
+  } catch (error) {
+    reportError((error && error.message) ? error.message : "保存文件失败");
+    return false;
+  }
 }
 
 async function toggleDocEdit() {
-  if (!docPreviewPath || docPreviewKind !== "text") return;
+  const tab = openTabs.find((item) => item.path === activeTabPath);
+  if (!tab || docPreviewKind !== "text") return;
   const container = document.getElementById("doc-preview-content");
   let scrollRatio = 0;
-  if (docEditMode) {
-    const textarea = container?.querySelector(".doc-edit-textarea");
-    if (textarea instanceof HTMLTextAreaElement) {
-      const maxScroll = textarea.scrollHeight - textarea.clientHeight;
-      scrollRatio = maxScroll > 0 ? textarea.scrollTop / maxScroll : 0;
-      const newContent = textarea.value;
-      try {
-        const res = await fetch("/api/documents/content", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path: docPreviewPath, content: newContent }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "保存失败");
-        docPreviewContent = newContent;
-      } catch (error) {
-        reportError((error && error.message) ? error.message : "保存文件失败");
-        return;
+  if (tab.editMode) {
+    if (container) {
+      const textarea = container.querySelector(".doc-edit-textarea");
+      if (textarea instanceof HTMLTextAreaElement) {
+        const maxScroll = textarea.scrollHeight - textarea.clientHeight;
+        scrollRatio = maxScroll > 0 ? textarea.scrollTop / maxScroll : 0;
       }
     }
-    docEditMode = false;
+    const ok = await saveCurrentTabEdit();
+    if (!ok) return;
+    tab.editMode = false;
+    saveOpenTabs();
     updateDocPreviewPanel();
     if (container) {
       const maxScroll = container.scrollHeight - container.clientHeight;
@@ -215,7 +223,8 @@ async function toggleDocEdit() {
       const maxScroll = container.scrollHeight - container.clientHeight;
       scrollRatio = maxScroll > 0 ? container.scrollTop / maxScroll : 0;
     }
-    docEditMode = true;
+    tab.editMode = true;
+    saveOpenTabs();
     clearPreviewSelection();
     updateDocPreviewPanel();
     const textarea = container?.querySelector(".doc-edit-textarea");
@@ -224,27 +233,24 @@ async function toggleDocEdit() {
       textarea.scrollTop = Math.min(scrollRatio * maxScroll, maxScroll);
     }
   }
+  renderDocTabs();
   updateDocSelectionStatus();
 }
 
 function updateDocSelectionStatus() {
-  const pathEl = document.querySelector("#doc-selection-status .doc-preview-path");
   const linesEl = document.querySelector("#doc-selection-status .doc-selection-lines");
   const summaryEl = document.querySelector("#doc-selection-status .doc-selection-summary");
-  const clearBtn = document.getElementById("doc-clear-selection-btn");
   const editBtn = document.getElementById("doc-edit-btn");
-  if (pathEl) pathEl.textContent = docPreviewPath || "";
   if (linesEl) linesEl.textContent = getDocSelectionStatusText();
   if (summaryEl) summaryEl.textContent = selectedPreviewSummary ? `"${selectedPreviewSummary}"` : "";
-  if (clearBtn) clearBtn.disabled = !selectedPreviewText && !docPreviewPath;
   if (editBtn) {
-    const editIcon = docEditMode ? "log-out" : "pencil";
+    const editIcon = getActiveTabEditMode() ? "log-out" : "pencil";
     if (editBtn.dataset.icon !== editIcon) {
       editBtn.dataset.icon = editIcon;
       editBtn.innerHTML = `<i data-lucide="${editIcon}"></i>`;
       window.lucide?.createIcons();
     }
-    editBtn.disabled = !docPreviewPath || docPreviewKind !== "text";
+    editBtn.disabled = !activeTabPath || docPreviewKind !== "text";
   }
 }
 
@@ -256,13 +262,17 @@ export function getSelectedPreviewPayload() {
 
 export function getPreviewContextPayload() {
   return {
-    previewPath: docPreviewPath || undefined,
+    previewPath: activeTabPath || undefined,
     selectedPreviewText: getSelectedPreviewPayload(),
   };
 }
 
+export function getOpenTabPaths() {
+  return openTabs.map((tab) => tab.path);
+}
+
 export function updateSelectedPreviewTextFromSelection() {
-  if (docEditMode || docPreviewKind !== "text") return;
+  if (getActiveTabEditMode() || docPreviewKind !== "text") return;
   const preview = document.getElementById("doc-preview-content");
   const selection = window.getSelection();
   if (!preview || !selection || selection.rangeCount === 0) {
@@ -289,7 +299,7 @@ function updateDocPreviewPanel() {
   if (!content) return;
   content.classList.toggle("unsupported", !docPreviewSupported);
   content.classList.toggle("image-preview", docPreviewKind === "image");
-  if (!docPreviewPath) {
+  if (!activeTabPath) {
     content.classList.remove("markdown-body");
     content.classList.remove("image-preview");
     content.textContent = "请选择一个文件进行预览";
@@ -306,17 +316,17 @@ function updateDocPreviewPanel() {
     const img = document.createElement("img");
     img.className = "doc-preview-image";
     img.src = docPreviewContent || "";
-    img.alt = docPreviewPath;
+    img.alt = activeTabPath;
     content.appendChild(img);
     return;
   }
-  if (docEditMode) {
+  if (getActiveTabEditMode()) {
     content.classList.remove("markdown-body");
     content.innerHTML = `<textarea class="doc-edit-textarea" spellcheck="false">${escHtml(docPreviewContent || "")}</textarea>`;
     return;
   }
   content.classList.add("markdown-body");
-  const basePath = docPreviewPath ? docPreviewPath.replace(/[^/\\]*$/, "") : "";
+  const basePath = activeTabPath ? activeTabPath.replace(/[^/\\]*$/, "") : "";
   renderContent(content, docPreviewContent, basePath);
   if (savedDocPreviewScrollTop > 0) {
     // Restore scroll position preserved across DOM rebuilds (e.g. session switch).
@@ -333,39 +343,194 @@ function updateDocPreviewPanel() {
   }
 }
 
-async function openDocPreview(path) {
+async function loadActiveTabContent() {
+  if (!activeTabPath) {
+    docPreviewContent = "";
+    docPreviewSupported = true;
+    docPreviewKind = "text";
+    clearPreviewSelection();
+    updateDocPreviewPanel();
+    updateDocSelectionStatus();
+    return false;
+  }
   try {
-    const data = await fetchDocContent(path);
-    docPreviewPath = data.path || path;
+    const data = await fetchDocContent(activeTabPath);
     docPreviewContent = data.content || "";
     docPreviewSupported = data.supported !== false;
     docPreviewKind = data.kind || (docPreviewSupported ? "text" : "unsupported");
-    docEditMode = false;
-    try {
-      await recordRecentPreview(docPreviewPath);
-    } catch {
-      // A persistence error must not prevent an otherwise successful preview.
-    }
     clearPreviewSelection();
     updateDocPreviewPanel();
+    updateDocSelectionStatus();
+    return true;
   } catch (error) {
-    if (recentPreviewFiles.includes(path)) void removeRecentPreview(path);
     reportError((error && error.message) ? error.message : "读取文件失败");
+    return false;
+  }
+}
+
+async function openDocPreview(path) {
+  if (openTabs.some((tab) => tab.path === path)) {
+    // 已打开：直接激活（保留其固定/临时状态）
+    await activateTab(path);
+    return;
+  }
+  // 存在临时标签（斜体、未固定）时替换它，否则新建临时标签
+  const tempIndex = openTabs.findIndex((tab) => !tab.sticky);
+  const replacedPath = tempIndex !== -1 ? openTabs[tempIndex].path : null;
+  if (tempIndex !== -1) {
+    if (openTabs[tempIndex].path === activeTabPath) {
+      const ok = await saveCurrentTabEdit();
+      if (!ok) return;
+    }
+    openTabs[tempIndex] = { path, editMode: false, sticky: false };
+  } else {
+    openTabs.push({ path, editMode: false, sticky: false });
+  }
+  activeTabPath = path;
+  saveOpenTabs();
+  renderDocTabs();
+  const ok = await loadActiveTabContent();
+  if (!ok) {
+    if (tempIndex !== -1 && replacedPath) {
+      // 打开失败：恢复被替换的临时标签
+      openTabs[tempIndex] = { path: replacedPath, editMode: false, sticky: false };
+      activeTabPath = replacedPath;
+      saveOpenTabs();
+      renderDocTabs();
+      await loadActiveTabContent();
+    } else {
+      // 打开失败：回滚刚创建的标签
+      await closeTab(path, { saveEdit: false });
+    }
+  }
+}
+
+async function activateTab(path) {
+  if (path === activeTabPath) return;
+  const ok = await saveCurrentTabEdit();
+  if (!ok) return;
+  activeTabPath = path;
+  saveOpenTabs();
+  renderDocTabs();
+  await loadActiveTabContent();
+}
+
+async function closeTab(path, { saveEdit = true } = {}) {
+  const index = openTabs.findIndex((tab) => tab.path === path);
+  if (index === -1) return;
+  if (path === activeTabPath && saveEdit) {
+    const ok = await saveCurrentTabEdit();
+    if (!ok) return;
+  }
+  openTabs.splice(index, 1);
+  if (path === activeTabPath) {
+    if (openTabs.length) {
+      const next = openTabs[Math.min(index, openTabs.length - 1)];
+      activeTabPath = next.path;
+      saveOpenTabs();
+      await loadActiveTabContent();
+    } else {
+      activeTabPath = null;
+      docPreviewContent = "";
+      docPreviewSupported = true;
+      docPreviewKind = "text";
+      clearPreviewSelection();
+      saveOpenTabs();
+      updateDocPreviewPanel();
+      updateDocSelectionStatus();
+    }
+  } else {
+    saveOpenTabs();
+  }
+  renderDocTabs();
+}
+
+function renderDocTabs() {
+  const container = document.getElementById("doc-tabs");
+  if (!container) return;
+  if (!openTabs.length) {
+    container.innerHTML = "";
+    return;
+  }
+  container.innerHTML = openTabs.map((tab) => `
+    <button class="doc-tab ${tab.path === activeTabPath ? "active" : ""} ${tab.editMode ? "editing" : ""} ${tab.sticky ? "" : "temporary"}" data-tab-path="${escHtml(tab.path)}" type="button" title="${escHtml(tab.path)}${tab.sticky ? "" : "（临时标签，双击固定）"}" aria-label="标签 ${escHtml(tab.path)}">
+      <i data-lucide="${tab.editMode ? "pencil" : "file-text"}" class="doc-tab-icon"></i>
+      <span class="doc-tab-label">${escHtml(tab.path.split("/").pop() || tab.path)}</span>
+      <span class="doc-tab-close" data-close-tab-path="${escHtml(tab.path)}" role="button" tabindex="-1" title="关闭标签" aria-label="关闭标签 ${escHtml(tab.path)}"><i data-lucide="x" class="doc-tab-close-icon"></i></span>
+    </button>
+  `).join("");
+  window.lucide?.createIcons();
+
+  container.querySelectorAll(".doc-tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      void activateTab(button.dataset.tabPath);
+    });
+    // 双击临时标签 → 固定为常驻标签
+    button.addEventListener("dblclick", () => {
+      const tab = openTabs.find((item) => item.path === button.dataset.tabPath);
+      if (tab && !tab.sticky) {
+        tab.sticky = true;
+        saveOpenTabs();
+        renderDocTabs();
+      }
+    });
+  });
+  container.querySelectorAll(".doc-tab-close").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      void closeTab(button.dataset.closeTabPath);
+    });
+  });
+
+  // Scroll the active tab into view (horizontal).
+  const active = container.querySelector(".doc-tab.active");
+  if (active) {
+    const containerRect = container.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+    if (activeRect.left < containerRect.left) {
+      container.scrollLeft -= containerRect.left - activeRect.left;
+    } else if (activeRect.right > containerRect.right) {
+      container.scrollLeft += activeRect.right - containerRect.right;
+    }
   }
 }
 
 function renderDocColumns() {
   const container = document.getElementById("doc-columns");
   if (!container) return;
+
+  const rootTabs = document.getElementById("doc-root-tabs");
+  if (rootTabs) {
+    rootTabs.innerHTML = DOC_BROWSER_ROOTS.map((root) => `
+      <button class="doc-root-tab ${root === docRootPath ? "active" : ""}" data-doc-root="${escHtml(root)}" type="button" role="tab" aria-selected="${root === docRootPath ? "true" : "false"}">
+        <i data-lucide="folder" class="doc-root-tab-icon"></i>
+        <span class="doc-root-tab-label">${escHtml(root)}</span>
+      </button>
+    `).join("");
+    window.lucide?.createIcons();
+    rootTabs.querySelectorAll(".doc-root-tab").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const root = button.dataset.docRoot;
+        if (!root || root === docRootPath) return;
+        docRootPath = root;
+        saveDocRootPath();
+        docSecondActivePath = null;
+        docThirdDirPath = null;
+        docThirdEntries = [];
+        docThirdActivePath = null;
+        docSecondEntries = await fetchDocTree(root);
+        renderDocColumns();
+      });
+    });
+  }
+
   const scrollTops = Array.from(container.querySelectorAll(".doc-column-body")).map((el) => el.scrollTop);
   container.innerHTML = [
-    buildDocColumn("根目录", DOC_BROWSER_ROOTS.map((root) => ({ name: root, path: root, kind: "directory" })), docRootPath, { recentPaths: recentPreviewFiles }),
-    '<div class="doc-column-resizer" data-column-resizer="0" title="拖拽调整文件树列宽"></div>',
     buildDocColumn(docRootPath || "", docSecondEntries, docSecondActivePath),
-    '<div class="doc-column-resizer" data-column-resizer="1" title="拖拽调整文件树列宽"></div>',
+    '<div class="doc-column-resizer" data-column-resizer="0" title="拖拽调整文件树列宽"></div>',
     buildDocColumn(docThirdDirPath ? docThirdDirPath.split("/").pop() || "" : "", docThirdEntries, docThirdActivePath, {
       showBack: true,
-      backDisabled: !docThirdDirPath || docThirdDirPath === docSecondActivePath,
+      backDisabled: !docThirdDirPath,
     }),
   ].join("");
   window.lucide?.createIcons();
@@ -383,20 +548,9 @@ function renderDocColumns() {
       const kind = button.dataset.docKind;
       if (!path) return;
 
-      if (path === "knowledge_base" || path === "inputs") {
-        docRootPath = path;
-        docSecondActivePath = null;
-        docThirdDirPath = null;
-        docThirdEntries = [];
-        docThirdActivePath = null;
-        docSecondEntries = await fetchDocTree(path);
-        renderDocColumns();
-        return;
-      }
-
       const docColumns = container.querySelectorAll(".doc-column");
-      const inSecondColumn = button.closest(".doc-column") === docColumns[1];
-      if (inSecondColumn) {
+      const inFirstColumn = button.closest(".doc-column") === docColumns[0];
+      if (inFirstColumn) {
         docSecondActivePath = path;
         if (kind === "directory") {
           docThirdDirPath = path;
@@ -426,38 +580,21 @@ function renderDocColumns() {
     });
   });
 
-  container.querySelectorAll(".doc-recent-entry").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const path = button.dataset.recentDocPath;
-      if (!path) return;
-      await openDocPreview(path);
-      renderDocColumns();
-    });
-  });
-
-  container.querySelectorAll(".doc-recent-remove").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const path = button.dataset.removeRecentDocPath;
-      if (!path) return;
-      void removeRecentPreview(path).then(() => renderDocColumns());
-    });
-  });
-
   document.getElementById("doc-back-btn")?.addEventListener("click", async () => {
-    if (!docThirdDirPath || docThirdDirPath === docSecondActivePath) return;
+    if (!docThirdDirPath) return;
     const parts = docThirdDirPath.split("/");
     parts.pop();
     const parentPath = parts.join("/");
     if (!parentPath || parentPath === docRootPath) {
-      docThirdDirPath = docSecondActivePath;
+      // 回到第一层：清空第二列
+      docThirdDirPath = null;
+      docThirdEntries = [];
+      docThirdActivePath = null;
+      docSecondActivePath = null;
     } else {
       docThirdDirPath = parentPath;
-    }
-    if (docThirdDirPath) {
-      docThirdEntries = await fetchDocTree(docThirdDirPath);
-    } else {
-      docThirdEntries = [];
+      docThirdActivePath = null;
+      docThirdEntries = await fetchDocTree(parentPath);
     }
     renderDocColumns();
   });
@@ -472,37 +609,29 @@ export async function refreshDocBrowser() {
         docSecondActivePath = null;
         docThirdDirPath = null;
         docThirdEntries = [];
-      } else if (docSecondActivePath && docThirdDirPath) {
+      } else if (docThirdDirPath) {
         try {
           docThirdEntries = await fetchDocTree(docThirdDirPath);
         } catch {
-          docThirdDirPath = docSecondActivePath;
-          docThirdEntries = docThirdDirPath ? await fetchDocTree(docThirdDirPath) : [];
+          docThirdDirPath = null;
+          docThirdEntries = [];
         }
       }
     }
 
-    if (docPreviewPath) {
-      try {
-        const data = await fetchDocContent(docPreviewPath);
-        docPreviewPath = data.path || docPreviewPath;
-        docPreviewContent = data.content || "";
-        docPreviewSupported = data.supported !== false;
-        docPreviewKind = data.kind || (docPreviewSupported ? "text" : "unsupported");
-      } catch {
-        const missingPath = docPreviewPath;
-        docPreviewPath = "";
-        docPreviewContent = "";
-        docPreviewSupported = true;
-        docPreviewKind = "text";
-        clearPreviewSelection();
-        if (missingPath) void removeRecentPreview(missingPath);
+    if (activeTabPath) {
+      const ok = await loadActiveTabContent();
+      if (!ok) {
+        // 文件已失效：关闭对应标签
+        await closeTab(activeTabPath, { saveEdit: false });
       }
+    } else {
+      updateDocPreviewPanel();
+      updateDocSelectionStatus();
     }
 
     renderDocColumns();
-    updateDocPreviewPanel();
-    updateDocSelectionStatus();
+    renderDocTabs();
   } catch (error) {
     reportError((error && error.message) ? error.message : "刷新文档结构失败");
   }
@@ -556,7 +685,6 @@ export function initRightPanel() {
   document.getElementById("knowledge-btn")?.addEventListener("click", openKnowledgeModal);
   document.getElementById("doc-refresh-btn")?.addEventListener("click", refreshDocBrowser);
   document.getElementById("doc-edit-btn")?.addEventListener("click", toggleDocEdit);
-  document.getElementById("doc-clear-selection-btn")?.addEventListener("click", clearDocPreviewContext);
   document.getElementById("doc-preview-content")?.addEventListener("click", () => {
     const selection = window.getSelection();
     if (!selection || selection.toString().trim()) return;
@@ -565,6 +693,21 @@ export function initRightPanel() {
   });
   initDocResizeHandle();
   renderDocColumns();
-  updateDocPreviewPanel();
-  updateDocSelectionStatus();
+  renderDocTabs();
+  // 刷新/重建后重新加载当前根目录的文件树（初始状态 docSecondEntries 为空）
+  void (async () => {
+    try {
+      docSecondEntries = await fetchDocTree(docRootPath);
+    } catch {
+      docSecondEntries = [];
+    }
+    renderDocColumns();
+  })();
+  if (activeTabPath) {
+    // 页面刷新后恢复活动标签的内容
+    void loadActiveTabContent();
+  } else {
+    updateDocPreviewPanel();
+    updateDocSelectionStatus();
+  }
 }

@@ -8,19 +8,11 @@ export interface RecentModel {
 
 export interface AppState {
   lastActiveSessionId?: string;
-  recentPreviewFiles: string[];
   recentModels: RecentModel[];
 }
 
-const MAX_RECENT_PREVIEW_FILES = 3;
 const MAX_RECENT_MODELS = 5;
-const DEFAULT_APP_STATE: AppState = { recentPreviewFiles: [], recentModels: [] };
-
-function normalizeRecentPreviewFiles(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return [...new Set(value.filter((path): path is string => typeof path === "string" && path.trim().length > 0))]
-    .slice(0, MAX_RECENT_PREVIEW_FILES);
-}
+const DEFAULT_APP_STATE: AppState = { recentModels: [] };
 
 function normalizeRecentModels(value: unknown): RecentModel[] {
   if (!Array.isArray(value)) return [];
@@ -50,7 +42,6 @@ export async function loadAppState(userDataDir?: string): Promise<AppState> {
     const parsed = JSON.parse(raw) as Partial<AppState>;
     return {
       lastActiveSessionId: typeof parsed.lastActiveSessionId === "string" ? parsed.lastActiveSessionId : undefined,
-      recentPreviewFiles: normalizeRecentPreviewFiles(parsed.recentPreviewFiles),
       recentModels: normalizeRecentModels(parsed.recentModels),
     };
   } catch {
@@ -62,7 +53,6 @@ export async function saveAppState(state: AppState, userDataDir?: string): Promi
   const paths = getPaths(userDataDir);
   const normalizedState: AppState = {
     lastActiveSessionId: typeof state.lastActiveSessionId === "string" ? state.lastActiveSessionId : undefined,
-    recentPreviewFiles: normalizeRecentPreviewFiles(state.recentPreviewFiles),
     recentModels: normalizeRecentModels(state.recentModels),
   };
   await fs.mkdir(paths.files, { recursive: true });
@@ -72,24 +62,6 @@ export async function saveAppState(state: AppState, userDataDir?: string): Promi
 export async function setLastActiveSession(sessionId: string, userDataDir?: string): Promise<void> {
   const state = await loadAppState(userDataDir);
   await saveAppState({ ...state, lastActiveSessionId: sessionId }, userDataDir);
-}
-
-export async function recordRecentPreviewFile(filePath: string, userDataDir?: string): Promise<AppState> {
-  const state = await loadAppState(userDataDir);
-  if (state.recentPreviewFiles.includes(filePath)) return state;
-
-  const recentPreviewFiles = [filePath, ...state.recentPreviewFiles].slice(0, MAX_RECENT_PREVIEW_FILES);
-  const nextState = { ...state, recentPreviewFiles };
-  await saveAppState(nextState, userDataDir);
-  return nextState;
-}
-
-export async function removeRecentPreviewFile(filePath: string, userDataDir?: string): Promise<AppState> {
-  const state = await loadAppState(userDataDir);
-  const recentPreviewFiles = state.recentPreviewFiles.filter((path) => path !== filePath);
-  const nextState = { ...state, recentPreviewFiles };
-  await saveAppState(nextState, userDataDir);
-  return nextState;
 }
 
 export async function recordRecentModel(provider: string, model: string, userDataDir?: string): Promise<AppState> {

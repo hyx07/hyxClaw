@@ -988,8 +988,6 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
   grid-template-columns:
     minmax(80px, var(--doc-column-1-width, 1fr))
     8px
-    minmax(80px, var(--doc-column-2-width, 1fr))
-    8px
     minmax(80px, 1fr);
 }
 .doc-column {
@@ -1055,6 +1053,83 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
   border-bottom-color: var(--border);
   background: var(--bg4);
 }
+/* 根目录切换 tabs（覆盖 base 浅色样式，跟随主题） */
+#doc-root-tabs {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--bg4);
+}
+.doc-root-tab {
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+.doc-root-tab:hover {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.doc-root-tab.active {
+  background: var(--toolbar-menu-selected-bg);
+  color: var(--text1);
+  box-shadow: none;
+}
+
+/* 文件标签条（覆盖 base 浅色样式，跟随主题） */
+#doc-tabs {
+  height: 36px;
+  min-height: 36px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg4);
+}
+.doc-tab-icon {
+  width: 14px;
+  height: 14px;
+}
+.doc-tab-close-icon {
+  width: 12px;
+  height: 12px;
+}
+.doc-root-tab-icon {
+  width: 14px;
+  height: 14px;
+}
+.doc-tab {
+  border-radius: var(--radius-sm);
+  border-color: var(--border);
+  color: var(--text2);
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+.doc-tab:hover {
+  background: var(--hover-bg);
+  color: var(--text);
+}
+.doc-tab.active {
+  background: var(--toolbar-menu-selected-bg);
+  border-color: var(--border-strong);
+  color: var(--text1);
+  box-shadow: none;
+  font-weight: 500;
+}
+.doc-tab-close {
+  border-radius: var(--radius-sm);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.doc-tab-close:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
 .doc-column-header {
   font-weight: var(--weight-semibold);
 }
@@ -1067,83 +1142,40 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
     background 0.12s ease,
     color 0.12s ease;
 }
-.doc-entry:hover,
-.doc-recent-entry:hover {
+.doc-entry:hover {
   background: var(--hover-bg);
 }
-.doc-entry.active,
-.doc-recent-entry.active {
+.doc-entry.active {
   background: var(--toolbar-menu-selected-bg);
   color: var(--text1);
   box-shadow: none;
 }
-.doc-entry .lucide,
-.doc-recent-entry .lucide {
+.doc-entry .lucide {
   width: 14px;
   height: 14px;
 }
-.doc-recent-files {
-  padding: var(--space-1);
-  border-top-color: var(--border);
-  background: var(--bg4);
-}
-.doc-recent-entry {
-  border: 0;
-  border-radius: 0;
-  transition:
-    background 0.12s ease,
-    color 0.12s ease;
-}
-.doc-recent-entry-label {
-  flex: 1 1 auto;
-}
-.doc-recent-remove {
-  display: none;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 0;
-  line-height: 1;
-}
-.doc-recent-entry:hover .doc-recent-remove,
-.doc-recent-remove:focus-visible {
-  display: inline-flex;
-}
-.doc-recent-remove:hover {
-  background: var(--danger-soft);
-  color: var(--danger);
-}
-.doc-recent-remove .lucide {
-  width: 12px;
-  height: 12px;
-}
 #doc-preview-toolbar {
-  min-height: 52px;
-  padding: var(--space-2) var(--space-3);
+  height: 34px;
+  min-height: 34px;
+  padding: 4px var(--space-2);
+}
+#doc-preview-toolbar .lucide {
+  width: 16px;
+  height: 16px;
 }
 .doc-toolbar-actions {
   gap: var(--space-1);
 }
-#doc-clear-selection-btn,
 #doc-refresh-btn,
 #doc-edit-btn {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
   font-size: 0;
 }
-#doc-clear-selection-btn:hover:not(:disabled),
 #doc-refresh-btn:hover:not(:disabled),
 #doc-edit-btn:hover:not(:disabled) {
   background: var(--hover-bg);

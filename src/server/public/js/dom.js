@@ -343,7 +343,7 @@ export function createChatView({ state, documents, pickers, permissions, actions
     trigger.title = selected ? `${selected.dataset.provider || ""} · ${selected.textContent}` : "Model";
 
     const fragments = [];
-    fragments.push(createMenuGroupTitle("Providers"));
+    fragments.push(createMenuGroupTitle("提供商"));
     const providers = state.availableProviders.length ? state.availableProviders : [state.defaultProvider];
     const normalized = providers.includes(state.currentProvider) ? providers : [...providers, state.currentProvider];
     for (const provider of normalized) {
@@ -365,7 +365,7 @@ export function createChatView({ state, documents, pickers, permissions, actions
       .filter((entry) => !(entry.provider === state.currentProvider && entry.model === state.currentModel))
       .slice(0, 2);
     if (recent.length) {
-      fragments.push(createMenuGroupTitle("Recent Models"));
+      fragments.push(createMenuGroupTitle("最近使用"));
       for (const entry of recent) {
         const modelInfo = getModelsForProvider(entry.provider).find((model) => model.id === entry.model);
         const label = modelInfo?.label || modelInfo?.name || entry.model;

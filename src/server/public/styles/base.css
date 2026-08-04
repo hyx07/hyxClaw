@@ -280,9 +280,9 @@
 
 
     #doc-columns {
-      min-height: 85px;
+      min-height: 0;
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 0;
       flex: 0 0 28%;
       border: 1px solid var(--border);
@@ -398,48 +398,144 @@
     }
 
 
-    .doc-recent-files {
+    #doc-root-tabs {
       display: flex;
-      flex: 0 0 auto;
-      flex-direction: column;
-      gap: 4px;
-      padding: 6px;
-      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 6px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg2);
     }
 
-    .doc-recent-entry {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .doc-root-tab {
+      flex: 0 1 auto;
       min-width: 0;
-      width: 100%;
       border: none;
-      border-radius: 0;
+      border-radius: 8px;
       background: transparent;
       color: var(--text2);
       cursor: pointer;
       font-size: 12px;
-      padding: 7px 10px;
-      text-align: left;
+      font-weight: 500;
+      padding: 5px 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
 
-    .doc-recent-entry:hover {
+    .doc-root-tab:hover {
       color: var(--text);
       background: rgba(255, 255, 255, 0.4);
     }
 
-    .doc-recent-entry.active {
+    .doc-root-tab.active {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.55);
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    .doc-root-tab-icon {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .doc-root-tab-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+
+    #doc-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 0 0 auto;
+      min-height: 36px;
+      max-width: 100%;
+      padding: 4px 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      border-bottom: 1px solid var(--border);
+      scrollbar-width: thin;
+    }
+
+    .doc-tab {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+      max-width: 180px;
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 4px 8px;
+      white-space: nowrap;
+    }
+
+    .doc-tab:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .doc-tab.active {
       color: var(--text);
       background: rgba(255, 255, 255, 0.55);
       font-weight: 500;
       box-shadow: inset 3px 0 0 var(--accent);
     }
 
-    .doc-recent-entry-label {
+    .doc-tab.editing .doc-tab-icon {
+      color: var(--accent);
+    }
+
+    .doc-tab.temporary {
+      font-style: italic;
+    }
+
+    .doc-tab-icon {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .doc-tab-label {
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      /* 斜体字形向右倾斜，预留少量空间避免尾部被裁切/贴近关闭按钮 */
+      padding-right: 3px;
+    }
+
+    .doc-tab-close {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0;
+      line-height: 1;
+    }
+
+    .doc-tab-close:hover {
+      background: rgba(255, 0, 0, 0.12);
+      color: #c0392b;
+    }
+
+    .doc-tab-close-icon {
+      width: 12px;
+      height: 12px;
     }
 
 
@@ -501,19 +597,9 @@
       min-width: 0;
       flex: 1;
       display: flex;
-      flex-direction: column;
-      gap: 2px;
-      height: 54px;
-      justify-content: space-between;
-    }
-
-
-    .doc-preview-path {
-      font-size: 12px;
-      color: var(--text2);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
     }
 
 
@@ -522,8 +608,8 @@
       color: var(--text2);
       white-space: nowrap;
       overflow: hidden;
-      margin-top: 6px;
       text-overflow: ellipsis;
+      flex-shrink: 0;
     }
 
 
@@ -545,7 +631,6 @@
     }
 
 
-    #doc-clear-selection-btn,
     #doc-refresh-btn,
     #doc-edit-btn {
       border: 1px solid var(--border);
@@ -556,10 +641,4 @@
       height: 30px;
       cursor: pointer;
       flex-shrink: 0;
-    }
-
-
-    #doc-clear-selection-btn:disabled {
-      opacity: 0.45;
-      cursor: default;
     }

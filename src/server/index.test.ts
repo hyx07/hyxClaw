@@ -274,40 +274,9 @@ describe("server", () => {
   it("returns app state endpoint", async () => {
     const res = await fetch(`http://127.0.0.1:${port}/api/app-state`);
     expect(res.status).toBe(200);
-    const data = await res.json() as { lastActiveSessionId?: string; recentPreviewFiles?: string[] };
+    const data = await res.json() as { lastActiveSessionId?: string; recentModels?: Array<{ provider: string; model: string }> };
     expect(typeof data).toBe("object");
-    expect(data.recentPreviewFiles).toEqual([]);
-  });
-
-  it("records only recent preview files from allowed document roots", async () => {
-    const record = async (filePath: string) => {
-      const res = await fetch(`http://127.0.0.1:${port}/api/app-state/recent-preview-files`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: filePath }),
-      });
-      expect(res.status).toBe(200);
-    };
-
-    await record("inputs/notes.md");
-    await record("knowledge_base/example/a.md");
-    await record("knowledge_base/example/b.md");
-    await record("knowledge_base/example/index.md");
-
-    const appStateRes = await fetch(`http://127.0.0.1:${port}/api/app-state`);
-    const appState = await appStateRes.json() as { recentPreviewFiles: string[] };
-    expect(appState.recentPreviewFiles).toEqual([
-      "knowledge_base/example/index.md",
-      "knowledge_base/example/b.md",
-      "knowledge_base/example/a.md",
-    ]);
-
-    const invalidRes = await fetch(`http://127.0.0.1:${port}/api/app-state/recent-preview-files`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: "files/commands.md" }),
-    });
-    expect(invalidRes.status).toBe(400);
+    expect(data.recentModels).toEqual([]);
   });
 
   it("returns knowledge overview", async () => {

@@ -1,9 +1,8 @@
 import { getAvailableProviders, type Config, type ProviderName } from "../../config/index.js";
-import { loadAppState, recordRecentPreviewFile, removeRecentPreviewFile } from "../../app-state/index.js";
-import { readDocBrowserFile } from "../services/documents.js";
+import { loadAppState } from "../../app-state/index.js";
 import { flushUsage, getDailyStats, getUsageStats } from "../services/usage-store.js";
 import type { RouteHandler } from "../http-types.js";
-import { readJsonBody, sendJson } from "../http-types.js";
+import { sendJson } from "../http-types.js";
 
 export const handleSystemRoutes: RouteHandler = async ({ req, res, url, config, gitSyncEnabled }) => {
   if (url.pathname === "/health" && req.method === "GET") {
@@ -26,26 +25,6 @@ export const handleSystemRoutes: RouteHandler = async ({ req, res, url, config, 
   }
   if (url.pathname === "/api/app-state" && req.method === "GET") {
     sendJson(res, await loadAppState());
-    return true;
-  }
-  if (url.pathname === "/api/app-state/recent-preview-files" && req.method === "POST") {
-    try {
-      const data = await readJsonBody<{ path?: string }>(req);
-      if (!data.path) throw new Error("Missing document path");
-      const document = await readDocBrowserFile(data.path);
-      sendJson(res, await recordRecentPreviewFile(document.path));
-    } catch (error) {
-      sendJson(res, { error: (error as Error).message || "Failed to update app state" }, 400);
-    }
-    return true;
-  }
-  if (url.pathname === "/api/app-state/recent-preview-files" && req.method === "DELETE") {
-    const filePath = url.searchParams.get("path");
-    if (!filePath) {
-      sendJson(res, { error: "Missing document path" }, 400);
-    } else {
-      sendJson(res, await removeRecentPreviewFile(filePath));
-    }
     return true;
   }
   if (url.pathname === "/api/usage/flush" && req.method === "POST") {

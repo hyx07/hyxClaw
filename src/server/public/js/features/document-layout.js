@@ -51,7 +51,7 @@ export function initDocVerticalResize() {
     const browserHeight = browser.getBoundingClientRect().height;
     const startHeight = columns.getBoundingClientRect().height;
     const onMove = (moveEvent) => {
-      const height = Math.min(browserHeight - 80, Math.max(30, startHeight + moveEvent.clientY - startY));
+      const height = Math.min(browserHeight - 80, Math.max(0, startHeight + moveEvent.clientY - startY));
       columns.style.flex = `0 0 ${height}px`;
       preview.style.flex = "1 1 0";
     };
@@ -73,10 +73,9 @@ function loadDocColumnWidths() {
     const stored = JSON.parse(localStorage.getItem("docColumnWidths") || "{}");
     return {
       first: Number.isFinite(stored.first) ? stored.first : null,
-      second: Number.isFinite(stored.second) ? stored.second : null,
     };
   } catch {
-    return { first: null, second: null };
+    return { first: null };
   }
 }
 
@@ -85,23 +84,17 @@ function clamp(value, min, max) {
 }
 
 function applyDocColumnWidths(columns) {
-  const availableWidth = columns.clientWidth - DOC_COLUMN_RESIZER_WIDTH * 2;
-  const minimumWidth = DOC_COLUMN_MIN_WIDTH * 3;
+  const availableWidth = columns.clientWidth - DOC_COLUMN_RESIZER_WIDTH;
+  const minimumWidth = DOC_COLUMN_MIN_WIDTH * 2;
   if (availableWidth < minimumWidth) return;
 
-  const defaultWidth = availableWidth / 3;
+  const defaultWidth = availableWidth / 2;
   const first = clamp(
     docColumnWidths.first ?? defaultWidth,
     DOC_COLUMN_MIN_WIDTH,
-    availableWidth - DOC_COLUMN_MIN_WIDTH * 2,
-  );
-  const second = clamp(
-    docColumnWidths.second ?? defaultWidth,
-    DOC_COLUMN_MIN_WIDTH,
-    availableWidth - first - DOC_COLUMN_MIN_WIDTH,
+    availableWidth - DOC_COLUMN_MIN_WIDTH,
   );
   columns.style.setProperty("--doc-column-1-width", `${first}px`);
-  columns.style.setProperty("--doc-column-2-width", `${second}px`);
 }
 
 function saveDocColumnWidths() {
@@ -127,21 +120,15 @@ export function initDocColumnResize() {
       const index = Number(resizer.dataset.columnResizer);
       const columnElements = columns.querySelectorAll(".doc-column");
       const widths = Array.from(columnElements, (column) => column.getBoundingClientRect().width);
-      if (widths.length !== 3 || !Number.isInteger(index)) return;
+      if (widths.length !== 2 || index !== 0) return;
 
       const startX = event.clientX;
       resizer.classList.add("dragging");
       const onMove = (moveEvent) => {
         const delta = moveEvent.clientX - startX;
-        if (index === 0) {
-          const combinedWidth = widths[0] + widths[1];
-          const first = clamp(widths[0] + delta, DOC_COLUMN_MIN_WIDTH, combinedWidth - DOC_COLUMN_MIN_WIDTH);
-          docColumnWidths = { first, second: combinedWidth - first };
-        } else {
-          const combinedWidth = widths[1] + widths[2];
-          const second = clamp(widths[1] + delta, DOC_COLUMN_MIN_WIDTH, combinedWidth - DOC_COLUMN_MIN_WIDTH);
-          docColumnWidths = { ...docColumnWidths, second };
-        }
+        const combinedWidth = widths[0] + widths[1];
+        const first = clamp(widths[0] + delta, DOC_COLUMN_MIN_WIDTH, combinedWidth - DOC_COLUMN_MIN_WIDTH);
+        docColumnWidths = { first };
         applyDocColumnWidths(columns);
       };
       const onUp = () => {

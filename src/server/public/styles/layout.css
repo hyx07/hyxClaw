@@ -1,4 +1,3 @@
-    #doc-clear-selection-btn:hover:not(:disabled),
     #doc-refresh-btn:hover:not(:disabled),
     #doc-edit-btn:hover:not(:disabled) {
       border-color: var(--border-strong);
