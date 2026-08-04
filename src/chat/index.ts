@@ -15,6 +15,7 @@ import type { CompletionOptions, CompletionResponse, StreamFinish } from "../llm
 import type { Config, ProviderName } from "../config/index.js";
 import { getProviderCredential, resolveModelThinking } from "../config/index.js";
 import { getPaths } from "../config/paths.js";
+import { recordRecentModel } from "../app-state/index.js";
 import { getTools } from "../tools/registry.js";
 import { executeTool } from "../tools/executor.js";
 import type { ToolDefinition } from "../tools/types.js";
@@ -162,6 +163,12 @@ async function persistSessionRuntimeMeta(sessionId: string, providerName: Provid
   session.lastThinkingEffort = thinkingEffort;
   session.updatedAt = new Date().toISOString();
   await saveSession(session);
+  // 与实际使用同步：每次 LLM 请求结束后记录最近使用的模型，失败不影响主流程
+  try {
+    await recordRecentModel(providerName, model);
+  } catch (error) {
+    logger.warn(`Failed to record recent model: ${(error as Error).message}`);
+  }
 }
 
 function buildUsageRecord(

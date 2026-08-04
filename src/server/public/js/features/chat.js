@@ -381,6 +381,7 @@ export function createChatFeature({
     state.typingPlaceholder = null;
     permissions.clearForSession(message.sessionId);
     void actions.refreshSessionSummary(message.sessionId);
+    void actions.refreshRecentModels();
     updateCurrentCache();
     syncCompactButton();
   }
@@ -400,6 +401,7 @@ export function createChatFeature({
     if (message.contextUsage || message.usage) state.latestUsage = message.contextUsage || message.usage;
     updateTokenDisplay(state.latestUsage);
     void actions.refreshSessionSummary(message.sessionId);
+    void actions.refreshRecentModels();
     updateCurrentCache();
     syncCompactButton();
   }
@@ -438,6 +440,7 @@ export function createChatFeature({
     }
     if (message.type === "chatEnd" || message.type === "chatCancelled") {
       void actions.refreshSessionSummary(message.sessionId);
+      void actions.refreshRecentModels();
     }
   }
 

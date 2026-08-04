@@ -4,6 +4,7 @@ export function createAppState() {
     sessions: [],
     lastActiveSessionId: null,
     recentPreviewFiles: [],
+    recentModels: [],
     sessionCache: new Map(),
     currentSessionMessageCount: 0,
     currentMessages: [],
@@ -45,7 +46,6 @@ export function createAppState() {
     sendBtn: null,
     tokenDisplayEl: null,
     compactBtnEl: null,
-    providerSelectEl: null,
     modelSelectEl: null,
     thinkingEffortSelectEl: null,
     pendingImagesEl: null,
@@ -58,7 +58,6 @@ export function clearChatElements(state) {
   state.sendBtn = null;
   state.tokenDisplayEl = null;
   state.compactBtnEl = null;
-  state.providerSelectEl = null;
   state.modelSelectEl = null;
   state.thinkingEffortSelectEl = null;
   state.pendingImagesEl = null;

@@ -1,6 +1,7 @@
 import { escHtml } from "./format.js";
 import { clearChatElements } from "./state.js";
 import { initGitSync } from "./features/git-sync.js";
+import { requestJson } from "./api.js";
 
 const WORKSPACE_MODE_STORAGE_KEY = "hyxclaw-workspace-mode";
 
@@ -74,7 +75,6 @@ export function createChatView({ state, documents, pickers, permissions, actions
                   <span id="token-display" title="当前上下文长度"></span>
                 </div>
                 <div class="composer-right">
-                  <div class="toolbar-menu-control"><select id="provider-select" hidden></select><button id="provider-select-trigger" class="toolbar-select" type="button" title="Provider" aria-label="Provider" aria-haspopup="listbox" aria-expanded="false" aria-controls="provider-select-menu"><span class="toolbar-select-value"></span><i data-lucide="chevron-down"></i></button><div id="provider-select-menu" class="toolbar-select-menu" role="listbox" aria-label="Provider"></div></div>
                   <div class="toolbar-menu-control"><select id="model-select" hidden></select><button id="model-select-trigger" class="toolbar-select" type="button" title="Model" aria-label="Model" aria-haspopup="listbox" aria-expanded="false" aria-controls="model-select-menu"><span class="toolbar-select-value"></span><i data-lucide="chevron-down"></i></button><div id="model-select-menu" class="toolbar-select-menu" role="listbox" aria-label="Model"></div></div>
                   <div class="toolbar-menu-control"><select id="thinking-effort-select" hidden></select><button id="thinking-effort-select-trigger" class="toolbar-select" type="button" title="Thinking" aria-label="Thinking" aria-haspopup="listbox" aria-expanded="false" aria-controls="thinking-effort-select-menu"><span class="toolbar-select-value"></span><i data-lucide="chevron-down"></i></button><div id="thinking-effort-select-menu" class="toolbar-select-menu" role="listbox" aria-label="Thinking"></div></div>
                   <button id="send-btn" title="发送" aria-label="发送" disabled><i data-lucide="arrow-up"></i></button>
@@ -177,7 +177,6 @@ export function createChatView({ state, documents, pickers, permissions, actions
     state.sendBtn = document.getElementById("send-btn");
     state.tokenDisplayEl = document.getElementById("token-display");
     state.compactBtnEl = document.getElementById("compact-btn");
-    state.providerSelectEl = document.getElementById("provider-select");
     state.modelSelectEl = document.getElementById("model-select");
     state.thinkingEffortSelectEl = document.getElementById("thinking-effort-select");
     state.pendingImagesEl = document.getElementById("pending-images");
@@ -186,13 +185,10 @@ export function createChatView({ state, documents, pickers, permissions, actions
   function bindComposerEvents() {
     if (state.sendBtn) state.sendBtn.addEventListener("click", actions.sendMessage);
     if (state.compactBtnEl) state.compactBtnEl.addEventListener("click", actions.compactCurrentSession);
-    bindToolbarMenu(state.providerSelectEl, () => {
-      state.currentProvider = state.providerSelectEl.value;
-      state.currentModel = getModelsForProvider(state.currentProvider)[0]?.id || state.defaultModel;
-      syncModelControls();
-    });
     bindToolbarMenu(state.modelSelectEl, () => {
-      state.currentModel = state.modelSelectEl.value;
+      const [provider, model] = state.modelSelectEl.value.split("::");
+      if (provider) state.currentProvider = provider;
+      state.currentModel = model || state.defaultModel;
       syncThinkingEffortSelect();
     });
     bindToolbarMenu(state.thinkingEffortSelectEl, () => {
@@ -217,36 +213,27 @@ export function createChatView({ state, documents, pickers, permissions, actions
   }
 
   function syncModelControls() {
-    if (!state.providerSelectEl) return;
-    syncProviderSelect();
-    state.providerSelectEl.value = state.currentProvider;
-    renderToolbarMenu(state.providerSelectEl);
+    if (!state.modelSelectEl) return;
     syncModelSelect();
-    state.modelSelectEl.value = state.currentModel;
+    state.modelSelectEl.value = `${state.currentProvider}::${state.currentModel}`;
     renderToolbarMenu(state.modelSelectEl);
     syncThinkingEffortSelect();
-  }
-
-  function syncProviderSelect() {
-    state.providerSelectEl.innerHTML = "";
-    const providers = state.availableProviders.length ? state.availableProviders : [state.defaultProvider];
-    const normalized = providers.includes(state.currentProvider) ? providers : [...providers, state.currentProvider];
-    for (const provider of normalized) {
-      const option = document.createElement("option");
-      option.value = provider;
-      option.textContent = provider;
-      state.providerSelectEl.appendChild(option);
-    }
   }
 
   function syncModelSelect() {
     if (!state.modelSelectEl) return;
     state.modelSelectEl.innerHTML = "";
-    const models = getModelsForProvider(state.currentProvider);
+    const provider = state.currentProvider;
     const fallback = state.currentModel || state.defaultModel;
-    for (const model of (models.length ? models : [{ id: fallback, label: fallback }])) {
+    let models = getModelsForProvider(provider);
+    // 保证当前模型始终在列表中，避免 select 匹配失败导致按钮空白
+    if (!models.some((model) => model.id === fallback)) {
+      models = [...models, { id: fallback, label: fallback }];
+    }
+    for (const model of models) {
       const option = document.createElement("option");
-      option.value = model.id;
+      option.value = `${provider}::${model.id}`;
+      option.dataset.provider = provider;
       option.textContent = model.label || model.name || model.id;
       state.modelSelectEl.appendChild(option);
     }
@@ -291,6 +278,17 @@ export function createChatView({ state, documents, pickers, permissions, actions
     menu.addEventListener("click", (event) => {
       const option = event.target.closest(".toolbar-select-option");
       if (!option) return;
+      if (selectEl.id === "model-select") {
+        // Recent models 可能来自其他 provider，不能依赖 select.value 匹配，
+        // 直接更新状态并重建控件
+        const [provider, model] = option.dataset.value.split("::");
+        if (provider) state.currentProvider = provider;
+        state.currentModel = model || state.defaultModel;
+        syncModelControls();
+        setToolbarMenuOpen(control, false);
+        trigger.focus();
+        return;
+      }
       selectEl.value = option.dataset.value;
       selectEl.dispatchEvent(new Event("change"));
       setToolbarMenuOpen(control, false);
@@ -311,6 +309,7 @@ export function createChatView({ state, documents, pickers, permissions, actions
   }
 
   function renderToolbarMenu(selectEl) {
+    if (selectEl?.id === "model-select") return renderModelToolbarMenu(selectEl);
     const control = selectEl?.closest(".toolbar-menu-control");
     const trigger = control?.querySelector(".toolbar-select");
     const valueEl = trigger?.querySelector(".toolbar-select-value");
@@ -332,11 +331,170 @@ export function createChatView({ state, documents, pickers, permissions, actions
     }));
   }
 
+  function renderModelToolbarMenu(selectEl) {
+    const control = selectEl?.closest(".toolbar-menu-control");
+    const trigger = control?.querySelector(".toolbar-select");
+    const valueEl = trigger?.querySelector(".toolbar-select-value");
+    const menu = control?.querySelector(".toolbar-select-menu");
+    if (!control || !trigger || !valueEl || !menu) return;
+
+    const selected = selectEl.selectedOptions[0];
+    valueEl.textContent = selected?.textContent || "";
+    trigger.title = selected ? `${selected.dataset.provider || ""} · ${selected.textContent}` : "Model";
+
+    const fragments = [];
+    fragments.push(createMenuGroupTitle("Providers"));
+    const providers = state.availableProviders.length ? state.availableProviders : [state.defaultProvider];
+    const normalized = providers.includes(state.currentProvider) ? providers : [...providers, state.currentProvider];
+    for (const provider of normalized) {
+      const models = getModelsForProvider(provider);
+      const row = document.createElement("div");
+      row.className = "toolbar-provider-row";
+      const label = document.createElement("span");
+      label.textContent = provider;
+      const arrow = document.createElement("i");
+      arrow.dataset.lucide = "chevron-right";
+      arrow.className = "toolbar-provider-arrow";
+      row.append(label, arrow);
+      row.addEventListener("mouseenter", () => openProviderFlyout(control, row, provider, models));
+      row.addEventListener("mouseleave", () => scheduleCloseProviderFlyout(control));
+      fragments.push(row);
+    }
+
+    const recent = (state.recentModels || [])
+      .filter((entry) => !(entry.provider === state.currentProvider && entry.model === state.currentModel))
+      .slice(0, 2);
+    if (recent.length) {
+      fragments.push(createMenuGroupTitle("Recent Models"));
+      for (const entry of recent) {
+        const modelInfo = getModelsForProvider(entry.provider).find((model) => model.id === entry.model);
+        const label = modelInfo?.label || modelInfo?.name || entry.model;
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "toolbar-select-option";
+        item.dataset.value = `${entry.provider}::${entry.model}`;
+        item.dataset.provider = entry.provider;
+        item.setAttribute("role", "option");
+        item.textContent = label;
+        item.title = `${entry.provider} · ${label}`;
+        fragments.push(item);
+      }
+    }
+
+    menu.replaceChildren(...fragments);
+    closeProviderFlyout(control);
+    window.lucide?.createIcons({ root: control });
+  }
+
+  function createMenuGroupTitle(text) {
+    const title = document.createElement("div");
+    title.className = "toolbar-menu-group-title";
+    title.textContent = text;
+    return title;
+  }
+
+  function getProviderFlyout(control) {
+    let flyout = control.querySelector(".toolbar-provider-flyout");
+    if (flyout) return flyout;
+    flyout = document.createElement("div");
+    flyout.className = "toolbar-provider-flyout";
+    flyout.setAttribute("role", "listbox");
+    flyout.addEventListener("click", (event) => {
+      const option = event.target.closest(".toolbar-select-option");
+      if (!option) return;
+      // 子菜单模型可能属于非当前 provider，select 的 options 里没有对应值，
+      // 直接更新状态并重建控件
+      const [provider, model] = option.dataset.value.split("::");
+      if (provider) state.currentProvider = provider;
+      state.currentModel = model || state.defaultModel;
+      syncModelControls();
+      setToolbarMenuOpen(control, false);
+      control.querySelector(".toolbar-select")?.focus();
+    });
+    flyout.addEventListener("mouseenter", () => cancelCloseProviderFlyout(control));
+    flyout.addEventListener("mouseleave", () => scheduleCloseProviderFlyout(control));
+    control.appendChild(flyout);
+    return flyout;
+  }
+
+  function openProviderFlyout(control, row, provider, models) {
+    cancelCloseProviderFlyout(control);
+    const flyout = getProviderFlyout(control);
+    flyout.replaceChildren(...models.map((model) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "toolbar-select-option";
+      item.dataset.value = `${provider}::${model.id}`;
+      item.dataset.provider = provider;
+      item.setAttribute("role", "option");
+      item.textContent = model.label || model.name || model.id;
+      if (provider === state.currentProvider && model.id === state.currentModel) {
+        item.classList.add("selected");
+        item.setAttribute("aria-selected", "true");
+      }
+      return item;
+    }));
+
+    const menu = control.querySelector(".toolbar-select-menu");
+    const menuRect = menu.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const controlRect = control.getBoundingClientRect();
+    const flyoutWidth = Math.min(190, window.innerWidth - 24);
+    // 贴住菜单右边缘（-1 覆盖菜单边框，视觉无缝，同设置按钮 left:100% 效果）
+    let left = menuRect.right - controlRect.left - 1;
+    if (left + flyoutWidth > window.innerWidth - 8) {
+      left = menuRect.left - controlRect.left - flyoutWidth + 1;
+    }
+    flyout.style.left = `${Math.max(4, left)}px`;
+    // 与 hover 行顶部齐平
+    flyout.style.top = `${rowRect.top - controlRect.top}px`;
+    flyout.style.width = `${flyoutWidth}px`;
+    flyout.classList.add("open");
+    // 底部越界时上移（flyout 需先显示才能测量高度）
+    const flyoutRect = flyout.getBoundingClientRect();
+    if (flyoutRect.bottom > window.innerHeight - 8) {
+      const shift = flyoutRect.bottom - window.innerHeight + 8;
+      flyout.style.top = `${Math.max(4, flyoutRect.top - controlRect.top - shift)}px`;
+    }
+  }
+
+  function scheduleCloseProviderFlyout(control) {
+    cancelCloseProviderFlyout(control);
+    const timer = window.setTimeout(() => closeProviderFlyout(control), 200);
+    control.dataset.flyoutTimer = String(timer);
+  }
+
+  function cancelCloseProviderFlyout(control) {
+    if (control.dataset.flyoutTimer) {
+      window.clearTimeout(Number(control.dataset.flyoutTimer));
+      delete control.dataset.flyoutTimer;
+    }
+  }
+
+  function closeProviderFlyout(control) {
+    cancelCloseProviderFlyout(control);
+    control.querySelector(".toolbar-provider-flyout")?.classList.remove("open");
+  }
+
+  async function refreshRecentModels() {
+    try {
+      const { data } = await requestJson("/api/app-state");
+      if (Array.isArray(data?.recentModels)) {
+        state.recentModels = data.recentModels;
+        if (state.modelSelectEl) renderToolbarMenu(state.modelSelectEl);
+      }
+    } catch {
+      // 静默失败，不影响主流程
+    }
+  }
+
   function setToolbarMenuOpen(control, open, focusLast = false) {
     if (open) {
       document.querySelectorAll(".toolbar-menu-control.open").forEach((openControl) => {
         if (openControl !== control) setToolbarMenuOpen(openControl, false);
       });
+    } else {
+      closeProviderFlyout(control);
     }
     control.classList.toggle("open", open);
     control.querySelector(".toolbar-select")?.setAttribute("aria-expanded", String(open));
@@ -440,5 +598,6 @@ export function createChatView({ state, documents, pickers, permissions, actions
     autoResizeInput,
     renderChatArea,
     syncModelControls,
+    refreshRecentModels,
   };
 }
