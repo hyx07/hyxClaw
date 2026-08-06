@@ -263,15 +263,13 @@ export function createSessionFeature({ state, socket, renderer, pickers, permiss
     state.sessions = state.sessions.filter((session) => session.id !== id);
     state.sessionCache.delete(id);
     if (state.currentSessionId === id) {
-      state.currentSessionId = state.sessions[0]?.id || null;
-      if (state.currentSessionId) {
-        if (!restoreSessionState(state.currentSessionId)) {
-          state.latestUsage = null;
-          state.currentSessionMessageCount = 0;
-          state.currentMessages = [];
-          actions.renderChatArea();
-        }
-        joinSession(state.currentSessionId);
+      // 当前会话被删除：先断开 currentSessionId，再走与点击切换一致的 selectSession
+      // 路径，确保缓存恢复、排队事件重放（replaySessionEvents）、运行时状态重置等
+      // 逻辑完整执行，避免残留生成状态（typing-dots 永久跳动）。
+      state.currentSessionId = null;
+      const next = state.sessions[0]?.id || null;
+      if (next) {
+        selectSession(next);
       } else {
         state.latestUsage = null;
         state.currentSessionMessageCount = 0;
