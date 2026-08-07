@@ -27,6 +27,9 @@ let docThirdActivePath = null;
 let openTabs = loadOpenTabs();
 let activeTabPath = openTabs.length ? openTabs[0].path : null;
 
+// 发送消息时是否附带当前浏览文件路径与选中文本（跨会话保留，默认开启）
+let attachDocContext = loadAttachDocContext();
+
 // 当前活动标签的内容状态
 let docPreviewContent = "";
 let docPreviewSupported = true;
@@ -82,6 +85,14 @@ function saveOpenTabs() {
 
 function getActiveTabEditMode() {
   return openTabs.find((tab) => tab.path === activeTabPath)?.editMode ?? false;
+}
+
+function loadAttachDocContext() {
+  try {
+    return localStorage.getItem("docAttachContext") !== "false";
+  } catch {
+    return true;
+  }
 }
 
 function getDocSelectionStatusText() {
@@ -261,10 +272,26 @@ export function getSelectedPreviewPayload() {
 }
 
 export function getPreviewContextPayload() {
+  // 关闭附带时返回空对象，chat.js 展开后不会携带任何文件上下文字段
+  if (!attachDocContext) return {};
   return {
     previewPath: activeTabPath || undefined,
     selectedPreviewText: getSelectedPreviewPayload(),
   };
+}
+
+export function getAttachDocContext() {
+  return attachDocContext;
+}
+
+export function toggleAttachDocContext() {
+  attachDocContext = !attachDocContext;
+  try {
+    localStorage.setItem("docAttachContext", String(attachDocContext));
+  } catch {
+    // ignore
+  }
+  return attachDocContext;
 }
 
 export function getOpenTabPaths() {

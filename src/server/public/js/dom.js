@@ -72,6 +72,9 @@ export function createChatView({ state, documents, pickers, permissions, actions
                   <button id="compact-btn" class="composer-action-btn" title="压缩会话" aria-label="压缩会话" disabled>
                     <i data-lucide="archive"></i>
                   </button>
+                  <button id="doc-context-toggle" class="composer-action-btn" type="button" title="${documents.getAttachDocContext() ? "发送时附带当前浏览文件路径与选中文本（点击关闭）" : "已关闭：发送时不附带浏览文件路径与选中文本（点击开启）"}" aria-label="附带浏览文件上下文" aria-pressed="${documents.getAttachDocContext()}">
+                    <i data-lucide="${documents.getAttachDocContext() ? "file" : "eye-off"}"></i>
+                  </button>
                   <span id="token-display" title="当前上下文长度"></span>
                 </div>
                 <div class="composer-right">
@@ -185,6 +188,18 @@ export function createChatView({ state, documents, pickers, permissions, actions
   function bindComposerEvents() {
     if (state.sendBtn) state.sendBtn.addEventListener("click", actions.sendMessage);
     if (state.compactBtnEl) state.compactBtnEl.addEventListener("click", actions.compactCurrentSession);
+    const docContextBtn = document.getElementById("doc-context-toggle");
+    if (docContextBtn) {
+      docContextBtn.addEventListener("click", () => {
+        const enabled = documents.toggleAttachDocContext();
+        docContextBtn.setAttribute("aria-pressed", String(enabled));
+        docContextBtn.innerHTML = `<i data-lucide="${enabled ? "file" : "eye-off"}"></i>`;
+        docContextBtn.title = enabled
+          ? "发送时附带当前浏览文件路径与选中文本（点击关闭）"
+          : "已关闭：发送时不附带浏览文件路径与选中文本（点击开启）";
+        window.lucide?.createIcons();
+      });
+    }
     bindToolbarMenu(state.modelSelectEl, () => {
       const [provider, model] = state.modelSelectEl.value.split("::");
       if (provider) state.currentProvider = provider;

@@ -764,10 +764,6 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
   color: var(--text1);
   background: var(--hover-bg);
 }
-.composer-action-btn.active {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
 .composer-action-btn:disabled {
   opacity: 0.38;
   cursor: not-allowed;
