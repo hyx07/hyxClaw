@@ -168,7 +168,12 @@ async function fetchDocTree(path) {
 async function fetchDocContent(path) {
   const res = await fetch(`/api/documents/content?path=${encodeURIComponent(path)}`);
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "读取文件失败");
+  if (!res.ok) {
+    const error = new Error(data.error || "读取文件失败");
+    // 404 表示文件不存在/已被删除，调用方可据此静默处理而非弹错误提示
+    error.notFound = res.status === 404;
+    throw error;
+  }
   return data;
 }
 
@@ -390,6 +395,17 @@ async function loadActiveTabContent() {
     updateDocSelectionStatus();
     return true;
   } catch (error) {
+    if (error && error.notFound) {
+      // 文件已被删除（如模型执行 delete 工具后刷新）：静默失效，
+      // 由调用方（refreshDocBrowser 等）关闭对应标签，不弹出错误提示。
+      docPreviewContent = "";
+      docPreviewSupported = false;
+      docPreviewKind = "unsupported";
+      clearPreviewSelection();
+      updateDocPreviewPanel();
+      updateDocSelectionStatus();
+      return false;
+    }
     reportError((error && error.message) ? error.message : "读取文件失败");
     return false;
   }

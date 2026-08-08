@@ -24,6 +24,12 @@ export const handleContentRoutes: RouteHandler = async ({ req, res, url, config 
     try {
       sendJson(res, await readDocBrowserFile(url.searchParams.get("path") ?? ""));
     } catch (error) {
+      // 文件刚被删除（例如模型执行了 delete 工具）：返回 404 与友好提示，
+      // 前端据此静默关闭失效的预览标签，而不是把原始 ENOENT 抛给用户。
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        sendJson(res, { error: "文件不存在或已被删除" }, 404);
+        return true;
+      }
       sendJson(res, { error: (error as Error).message || "Failed to load document" }, 400);
     }
     return true;

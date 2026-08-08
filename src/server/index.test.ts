@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { WebSocket } from "ws";
 import { startServer, stopServer, buildAugmentedUserContent, parseCommandsMarkdown } from "./index.js";
@@ -325,6 +325,19 @@ describe("server", () => {
     expect(data.path).toBe("inputs/notes.md");
     expect(data.supported).toBe(true);
     expect(data.content).toContain("# Notes");
+  });
+
+  it("returns 404 with a friendly message when the document was deleted", async () => {
+    // 模拟模型执行 delete 工具后前端刷新：文件已不存在，不应返回原始 ENOENT
+    const doomedPath = path.join(testDir, "inputs", "doomed.md");
+    await writeFile(doomedPath, "# Doomed\n", "utf-8");
+    await unlink(doomedPath);
+
+    const res = await fetch(`http://127.0.0.1:${port}/api/documents/content?path=inputs/doomed.md`);
+    expect(res.status).toBe(404);
+    const data = await res.json() as { error: string };
+    expect(data.error).toBe("文件不存在或已被删除");
+    expect(data.error).not.toContain("ENOENT");
   });
 
   it("loads document content for image files", async () => {
