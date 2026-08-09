@@ -1,6 +1,6 @@
 import { requestJson } from "../api.js";
 import { escHtml } from "../format.js";
-import { getOpenTabPaths } from "./documents.js";
+import { getOpenTabPaths, getRecentOpenedPaths } from "./documents.js";
 
 export function createPickerFeature({ state, autoResizeInput, updateSendAvailability }) {
   let filePickerFiles = [];
@@ -122,7 +122,8 @@ export function createPickerFeature({ state, autoResizeInput, updateSendAvailabi
       const query = match[1];
       const { data } = await requestJson(`/api/files?q=${encodeURIComponent(query)}`);
       const normalizedQuery = query.toLocaleLowerCase();
-      const recentFiles = getOpenTabPaths()
+      // 置顶：最近打开过的文件（最多 3 个，MRU 顺序）+ 当前打开的标签页，去重
+      const recentFiles = [...new Set([...getRecentOpenedPaths(), ...getOpenTabPaths()])]
         .filter((filePath) => filePath.toLocaleLowerCase().includes(normalizedQuery))
         .map((filePath) => ({ path: filePath }));
       const recentPaths = new Set(recentFiles.map((file) => file.path));

@@ -15,6 +15,8 @@ export function configureDocuments(options) {
 const DOC_BROWSER_ROOTS = ["knowledge_base", "inputs"];
 const DOC_ROOT_TAB_KEY = "docRootPath";
 const DOC_TABS_KEY = "docOpenTabs";
+const DOC_RECENT_KEY = "docRecentOpened";
+const MAX_RECENT_OPENED = 3;
 
 let docRootPath = loadDocRootPath();
 let docSecondEntries = [];
@@ -26,6 +28,9 @@ let docThirdActivePath = null;
 // 打开的标签页（跨会话/刷新保留）：{ path, editMode }
 let openTabs = loadOpenTabs();
 let activeTabPath = openTabs.length ? openTabs[0].path : null;
+
+// 最近打开过的文件路径（最多 3 个，MRU 顺序，跨会话/刷新保留），用于 @ 引用时置顶
+let recentOpenedPaths = loadRecentOpened();
 
 // 发送消息时是否附带当前浏览文件路径与选中文本（跨会话保留，默认开启）
 let attachDocContext = loadAttachDocContext();
@@ -81,6 +86,35 @@ function saveOpenTabs() {
   } catch {
     // ignore
   }
+}
+
+function loadRecentOpened() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(DOC_RECENT_KEY) || "[]");
+    if (!Array.isArray(stored)) return [];
+    return stored
+      .filter((path) => typeof path === "string" && path)
+      .slice(0, MAX_RECENT_OPENED);
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentOpened() {
+  try {
+    localStorage.setItem(DOC_RECENT_KEY, JSON.stringify(recentOpenedPaths));
+  } catch {
+    // ignore
+  }
+}
+
+function recordRecentOpened(path) {
+  recentOpenedPaths = [path, ...recentOpenedPaths.filter((item) => item !== path)].slice(0, MAX_RECENT_OPENED);
+  saveRecentOpened();
+}
+
+export function getRecentOpenedPaths() {
+  return [...recentOpenedPaths];
 }
 
 function getActiveTabEditMode() {
@@ -391,6 +425,7 @@ async function loadActiveTabContent() {
     docPreviewSupported = data.supported !== false;
     docPreviewKind = data.kind || (docPreviewSupported ? "text" : "unsupported");
     clearPreviewSelection();
+    recordRecentOpened(activeTabPath);
     updateDocPreviewPanel();
     updateDocSelectionStatus();
     return true;
