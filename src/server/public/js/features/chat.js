@@ -2,6 +2,8 @@ import { requestJson, jsonRequest } from "../api.js";
 import { escHtml } from "../format.js";
 import { buildUserMessageContent, extractUserText } from "../render/messages.js";
 
+const ROUND_ANCHOR_TOP_OFFSET = 22;
+
 export function createChatFeature({
   state,
   socket,
@@ -19,14 +21,17 @@ export function createChatFeature({
     if ((!content && !state.pendingImages.length) || !state.currentSessionId) return;
     const images = state.pendingImages.map((image) => ({ url: image.url, path: image.path }));
     setSendDisabled(true);
-    state.pendingUserBubble = renderer.appendMessage("user", buildUserMessageContent(content, images));
+    state.pendingUserBubble = renderer.appendMessage("user", buildUserMessageContent(content, images), undefined, { scroll: false });
     if (state.pendingUserBubble) {
       const msgEl = state.pendingUserBubble.closest(".message");
       if (msgEl) {
+        state.currentRoundAnchor = msgEl;
         msgEl.classList.add("message-new");
         msgEl.addEventListener("animationend", () => msgEl.classList.remove("message-new"), { once: true });
       }
     }
+    state.userScrolledUp = false;
+    scrollRoundAnchorToTop();
     state.currentSessionMessageCount++;
     state.pendingSubmission = { content, images };
     socket.send({
@@ -120,6 +125,8 @@ export function createChatFeature({
   async function doCompact() {
     if (!state.currentSessionId || state.isStreaming || state.isCompacting || state.currentSessionMessageCount < 2) return;
     closeCompactModal(true);
+    state.currentRoundAnchor = null;
+    state.messagesEl?.classList.remove("round-anchor-active");
     state.isCompacting = true;
     syncCompactButton();
     document.getElementById("compact-confirm-btn").disabled = true;
@@ -185,6 +192,15 @@ export function createChatFeature({
     if (state.messagesEl && !state.userScrolledUp) {
       state.messagesEl.scrollTop = state.messagesEl.scrollHeight;
     }
+  }
+
+  function scrollRoundAnchorToTop() {
+    const container = state.messagesEl;
+    const anchor = state.currentRoundAnchor;
+    if (!container || !anchor?.isConnected) return;
+    container.classList.add("round-anchor-active");
+    const anchorOffset = anchor.getBoundingClientRect().top - container.getBoundingClientRect().top;
+    container.scrollTop += anchorOffset - ROUND_ANCHOR_TOP_OFFSET;
   }
 
   function bindScrollListener() {
@@ -287,6 +303,7 @@ export function createChatFeature({
       if (cached) state.sessionCache.delete(state.currentSessionId);
       state.currentSessionMessageCount = serverCount;
       state.currentMessages = session.messages;
+      state.currentRoundAnchor = null;
       renderer.renderMessages(session.messages);
     }
     syncCompactButton();
@@ -316,8 +333,13 @@ export function createChatFeature({
         window.lucide?.createIcons();
       }
     }
-    state.userScrolledUp = false;
-    state.streamingBubble = renderer.appendMessage("assistant", "");
+    if (!state.currentRoundAnchor?.isConnected) {
+      const userMessages = state.messagesEl?.querySelectorAll(".message.user");
+      state.currentRoundAnchor = userMessages?.[userMessages.length - 1] || null;
+      state.userScrolledUp = false;
+      scrollRoundAnchorToTop();
+    }
+    state.streamingBubble = renderer.appendMessage("assistant", "", undefined, { scroll: false });
     // Add entrance animation for the new assistant message
     if (state.streamingBubble) {
       const msgEl = state.streamingBubble.closest(".message");
@@ -427,6 +449,8 @@ export function createChatFeature({
       state.pendingSubmission = null;
       state.pendingUserBubble = null;
     }
+    state.currentRoundAnchor = null;
+    state.messagesEl?.classList.remove("round-anchor-active");
     showError(message.message);
     updateCurrentCache();
     syncCompactButton();
@@ -493,6 +517,7 @@ export function createChatFeature({
     handleServerMessage,
     replaySessionEvents,
     restartFromMessage,
+    scrollRoundAnchorToTop,
     scrollToBottom,
     sendMessage,
     setSendDisabled,

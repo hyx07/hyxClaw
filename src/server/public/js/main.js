@@ -21,7 +21,7 @@ const socket = createWebSocketClient({
   onStatus: setConnectionStatus,
 });
 const permissions = createPermissionFeature({ send: socket.send });
-const streaming = createStreamingRenderer({ state, scrollToBottom: () => actions.scrollToBottom() });
+const streaming = createStreamingRenderer({ state });
 const renderer = createMessageRenderer({
   state,
   streaming,

@@ -1,6 +1,6 @@
 import { renderContent } from "../markdown.js";
 
-export function createStreamingRenderer({ state, scrollToBottom }) {
+export function createStreamingRenderer({ state }) {
   function setBubbleContent(bubble, content) {
     const contentDiv = bubble.querySelector(".message-content");
     if (!contentDiv) return;
@@ -68,7 +68,6 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
     } else {
       insertBeforeMessageContent(bubble, details);
     }
-    scrollToBottom();
     return details;
   }
 
@@ -81,7 +80,6 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
     dots.setAttribute("aria-label", "Working");
     dots.innerHTML = "<span></span><span></span><span></span>";
     content.appendChild(dots);
-    scrollToBottom();
     return dots;
   }
 
@@ -120,7 +118,6 @@ export function createStreamingRenderer({ state, scrollToBottom }) {
     } else {
       segment.appendChild(document.createTextNode(chunk));
     }
-    scrollToBottom();
   }
 
   function countBlankLines(text) {

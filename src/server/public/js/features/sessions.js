@@ -90,6 +90,7 @@ export function createSessionFeature({ state, socket, renderer, pickers, permiss
       applySessionRuntimeState(data.session);
       state.currentSessionMessageCount = data.session.messages.length;
       state.currentMessages = data.session.messages;
+      state.currentRoundAnchor = null;
       renderer.renderMessages(data.session.messages);
       actions.syncCompactButton();
     }
@@ -153,6 +154,7 @@ export function createSessionFeature({ state, socket, renderer, pickers, permiss
       currentThinkingEffort: state.currentThinkingEffort,
       isCompacting: state.isCompacting,
       userScrolledUp: state.userScrolledUp,
+      hasRoundAnchor: state.messagesEl.classList.contains("round-anchor-active"),
       visibleProcessStep: state.visibleProcessStep,
       pendingProcessStep: state.pendingProcessStep,
       visibleProcessSince: state.visibleProcessSince,
@@ -185,6 +187,9 @@ export function createSessionFeature({ state, socket, renderer, pickers, permiss
     state.currentThinkingEffort = cached.currentThinkingEffort;
     state.isCompacting = cached.isCompacting;
     state.userScrolledUp = cached.userScrolledUp || false;
+    const userMessages = state.messagesEl.querySelectorAll(".message.user");
+    state.currentRoundAnchor = userMessages[userMessages.length - 1] || null;
+    state.messagesEl.classList.toggle("round-anchor-active", Boolean(cached.hasRoundAnchor));
     state.visibleProcessStep = cached.visibleProcessStep || null;
     state.pendingProcessStep = cached.pendingProcessStep || null;
     state.visibleProcessSince = cached.visibleProcessSince || 0;
@@ -222,9 +227,10 @@ export function createSessionFeature({ state, socket, renderer, pickers, permiss
       renderSessionList();
       actions.syncModelControls();
       pickers.renderPendingImages();
-      actions.scrollToBottom();
+      if (state.messagesEl?.classList.contains("round-anchor-active")) actions.scrollRoundAnchorToTop();
+      else actions.scrollToBottom();
       if (state.isStreaming && !state.streamingBubble) {
-        state.streamingBubble = renderer.appendMessage("assistant", "");
+        state.streamingBubble = renderer.appendMessage("assistant", "", undefined, { scroll: false });
         state.typingPlaceholder = actions.appendTypingDots(state.streamingBubble);
       }
       actions.replaySessionEvents();
@@ -251,6 +257,7 @@ export function createSessionFeature({ state, socket, renderer, pickers, permiss
     state.currentMessages = [];
     state.pendingImages = [];
     state.userScrolledUp = false;
+    state.currentRoundAnchor = null;
     state.visibleProcessStep = null;
     state.pendingProcessStep = null;
     state.visibleProcessSince = 0;

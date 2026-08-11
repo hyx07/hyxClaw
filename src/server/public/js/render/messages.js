@@ -6,6 +6,7 @@ const USER_MESSAGE_COLLAPSE_LINE_THRESHOLD = 5;
 export function createMessageRenderer({ state, streaming, onRestart, scrollToBottom }) {
   function renderMessages(messages) {
     if (!state.messagesEl) return;
+    state.messagesEl.classList.remove("round-anchor-active");
     if (!messages.length) {
       state.messagesEl.innerHTML = '<div id="empty-state" class="empty-state"><div class="empty-state-icon"><i data-lucide="message-circle"></i></div><p class="empty-state-title">发送消息开始对话</p></div>';
       window.lucide?.createIcons();
@@ -126,7 +127,7 @@ export function createMessageRenderer({ state, streaming, onRestart, scrollToBot
     else bubble.appendChild(details);
   }
 
-  function appendMessage(role, content, messageId) {
+  function appendMessage(role, content, messageId, { scroll = true } = {}) {
     if (!state.messagesEl) return null;
     state.messagesEl.querySelector("#empty-state")?.remove();
     const message = document.createElement("div");
@@ -163,7 +164,7 @@ export function createMessageRenderer({ state, streaming, onRestart, scrollToBot
     }
     message.appendChild(bubble);
     state.messagesEl.appendChild(message);
-    scrollToBottom();
+    if (scroll) scrollToBottom();
     window.lucide?.createIcons();
     return bubble;
   }

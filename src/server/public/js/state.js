@@ -28,6 +28,7 @@ export function createAppState() {
     typingPlaceholder: null,
     pendingSubmission: null,
     pendingUserBubble: null,
+    currentRoundAnchor: null,
     latestUsage: null,
     isCompacting: false,
     compactingBubble: null,
@@ -52,6 +53,7 @@ export function createAppState() {
 }
 
 export function clearChatElements(state) {
+  state.currentRoundAnchor = null;
   state.messagesEl = null;
   state.inputEl = null;
   state.sendBtn = null;

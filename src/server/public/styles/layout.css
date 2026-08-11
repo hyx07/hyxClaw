@@ -90,6 +90,14 @@
       background: rgba(147, 161, 161, 0.45);
     }
 
+    /* Reserve enough trailing space for the active user message to align with
+       the top of the viewport while its reply grows below it. */
+    #messages.round-anchor-active::after {
+      content: "";
+      flex: 0 0 calc(100% - 44px);
+      pointer-events: none;
+    }
+
 
     #empty-state {
       flex: 1;
