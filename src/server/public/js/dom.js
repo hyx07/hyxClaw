@@ -466,11 +466,14 @@ export function createChatView({ state, documents, pickers, permissions, actions
     flyout.style.top = `${rowRect.top - controlRect.top}px`;
     flyout.style.width = `${flyoutWidth}px`;
     flyout.classList.add("open");
-    // 底部越界时上移（flyout 需先显示才能测量高度）
+    // 底部越界时上移（flyout 需先显示才能测量高度）。
+    // 触发修正时新 top 必然为负（在 control 上方），不能再用 Math.max(4, ...) 钳制，
+    // 否则会把 flyout 从上方钳到 control 下方 4px，掉到菜单下面。
     const flyoutRect = flyout.getBoundingClientRect();
     if (flyoutRect.bottom > window.innerHeight - 8) {
       const shift = flyoutRect.bottom - window.innerHeight + 8;
-      flyout.style.top = `${Math.max(4, flyoutRect.top - controlRect.top - shift)}px`;
+      const newTop = flyoutRect.top - controlRect.top - shift;
+      if (newTop < 0) flyout.style.top = `${newTop}px`;
     }
   }
 
