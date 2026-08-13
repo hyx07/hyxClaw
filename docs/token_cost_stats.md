@@ -213,7 +213,10 @@ interface DailyUsage {
 
 ### 日期口径
 
-- 按 `timestamp` 的 **UTC 日期**（`slice(0, 10)`）分桶，前后端一致
+- 按 `timestamp` 换算成**北京时间日期**（UTC+8，无夏令时）分桶，前后端一致
+  - 后端：`toBeijingDateStr()`（`usage-store.ts`，时间戳 + 8h 后取 UTC 日期字段）
+  - 前端：`padDateRange()` 补占位横轴日期时同样用 UTC+8 偏移
+- 保留策略 / 最近 N 天 cutoff 同样按北京时间日期计算（`beijingCutoff(days)`）
 - `DAILY_RETENTION_DAYS = 30`
 
 ---

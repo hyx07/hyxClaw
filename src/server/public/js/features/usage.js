@@ -100,10 +100,12 @@ function renderChart(containerId, legendId, data, groupKey, totalKey, formatFn, 
 function padDateRange(apiData, days) {
   const byDate = Object.fromEntries(apiData.map((entry) => [entry.date, entry]));
   const padded = [];
-  const today = new Date();
+  // 与后端口径一致：按北京时间（UTC+8，无夏令时）分天
+  const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
+  const today = new Date(Date.now() + BEIJING_OFFSET_MS);
   for (let index = days - 1; index >= 0; index--) {
     const date = new Date(today);
-    date.setDate(date.getDate() - index);
+    date.setUTCDate(date.getUTCDate() - index);
     const key = date.toISOString().slice(0, 10);
     padded.push(byDate[key] || { date: key, totalTokens: 0, totalCost: 0, byModel: {}, byProvider: {}, byModelCost: {}, byProviderCost: {} });
   }

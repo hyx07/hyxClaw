@@ -31,6 +31,21 @@ interface DailyUsage {
 
 const DAILY_RETENTION_DAYS = 30;
 
+// 北京时间 = UTC + 8（无夏令时），统计口径按北京时间分天
+const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+/** 将任意日期转成北京时间日期字符串（YYYY-MM-DD） */
+function toBeijingDateStr(date: Date): string {
+  return new Date(date.getTime() + BEIJING_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/** 当前北京时间往前推 days 天的日期字符串（YYYY-MM-DD） */
+function beijingCutoff(days: number): string {
+  const cutoff = new Date(Date.now() + BEIJING_OFFSET_MS);
+  cutoff.setUTCDate(cutoff.getUTCDate() - days);
+  return cutoff.toISOString().slice(0, 10);
+}
+
 export async function appendUsageRecord(record: UsageRecord): Promise<void> {
   await appendFile(getPaths().usageTempFile, `${JSON.stringify(record)}\n`, "utf-8");
 }
@@ -70,7 +85,7 @@ function addToBucket(map: Map<string, DailyUsage>, bucket: DailyUsage): void {
 
 function recordToBucket(record: UsageRecord): DailyUsage {
   return {
-    date: record.timestamp.slice(0, 10),
+    date: toBeijingDateStr(new Date(record.timestamp)),
     provider: record.provider || "unknown",
     model: record.model || "unknown",
     inputTokens: record.inputTokens,
@@ -171,9 +186,7 @@ export async function flushUsage(): Promise<void> {
   const buckets = await readDailyStore();
   for (const record of tempRecords) addToBucket(buckets, recordToBucket(record));
 
-  const cutoff = new Date();
-  cutoff.setUTCDate(cutoff.getUTCDate() - DAILY_RETENTION_DAYS);
-  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  const cutoffStr = beijingCutoff(DAILY_RETENTION_DAYS);
   const daily = Array.from(buckets.values())
     .filter((bucket) => bucket.date >= cutoffStr)
     .sort((a, b) => a.date.localeCompare(b.date) || a.provider.localeCompare(b.provider) || a.model.localeCompare(b.model));
@@ -190,9 +203,7 @@ export async function getUsageStats(): Promise<AggregatedUsage[]> {
 }
 
 export async function getDailyStats(days: number): Promise<DailyStat[]> {
-  const cutoff = new Date();
-  cutoff.setUTCDate(cutoff.getUTCDate() - days);
-  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  const cutoffStr = beijingCutoff(days);
   const dateMap = new Map<string, {
     byModel: Map<string, number>;
     byProvider: Map<string, number>;
