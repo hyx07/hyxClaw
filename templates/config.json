@@ -82,7 +82,7 @@
         {
           "id": "deepseek-v4-pro",
           "label": "ds-v4-pro",
-          "cost": { "input": 9, "output": 27, "cachedRead": 0.3 },
+          "cost": { "input": 9.0, "output": 27.0, "cachedRead": 0.3 },
           "thinking": [
             { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
             { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }
