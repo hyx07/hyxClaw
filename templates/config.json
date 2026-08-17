@@ -56,7 +56,7 @@
         {
           "id": "deepseek-v4-flash",
           "label": "ali-v4-flash",
-          "cost": { "input": 1, "output": 2, "cachedRead": 0.2 },
+          "cost": { "input": 3.0, "output": 9.0, "cachedRead": 0.3 },
           "thinking": [
             { "id": "high", "params": { "enable_thinking": true, "reasoning_effort": "high" } },
             { "id": "max", "params": { "enable_thinking": true, "reasoning_effort": "max" } }
