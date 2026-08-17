@@ -54,10 +54,11 @@
           "thinkingOff": { "enable_thinking": false }
         },
         {
-          "id": "deepseek-v4-flash",
+          "id": "deepseek-v4-flash-0731",
           "label": "ali-v4-flash",
           "cost": { "input": 3.0, "output": 9.0, "cachedRead": 0.3 },
           "thinking": [
+            { "id": "low", "params": { "enable_thinking": true, "reasoning_effort": "low" } },
             { "id": "high", "params": { "enable_thinking": true, "reasoning_effort": "high" } },
             { "id": "max", "params": { "enable_thinking": true, "reasoning_effort": "max" } }
           ],
@@ -74,6 +75,7 @@
           "label": "ds-v4-flash",
           "cost": { "input": 3.0, "output": 9.0, "cachedRead": 0.1 },
           "thinking": [
+            { "id": "low", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "low" } },
             { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
             { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }
           ],
@@ -84,6 +86,7 @@
           "label": "ds-v4-pro",
           "cost": { "input": 9.0, "output": 27.0, "cachedRead": 0.3 },
           "thinking": [
+            { "id": "low", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "low" } },
             { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
             { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }
           ],
