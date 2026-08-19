@@ -43,7 +43,6 @@ let selectedPreviewText = "";
 let selectedPreviewSummary = "";
 let selectedPreviewStartLine = 0;
 let selectedPreviewEndLine = 0;
-let savedDocPreviewScrollTop = 0;
 
 function loadDocRootPath() {
   try {
@@ -212,8 +211,26 @@ async function fetchDocContent(path) {
 }
 
 export function saveDocPreviewScrollPosition() {
+  saveActiveTabScrollPosition();
+}
+
+// 把当前预览区的滚动位置记录到活动标签上（切换标签/重建 DOM 前调用）
+function saveActiveTabScrollPosition() {
+  const tab = openTabs.find((item) => item.path === activeTabPath);
   const el = document.getElementById("doc-preview-content");
-  if (el) savedDocPreviewScrollTop = el.scrollTop;
+  if (tab && el) tab.scrollTop = el.scrollTop;
+}
+
+// 渲染后按标签自身记录的滚动位置恢复；期间若已切走则跳过，避免污染新标签
+function restorePreviewScroll(container) {
+  const path = activeTabPath;
+  requestAnimationFrame(() => {
+    if (activeTabPath !== path || !container.isConnected) return;
+    const tab = openTabs.find((item) => item.path === path);
+    const target = tab?.scrollTop ?? 0;
+    const maxScroll = container.scrollHeight - container.clientHeight;
+    container.scrollTop = Math.min(target, Math.max(0, maxScroll));
+  });
 }
 
 export function clearPreviewSelection() {
@@ -267,6 +284,7 @@ async function toggleDocEdit() {
     if (container) {
       const maxScroll = container.scrollHeight - container.clientHeight;
       container.scrollTop = Math.min(scrollRatio * maxScroll, maxScroll);
+      tab.scrollTop = container.scrollTop;
     }
   } else {
     if (container) {
@@ -281,6 +299,7 @@ async function toggleDocEdit() {
     if (textarea instanceof HTMLTextAreaElement) {
       const maxScroll = textarea.scrollHeight - textarea.clientHeight;
       textarea.scrollTop = Math.min(scrollRatio * maxScroll, maxScroll);
+      tab.scrollTop = textarea.scrollTop;
     }
   }
   renderDocTabs();
@@ -389,24 +408,14 @@ function updateDocPreviewPanel() {
   if (getActiveTabEditMode()) {
     content.classList.remove("markdown-body");
     content.innerHTML = `<textarea class="doc-edit-textarea" spellcheck="false">${escHtml(docPreviewContent || "")}</textarea>`;
+    const textarea = content.querySelector(".doc-edit-textarea");
+    if (textarea) restorePreviewScroll(textarea);
     return;
   }
   content.classList.add("markdown-body");
   const basePath = activeTabPath ? activeTabPath.replace(/[^/\\]*$/, "") : "";
   renderContent(content, docPreviewContent, basePath);
-  if (savedDocPreviewScrollTop > 0) {
-    // Restore scroll position preserved across DOM rebuilds (e.g. session switch).
-    const targetScroll = savedDocPreviewScrollTop;
-    savedDocPreviewScrollTop = 0;
-    requestAnimationFrame(() => {
-      content.scrollTop = Math.min(targetScroll, content.scrollHeight - content.clientHeight);
-    });
-  } else {
-    // Normal file open (not a session switch): reset to top.
-    // The browser preserves scrollTop across innerHTML changes on the same
-    // element, so a new file would otherwise inherit the previous file's position.
-    content.scrollTop = 0;
-  }
+  restorePreviewScroll(content);
 }
 
 async function loadActiveTabContent() {
@@ -487,6 +496,8 @@ async function activateTab(path) {
   if (path === activeTabPath) return;
   const ok = await saveCurrentTabEdit();
   if (!ok) return;
+  // 切走前记录当前标签的滚动位置，切回时恢复
+  saveActiveTabScrollPosition();
   activeTabPath = path;
   saveOpenTabs();
   renderDocTabs();
@@ -681,6 +692,7 @@ function renderDocColumns() {
 export async function refreshDocBrowser() {
   try {
     clearPreviewSelection();
+    saveActiveTabScrollPosition();
     if (docRootPath) {
       docSecondEntries = await fetchDocTree(docRootPath);
       if (docSecondActivePath && !docSecondEntries.some((entry) => entry.path === docSecondActivePath)) {
