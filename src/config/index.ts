@@ -100,11 +100,22 @@ async function copyTemplates(paths: ReturnType<typeof getPaths>): Promise<void> 
       const destExists = await pathExists(destPath);
 
       switch (strategy.strategy) {
-        case "always":
+        case "always": {
           await fs.mkdir(path.dirname(destPath), { recursive: true });
+          if (destExists) {
+            const [templateBuf, destBuf] = await Promise.all([
+              fs.readFile(srcPath),
+              fs.readFile(destPath),
+            ]);
+            if (templateBuf.equals(destBuf)) {
+              logger.info(`[always] Up to date, skip: ${relPath}`);
+              break;
+            }
+          }
           await fs.copyFile(srcPath, destPath);
           logger.info(`[always] Updated: ${relPath}`);
           break;
+        }
 
         case "merge": {
           if (destExists) {

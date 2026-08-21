@@ -12,7 +12,7 @@
 2. 加载 `src/config/init-strategies.ts` 中定义的策略映射。
 3. 对每个模板文件，按声明的策略执行：
    - `once` — 仅在目标文件不存在时复制。若配置了 `trackInstalled`，则首次复制后记录，之后即使文件被删除也不再恢复。
-   - `always` — 每次 init 都覆盖目标文件。
+   - `always` — 模板内容与目标文件不一致时覆盖；内容一致则跳过，避免无谓地重写文件（如 `project_operation_manual.md`）。
    - `merge` — 深度合并 JSON：保留用户值，从模板追加新 key。
 4. 加载并校验 `config.json`。若为首次创建，CLI 提示用户配置 API Key。
 
@@ -52,7 +52,7 @@ export const FILE_STRATEGIES: Record<string, StrategyEntry> = {
 | 策略 | 行为 | 适用场景 |
 |---|---|---|
 | `once` | 仅在目标文件不存在时复制 | 知识库文件、用户会自定义的 prompt |
-| `always` | 每次 init 都覆盖 | 必须和模板保持同步的系统文件 |
+| `always` | 模板与目标内容不一致时覆盖，一致则跳过 | 必须和模板保持同步的系统文件 |
 | `merge` | 深度合并 JSON：保留用户值，仅追加模板中的新 key | 其他 JSON 配置文件（暂未使用） |
 
 **`merge` 策略细节**（用于 JSON 配置）：

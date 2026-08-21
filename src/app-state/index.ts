@@ -61,6 +61,9 @@ export async function saveAppState(state: AppState, userDataDir?: string): Promi
 
 export async function setLastActiveSession(sessionId: string, userDataDir?: string): Promise<void> {
   const state = await loadAppState(userDataDir);
+  // Idempotent: avoid rewriting app_state.json (and its git/mtime noise)
+  // when the active session has not actually changed.
+  if (state.lastActiveSessionId === sessionId) return;
   await saveAppState({ ...state, lastActiveSessionId: sessionId }, userDataDir);
 }
 

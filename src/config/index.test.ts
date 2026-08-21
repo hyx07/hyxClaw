@@ -2,9 +2,9 @@
  * Config module tests
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import path from "node:path";
-import { readFile, writeFile, access, mkdir, rm } from "node:fs/promises";
+import { readFile, writeFile, access, mkdir, rm, copyFile } from "node:fs/promises";
 import {
   loadConfig,
   initConfig,
@@ -16,6 +16,11 @@ import {
   resolveModelThinking,
 } from "./index.js";
 import { setupTestDir, cleanupTestDir } from "../test-utils.js";
+
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs/promises")>();
+  return { ...actual, copyFile: vi.fn(actual.copyFile) };
+});
 
 let testDir: string;
 
@@ -48,7 +53,7 @@ describe("config", () => {
     expect(config.defaultProvider).toBe("deepseek");
     expect(config.defaultModel).toBe("deepseek-v4-flash");
     expect(config.defaultThinkingEffort).toBe("high");
-    expect(config.providers.deepseek.models[0].thinking?.map((option) => option.id)).toEqual(["high", "max"]);
+    expect(config.providers.deepseek.models[0].thinking?.map((option) => option.id)).toEqual(["low", "high", "max"]);
     expect(resolveModelThinking(config, "deepseek", "deepseek-v4-flash", "max")).toEqual({
       level: "max",
       params: { thinking: { type: "enabled" }, reasoning_effort: "max" },
@@ -123,6 +128,30 @@ describe("config", () => {
     await writeFile(commandsPath, "custom-command\n", "utf-8");
     await initConfig(testDir);
     await expect(readFile(commandsPath, "utf-8")).resolves.toBe("custom-command\n");
+  });
+
+  it("initConfig skips 'always' files when content is identical", async () => {
+    await initConfig(testDir);
+
+    const copyMock = vi.mocked(copyFile);
+    copyMock.mockClear();
+
+    await initConfig(testDir);
+    expect(copyMock).not.toHaveBeenCalled();
+  });
+
+  it("initConfig overwrites 'always' files when template content changed", async () => {
+    await initConfig(testDir);
+    const manualPath = path.join(testDir, "files", "project_operation_manual.md");
+    await writeFile(manualPath, "custom manual\n", "utf-8");
+
+    await initConfig(testDir);
+
+    const templateManual = await readFile(
+      path.join(process.cwd(), "templates", "files", "project_operation_manual.md"),
+      "utf-8",
+    );
+    await expect(readFile(manualPath, "utf-8")).resolves.toBe(templateManual);
   });
 
   it("loadConfig merges user config with code defaults", async () => {

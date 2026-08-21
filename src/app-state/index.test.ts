@@ -1,7 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { rm } from "node:fs/promises";
 import { getTestDir } from "../config/paths.js";
 import { loadAppState, recordRecentModel, setLastActiveSession } from "./index.js";
+
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs/promises")>();
+  return { ...actual, writeFile: vi.fn(actual.writeFile) };
+});
 
 let testDir: string;
 
@@ -21,6 +26,17 @@ describe("app state", () => {
       lastActiveSessionId: "session-1",
       recentModels: [],
     });
+  });
+
+  it("setLastActiveSession does not rewrite the file when session is unchanged", async () => {
+    await setLastActiveSession("session-1", testDir);
+
+    const { writeFile } = await import("node:fs/promises");
+    const writeMock = vi.mocked(writeFile);
+    writeMock.mockClear();
+
+    await setLastActiveSession("session-1", testDir);
+    expect(writeMock).not.toHaveBeenCalled();
   });
 
   it("records recent models, dedupes and keeps newest first", async () => {

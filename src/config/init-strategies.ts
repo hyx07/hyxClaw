@@ -6,7 +6,7 @@
  *
  * Strategies:
  * - once:     Copy only when target does not exist.
- * - always:   Overwrite target every init.
+ * - always:   Overwrite target when template content differs; skip when identical.
  * - merge:    Deep-merge JSON — keep user values, append new keys from template.
  *
  * trackInstalled (only for once): record the file after first install.
