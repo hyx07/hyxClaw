@@ -115,19 +115,25 @@ describe("config", () => {
   it("initConfig synchronizes missing template files without overwriting existing ones", async () => {
     await initConfig(testDir);
     const gitignorePath = path.join(testDir, ".gitignore");
+    const gitattributesPath = path.join(testDir, ".gitattributes");
     const commandsPath = path.join(testDir, "files", "commands.md");
     const templateGitignore = await readFile(path.join(process.cwd(), "templates", ".gitignore"), "utf-8");
+    const templateGitattributes = await readFile(path.join(process.cwd(), "templates", ".gitattributes"), "utf-8");
     const templateCommands = await readFile(path.join(process.cwd(), "templates", "files", "commands.md"), "utf-8");
 
     await rm(gitignorePath);
+    await rm(gitattributesPath);
     await rm(commandsPath);
     await initConfig(testDir);
     await expect(readFile(gitignorePath, "utf-8")).resolves.toBe(templateGitignore);
+    await expect(readFile(gitattributesPath, "utf-8")).resolves.toBe(templateGitattributes);
     await expect(readFile(commandsPath, "utf-8")).resolves.toBe(templateCommands);
 
     await writeFile(commandsPath, "custom-command\n", "utf-8");
+    await writeFile(gitattributesPath, "* text=auto\n", "utf-8");
     await initConfig(testDir);
     await expect(readFile(commandsPath, "utf-8")).resolves.toBe("custom-command\n");
+    await expect(readFile(gitattributesPath, "utf-8")).resolves.toBe("* text=auto\n");
   });
 
   it("initConfig skips 'always' files when content is identical", async () => {

@@ -37,6 +37,7 @@ export const DEFAULT_STRATEGY: InitStrategy = 'once';
 // 未匹配到的文件走 defaultStrategy
 export const FILE_STRATEGIES: Record<string, StrategyEntry> = {
   '.gitignore':                { strategy: 'once' },
+  '.gitattributes':            { strategy: 'once' },
   'config.json':               { strategy: 'once' },
   'files/commands.md':         { strategy: 'once' },
   'files/project_operation_manual.md': { strategy: 'always' },
@@ -76,6 +77,7 @@ export const FILE_STRATEGIES: Record<string, StrategyEntry> = {
 ```text
 templates/
 |- .gitignore
+|- .gitattributes
 |- config.json
 |- files/
 |  |- commands.md
