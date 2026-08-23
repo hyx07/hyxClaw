@@ -24,7 +24,6 @@ import { calcCost } from "../llm/cost.js";
 
 export interface ChatOptions {
   stream?: boolean;
-  temperature?: number;
   maxTokens?: number;
   thinkingEffort?: string;
   provider?: ProviderName;
@@ -180,13 +179,14 @@ function buildUsageRecord(
 ): UsageRecord | undefined {
   if (!usage) return undefined;
 
+  const timestamp = new Date();
   return {
     ...usage,
     model,
     provider: providerName,
-    timestamp: new Date().toISOString(),
+    timestamp: timestamp.toISOString(),
     sessionId,
-    cost: calcCost(usage, costConfig),
+    cost: calcCost(usage, costConfig, timestamp),
   };
 }
 
@@ -570,7 +570,6 @@ export async function chat(
   config: Config,
   options: ChatOptions = {},
 ): Promise<ChatResult> {
-  const temperature = options.temperature ?? 0.7;
   const maxTokens = options.maxTokens ?? config.maxTokens;
   const persistedUserContent = options.persistedUserContent ?? userContent;
   const session = await loadSession(sessionId);
@@ -604,7 +603,6 @@ export async function chat(
   const llmOptions: CompletionOptions = {
     model: run.model,
     baseUrl: run.baseUrl,
-    temperature,
     maxTokens,
       thinkingEffort: run.thinkingEffort,
       thinkingParams: run.thinkingParams,
@@ -679,7 +677,6 @@ export async function* chatStream(
   config: Config,
   options: ChatOptions = {},
 ): AsyncGenerator<{ chunk: string; done: boolean; reasoning?: boolean; cancelled?: boolean; usage?: UsageRecord; contextUsage?: UsageRecord }, ChatResult, unknown> {
-  const temperature = options.temperature ?? 0.7;
   const maxTokens = options.maxTokens ?? config.maxTokens;
   const persistedUserContent = options.persistedUserContent ?? userContent;
   const session = await loadSession(sessionId);
@@ -714,7 +711,6 @@ export async function* chatStream(
   const llmOptions: CompletionOptions = {
     model: run.model,
     baseUrl: run.baseUrl,
-    temperature,
     maxTokens,
     thinkingEffort: run.thinkingEffort,
     thinkingParams: run.thinkingParams,

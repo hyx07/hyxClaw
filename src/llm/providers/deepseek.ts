@@ -67,7 +67,6 @@ export class DeepSeekProvider implements LLMProvider {
     const {
       model = "deepseek-v4-flash",
       baseUrl = DEEPSEEK_ENDPOINT,
-      temperature = 0.7,
       maxTokens = 4096,
       timeout = DEFAULT_TIMEOUT,
       tools,
@@ -78,7 +77,6 @@ export class DeepSeekProvider implements LLMProvider {
     const body = {
       model,
       messages: messages.map(mapMessage),
-      temperature,
       max_tokens: maxTokens,
       stream: false,
       ...(tools && tools.length > 0 ? { tools } : {}),
@@ -108,7 +106,6 @@ export class DeepSeekProvider implements LLMProvider {
     const {
       model = "deepseek-v4-flash",
       baseUrl = DEEPSEEK_ENDPOINT,
-      temperature = 0.7,
       maxTokens = 4096,
       timeout = DEFAULT_TIMEOUT,
       tools,
@@ -118,7 +115,6 @@ export class DeepSeekProvider implements LLMProvider {
     const body = {
       model,
       messages: messages.map(mapMessage),
-      temperature,
       max_tokens: maxTokens,
       stream: true,
       stream_options: { include_usage: true },

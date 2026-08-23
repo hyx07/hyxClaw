@@ -64,7 +64,6 @@ export class ZaiProvider implements LLMProvider {
     const {
       model = "glm-5",
       baseUrl = ZAI_ENDPOINTS.global,
-      temperature = 0.7,
       maxTokens = 4096,
       timeout = DEFAULT_TIMEOUT,
       tools,
@@ -75,7 +74,6 @@ export class ZaiProvider implements LLMProvider {
     const body = {
       model,
       messages: messages.map(mapMessage),
-      temperature,
       max_tokens: maxTokens,
       stream: false,
       ...(tools && tools.length > 0 ? { tools } : {}),
@@ -107,7 +105,6 @@ export class ZaiProvider implements LLMProvider {
     const {
       model = "glm-5",
       baseUrl = ZAI_ENDPOINTS.global,
-      temperature = 0.7,
       maxTokens = 4096,
       timeout = DEFAULT_TIMEOUT,
       tools,
@@ -117,7 +114,6 @@ export class ZaiProvider implements LLMProvider {
     const body = {
       model,
       messages: messages.map(mapMessage),
-      temperature,
       max_tokens: maxTokens,
       stream: true,
       ...(tools && tools.length > 0 ? { tools } : {}),

@@ -245,7 +245,7 @@ pnpm start
 - **每日**：7 天或 30 天的堆叠柱状图，按模型和 Provider 分色展示每日 Token 用量；可切换到费用视图查看每日费用
 - **总量**：按模型 + Provider 汇总输入、输出、Thinking token 和总费用
 
-费用按模型配置中的 `cost` 单价计算；未配置单价的模型费用记为 0。统计数据持久化在 `files/usage_daily.json` 和 `files/usage_total.json` 中。
+费用按模型配置中的 `cost` 单价计算；未配置单价的模型费用记为 0。`cost` 可选配 `schedules` 分时段价格（如工作日高峰价、夜间闲时价），按北京时间匹配第一个命中的时段，未命中时使用顶层单价；不配 `schedules` 时行为与固定单价一致。统计数据持久化在 `files/usage_daily.json` 和 `files/usage_total.json` 中。
 
 #### 知识库浏览
 

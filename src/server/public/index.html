@@ -314,7 +314,7 @@
         <li><strong>每日</strong>：7 天或 30 天的堆叠柱状图，按模型和 Provider 分色展示每日 Token 用量；可切换到费用视图查看每日费用</li>
         <li><strong>总量</strong>：按模型 + Provider 汇总输入、输出、Thinking token 和总费用</li>
       </ul>
-      <p>费用按模型配置中的 <code>cost</code> 单价计算；未配置单价的模型费用记为 0。统计数据持久化在 <code>files/usage_daily.json</code> 和 <code>files/usage_total.json</code> 中。</p>
+      <p>费用按模型配置中的 <code>cost</code> 单价计算；未配置单价的模型费用记为 0。<code>cost</code> 可选配 <code>schedules</code> 分时段价格（如工作日高峰价、夜间闲时价），按北京时间匹配第一个命中的时段，未命中时使用顶层单价；不配 <code>schedules</code> 时行为与固定单价一致。统计数据持久化在 <code>files/usage_daily.json</code> 和 <code>files/usage_total.json</code> 中。</p>
       <h3>知识库浏览</h3>
       <p>顶部工具栏的 📖 按钮可打开知识库总览面板，列出所有知识库及其包含的文件。每个知识库卡片显示名称、描述和文件列表，超过 5 个文件时可点击展开查看全部。</p>
 

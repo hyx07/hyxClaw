@@ -177,7 +177,6 @@ export async function compactSession(
   ], {
     model,
     baseUrl,
-    temperature: 0.2,
     maxTokens: 4096,
     thinkingEffort: thinking.level,
     thinkingParams: thinking.params,
@@ -225,7 +224,7 @@ export async function compactSession(
         provider: providerName,
         timestamp: new Date().toISOString(),
         sessionId,
-        cost: calcCost(response.usage, config.providers[providerName]?.models.find((m) => m.id === model)?.cost),
+        cost: calcCost(response.usage, config.providers[providerName]?.models.find((m) => m.id === model)?.cost, new Date()),
       }
     : undefined;
   return { archivedAs, usage };

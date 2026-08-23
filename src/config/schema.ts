@@ -26,11 +26,28 @@ export const ThinkingOptionSchema = z.object({
   params: ThinkingParamsSchema,
 });
 
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** 分时段价格：weekdays 1=周一…7=周日，缺省每天；窗口含头不含尾，end<=start 视为跨天 */
+export const CostScheduleSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    weekdays: z.array(z.number().int().min(1).max(7)).optional(),
+    start: z.string().regex(TIME_RE, "start must be HH:MM"),
+    end: z.string().regex(TIME_RE, "end must be HH:MM"),
+    input: z.number().min(0),
+    output: z.number().min(0),
+    cachedRead: z.number().min(0),
+    cachedWrite: z.number().min(0).default(0),
+  })
+  .refine((s) => s.start !== s.end, { message: "start and end must differ" });
+
 export const CostConfigSchema = z.object({
   input: z.number().min(0).default(0),
   output: z.number().min(0).default(0),
   cachedRead: z.number().min(0).default(0),
   cachedWrite: z.number().min(0).default(0),
+  schedules: z.array(CostScheduleSchema).optional(),
 });
 
 export const ModelOptionSchema = z.object({
@@ -190,6 +207,7 @@ export const ConfigSchema = z.object({
 
 export type Config = z.infer<typeof ConfigSchema>;
 export type CostConfig = z.infer<typeof CostConfigSchema>;
+export type CostSchedule = z.infer<typeof CostScheduleSchema>;
 export type ProviderName = z.infer<typeof ProviderNameSchema>;
 export type ThinkingEffort = z.infer<typeof ThinkingEffortSchema>;
 export type ModelOption = z.infer<typeof ModelOptionSchema>;

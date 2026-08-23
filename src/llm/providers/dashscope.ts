@@ -65,7 +65,6 @@ export class DashScopeProvider implements LLMProvider {
     const {
       model = "qwen-plus",
       baseUrl = DASHSCOPE_ENDPOINT,
-      temperature = 0.7,
       maxTokens = 4096,
       timeout = DEFAULT_TIMEOUT,
       tools,
@@ -75,7 +74,6 @@ export class DashScopeProvider implements LLMProvider {
     const body = {
       model,
       messages: messages.map(mapMessage),
-      temperature,
       max_tokens: maxTokens,
       stream: false,
       ...thinkingParams,
@@ -105,7 +103,6 @@ export class DashScopeProvider implements LLMProvider {
     const {
       model = "qwen-plus",
       baseUrl = DASHSCOPE_ENDPOINT,
-      temperature = 0.7,
       maxTokens = 4096,
       timeout = DEFAULT_TIMEOUT,
       tools,
@@ -114,7 +111,6 @@ export class DashScopeProvider implements LLMProvider {
     const body = {
       model,
       messages: messages.map(mapMessage),
-      temperature,
       max_tokens: maxTokens,
       stream: true,
       stream_options: { include_usage: true },

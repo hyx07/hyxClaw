@@ -54,9 +54,27 @@
           "thinkingOff": { "enable_thinking": false }
         },
         {
+          "id": "kimi-k3",
+          "label": "kimi-k3",
+          "modal": "vl",
+          "cost": { "input": 20, "output": 100, "cachedRead": 2 },
+          "thinking": [
+            { "id": "low", "params": { "reasoning_effort": "low" } },
+            { "id": "high", "params": { "reasoning_effort": "high" } },
+            { "id": "max", "params": { "reasoning_effort": "max" } }
+          ]
+        },
+        {
           "id": "deepseek-v4-flash-0731",
           "label": "ali-v4-flash",
-          "cost": { "input": 3.0, "output": 9.0, "cachedRead": 0.3 },
+          "cost": {
+            "input": 1.5,
+            "output": 4.5,
+            "cachedRead": 0.15,
+            "schedules": [
+              { "name": "busy", "start": "08:00", "end": "22:00", "input": 3.0, "output": 9.0, "cachedRead": 0.3 }
+            ]
+          },
           "thinking": [
             { "id": "low", "params": { "enable_thinking": true, "reasoning_effort": "low" } },
             { "id": "high", "params": { "enable_thinking": true, "reasoning_effort": "high" } },
@@ -73,7 +91,35 @@
         {
           "id": "deepseek-v4-flash",
           "label": "ds-v4-flash",
-          "cost": { "input": 3.0, "output": 9.0, "cachedRead": 0.1 },
+          "cost": {
+            "input": 1.5,
+            "output": 4.5,
+            "cachedRead": 0.05,
+            "schedules": [
+              { "name": "peak-am", "weekdays": [1, 2, 3, 4, 5], "start": "09:00", "end": "12:00", "input": 3.0, "output": 9.0, "cachedRead": 0.1 },
+              { "name": "peak-pm", "weekdays": [1, 2, 3, 4, 5], "start": "14:00", "end": "18:00", "input": 3.0, "output": 9.0, "cachedRead": 0.1 }
+            ]
+          },
+          "thinking": [
+            { "id": "low", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "low" } },
+            { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
+            { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }
+          ],
+          "thinkingOff": { "thinking": { "type": "disabled" } }
+        },
+        {
+          "id": "deepseek-v4-flash-vision-exp",
+          "label": "ds-v4-flash-vision",
+          "modal": "vl",
+          "cost": {
+            "input": 1.5,
+            "output": 4.5,
+            "cachedRead": 0.05,
+            "schedules": [
+              { "name": "peak-am", "weekdays": [1, 2, 3, 4, 5], "start": "09:00", "end": "12:00", "input": 3.0, "output": 9.0, "cachedRead": 0.1 },
+              { "name": "peak-pm", "weekdays": [1, 2, 3, 4, 5], "start": "14:00", "end": "18:00", "input": 3.0, "output": 9.0, "cachedRead": 0.1 }
+            ]
+          },
           "thinking": [
             { "id": "low", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "low" } },
             { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
@@ -84,7 +130,15 @@
         {
           "id": "deepseek-v4-pro",
           "label": "ds-v4-pro",
-          "cost": { "input": 9.0, "output": 27.0, "cachedRead": 0.3 },
+          "cost": {
+            "input": 4.5,
+            "output": 13.5,
+            "cachedRead": 0.15,
+            "schedules": [
+              { "name": "peak-am", "weekdays": [1, 2, 3, 4, 5], "start": "09:00", "end": "12:00", "input": 9.0, "output": 27.0, "cachedRead": 0.3 },
+              { "name": "peak-pm", "weekdays": [1, 2, 3, 4, 5], "start": "14:00", "end": "18:00", "input": 9.0, "output": 27.0, "cachedRead": 0.3 }
+            ]
+          },
           "thinking": [
             { "id": "low", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "low" } },
             { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },

@@ -129,7 +129,16 @@ function mapUsage(raw: ZaiRawUsage): NormalizedUsage {
             "input": 1,           // 每百万 tokens
             "output": 2,
             "cachedRead": 0.02,   // 缓存命中
-            "cachedWrite": 0      // 缓存写入（暂不触发）
+            "cachedWrite": 0,     // 缓存写入（暂不触发）
+            "schedules": [        // 可选：分时段价格，按数组顺序匹配第一个命中
+              {
+                "name": "peak-am",
+                "weekdays": [1, 2, 3, 4, 5],  // 1=周一…7=周日，缺省=每天
+                "start": "09:00",            // 含头（9:00 算高峰）
+                "end": "12:00",              // 不含尾（12:00 算空闲）
+                "input": 2, "output": 4, "cachedRead": 0.04, "cachedWrite": 0
+              }
+            ]
           }
         }
       ]
@@ -139,9 +148,14 @@ function mapUsage(raw: ZaiRawUsage): NormalizedUsage {
 ```
 
 - 单位不管，用户配什么数值就按什么计算
-- 未配置的字段默认 0
+- 未配置的字段默认 0；`schedules` 未配置时行为与旧版完全一致
+- `schedules` 内价格为该时段的**完整价格**（非差值），顶层字段为未命中时段的兜底价
+- 时段判定：按**北京时间**（UTC+8）的星期几 + 时分，窗口含头不含尾，`end <= start` 视为跨天（如 `22:00-06:00` 夜间价）；法定节假日无数据源，按工作日处理
+- 判定时刻 = `UsageRecord.timestamp`（对话/compaction 结束时刻）
 
 ### 公式（`src/llm/cost.ts`）
+
+`calcCost(usage, cost, now?)` 先用 `resolveCostConfig(now, cost)` 按北京时间解析出当前生效的价格（schedules 按序匹配，未命中取顶层默认），再计算：
 
 ```
 未缓存输入 = inputTokens - (cachedReadTokens ?? 0) - (cachedWriteTokens ?? 0)

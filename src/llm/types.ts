@@ -56,7 +56,6 @@ export interface CompletionResponse {
 export interface CompletionOptions {
   model?: string;
   baseUrl?: string;
-  temperature?: number;
   maxTokens?: number;
   timeout?: number;
   tools?: LLMTool[];
