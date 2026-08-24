@@ -41,6 +41,9 @@
 
 
     #doc-preview-content .doc-edit-textarea {
+      /* textarea 默认为 inline-block，基线对齐会把它向下推、底部超出容器，
+         导致预览容器和 textarea 出现双滚动条；块级化后高度正好填满内容区。 */
+      display: block;
       width: 100%;
       height: 100%;
       border: none;
