@@ -61,7 +61,9 @@ export const handleContentRoutes: RouteHandler = async ({ req, res, url, config 
       const resolved = resolveAllowedImagePath(config, url.searchParams.get("path") ?? "");
       if (!isImageFile(resolved)) throw new Error("Not an image");
       res.setHeader("Content-Type", IMAGE_MIME_BY_EXT[extname(resolved).toLowerCase()] || "application/octet-stream");
-      res.setHeader("Cache-Control", "public, max-age=3600");
+      // no-cache：每次使用前都必须向服务器重新验证（本路由未提供 ETag，
+      // 因此实际每次都会重新拉取），避免文件被修改/删除后预览仍展示旧图。
+      res.setHeader("Cache-Control", "no-cache");
       res.end(await readFile(resolved));
     } catch {
       res.statusCode = 404;
