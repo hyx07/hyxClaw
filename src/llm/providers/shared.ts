@@ -31,6 +31,19 @@ export function retryDelay(attempt: number, cfg: RetryConfig) {
   return Math.min(cfg.initialDelayMs * Math.pow(cfg.backoffMultiplier, attempt), cfg.maxDelayMs);
 }
 
+/**
+ * 剥离 ImagePart 中的内部 path 字段（仅用于前端展示与会话持久化，
+ * 不应发送给 provider）。返回新对象，不修改原消息。
+ */
+function stripImagePath(content: Message["content"]): Message["content"] {
+  if (!Array.isArray(content)) return content;
+  return content.map((part) =>
+    part.type === "image_url"
+      ? { type: "image_url", image_url: { url: part.image_url.url } }
+      : part,
+  );
+}
+
 export function mapMessage(m: Message): {
   role: string;
   content: Message["content"];
@@ -38,15 +51,16 @@ export function mapMessage(m: Message): {
   tool_calls?: LLMToolCall[];
   reasoning_content?: string;
 } {
-  if (m.role === "tool") return { role: "tool", content: m.content, tool_call_id: m.tool_call_id };
+  const content = stripImagePath(m.content);
+  if (m.role === "tool") return { role: "tool", content, tool_call_id: m.tool_call_id };
   if (m.tool_calls)
     return {
       role: m.role,
-      content: m.content,
+      content,
       tool_calls: m.tool_calls,
       ...(m.reasoning_content ? { reasoning_content: m.reasoning_content } : {}),
     };
-  return { role: m.role, content: m.content };
+  return { role: m.role, content };
 }
 
 export async function fetchWithRetry(
