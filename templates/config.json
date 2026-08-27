@@ -9,10 +9,9 @@
           "label": "zai-glm-5.3",
           "cost": { "input": 8, "output": 28, "cachedRead": 2 },
           "thinking": [
-            { "id": "low", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "low" } },
-            { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
-            { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }],
-          "thinkingOff": { "thinking": { "type": "disabled" } }
+            { "id": "low", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "low" } },
+            { "id": "high", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "high" } },
+            { "id": "max", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "max" } }]
         },
         {
           "id": "glm-5.3-flash",
@@ -20,10 +19,9 @@
           "modal": "vl",
           "cost": { "input": 0.8, "output": 2.8, "cachedRead": 0.23 },
           "thinking": [
-            { "id": "low", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "low" } },
-            { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
-            { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }],
-          "thinkingOff": { "thinking": { "type": "disabled" } }
+            { "id": "low", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "low" } },
+            { "id": "high", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "high" } },
+            { "id": "max", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "max" } }]
         }
       ]
     },
@@ -37,25 +35,25 @@
           "modal": "vl",
           "cost": { "input": 0.2, "output": 0.8, "cachedRead": 0.04},
           "thinking": [
-            { "id": "512", "params": { "enable_thinking": true, "thinking_budget": 512 } },
-            { "id": "1024", "params": { "enable_thinking": true, "thinking_budget": 1024 } },
-            { "id": "4096", "params": { "enable_thinking": true, "thinking_budget": 4096 } },
-            { "id": "8192", "params": { "enable_thinking": true, "thinking_budget": 8192 } }
+            { "id": "512", "params": { "enable_thinking": true, "thinking_budget": 512, "preserve_thinking": true } },
+            { "id": "1024", "params": { "enable_thinking": true, "thinking_budget": 1024, "preserve_thinking": true } },
+            { "id": "4096", "params": { "enable_thinking": true, "thinking_budget": 4096, "preserve_thinking": true } },
+            { "id": "8192", "params": { "enable_thinking": true, "thinking_budget": 8192, "preserve_thinking": true } }
           ],
-          "thinkingOff": { "enable_thinking": false }
+          "thinkingOff": { "enable_thinking": false, "preserve_thinking": true }
         },
         {
-          "id": "qwen3.7-plus",
-          "label": "qwen3.7-plus",
+          "id": "qwen3.8-flash",
+          "label": "qwen3.8-flash",
           "modal": "vl",
-          "cost": { "input": 2, "output": 8, "cachedRead": 0.4, "cachedWrite": 2.5 },
+          "cost": { "input": 1, "output": 3, "cachedRead": 0.1, "cachedWrite": 1.25 },
           "thinking": [
-            { "id": "512", "params": { "enable_thinking": true, "thinking_budget": 512 } },
-            { "id": "1024", "params": { "enable_thinking": true, "thinking_budget": 1024 } },
-            { "id": "4096", "params": { "enable_thinking": true, "thinking_budget": 4096 } },
-            { "id": "8192", "params": { "enable_thinking": true, "thinking_budget": 8192 } }
+            { "id": "512", "params": { "enable_thinking": true, "thinking_budget": 512, "preserve_thinking": true } },
+            { "id": "1024", "params": { "enable_thinking": true, "thinking_budget": 1024, "preserve_thinking": true } },
+            { "id": "4096", "params": { "enable_thinking": true, "thinking_budget": 4096, "preserve_thinking": true } },
+            { "id": "8192", "params": { "enable_thinking": true, "thinking_budget": 8192, "preserve_thinking": true } }
           ],
-          "thinkingOff": { "enable_thinking": false }
+          "thinkingOff": { "enable_thinking": false, "preserve_thinking": true }
         },
         {
           "id": "glm-5.3",
@@ -167,7 +165,7 @@
   "defaultProvider": "deepseek",
   "defaultModel": "deepseek-v4-flash",
   "defaultThinkingEffort": "high",
-  "maxTokens": 8192,
+  "maxTokens": 16384,
   "contextMaxTokens": 500000,
   "contextMaxMessages": 0,
   "maxToolCalls": 30,

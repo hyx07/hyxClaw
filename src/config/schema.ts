@@ -166,7 +166,7 @@ export const DEFAULT_CONFIG = {
   defaultProvider: "zai" as const,
   defaultModel: "GLM-4.7",
   defaultThinkingEffort: "high" as const,
-  maxTokens: 4096,
+  maxTokens: 16384,
   contextMaxTokens: 100_000,
   contextMaxMessages: 0,
   maxToolCalls: 10,

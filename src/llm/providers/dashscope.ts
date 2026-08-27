@@ -74,7 +74,7 @@ export class DashScopeProvider implements LLMProvider {
     const body = {
       model,
       messages: messages.map(mapMessage),
-      max_tokens: maxTokens,
+      max_completion_tokens: maxTokens,
       stream: false,
       ...thinkingParams,
       ...(tools && tools.length > 0 ? { tools } : {}),
@@ -111,7 +111,7 @@ export class DashScopeProvider implements LLMProvider {
     const body = {
       model,
       messages: messages.map(mapMessage),
-      max_tokens: maxTokens,
+      max_completion_tokens: maxTokens,
       stream: true,
       stream_options: { include_usage: true },
       ...(tools && tools.length > 0 ? { tools } : {}),

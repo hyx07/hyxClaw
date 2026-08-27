@@ -67,7 +67,7 @@ metadata 记录是：
 
 - provider 返回 reasoning 时，agent loop 内部会保留
 - **会完整持久化到磁盘**，前端渲染为折叠的 "Thinking" 块
-- 发送给模型时，`sanitizeHistoryForProvider` 统一剥离历史 reasoning（DeepSeek 模型开启 thinking 时例外，会保留）
+- 发送给模型时，`sanitizeHistoryForProvider` 对 reasoning_content 不做剥离，所有 provider 的历史 reasoning 都会随消息发送（供多轮上下文参考）
 
 相关实现：
 
@@ -165,37 +165,9 @@ system prompt 来源：`files/prompts/agent_system_prompt.txt`（由 `loadSystem
 
 这一步只影响**发给模型的上下文**，不修改 session 文件本身。
 
-## 6. DeepSeek 在 thinking mode 下的特殊处理
+## 6. agent loop 里的消息行为
 
-这是当前最特殊的一条 provider 兼容逻辑。
-
-### 6.1 触发条件
-
-模型名以 `deepseek` 开头（不限 provider），且 `thinkingEffort` 不为 `none`。
-
-### 6.2 处理规则
-
-如果触发，`sanitizeHistoryForProvider` 会**保留**历史 reasoning_content（其他 provider/model 则剥离）。
-
-### 6.3 原因
-
-这是为兼容 DeepSeek 在 thinking 模式下对历史消息的限制。
-
-项目当前采用的策略是：
-
-- `sanitizeHistoryForProvider` 在每次发送前统一剥离历史消息中的 `reasoning_content`，避免上下文膨胀
-- 例外：DeepSeek 模型（模型名以 `deepseek` 开头）且开启 thinking 时，保留 reasoning_content，因为 DeepSeek API 要求 tool_calls 与 reasoning_content 配套出现
-- 当前轮次 agent loop 内部的 reasoning_content 不受影响
-
-补充说明：
-
-- reasoning_content **会**持久化到 session 历史（之前不会，现已改为会）
-- 历史 reasoning 在前端渲染为折叠的 "Thinking" 块
-- 发送前的剥离/保留由 `sanitizeHistoryForProvider` 统一控制
-
-## 7. agent loop 里的消息行为
-
-### 7.1 工具调用过程
+### 6.1 工具调用过程
 
 当前 agent loop 使用的是非流式 `complete()` 循环：
 
@@ -205,7 +177,7 @@ system prompt 来源：`files/prompts/agent_system_prompt.txt`（由 `loadSystem
 4. 把 `assistant(tool_calls)` 和 `tool` 消息加入本轮 `extraMessages`
 5. 继续下一次 `complete()`
 
-### 7.2 当轮有效、落盘时清理
+### 6.2 当轮有效、落盘时清理
 
 `extraMessages` 在当轮内部是完整存在的，包括：
 
@@ -223,11 +195,11 @@ system prompt 来源：`files/prompts/agent_system_prompt.txt`（由 `loadSystem
 - 工具调用链会持久化
 - reasoning 也会持久化
 
-## 8. `chat()` 和 `chatStream()` 的差异
+## 7. `chat()` 和 `chatStream()` 的差异
 
 当前 Web UI 走的是 `chatStream()`。
 
-### 8.1 `chatStream()`
+### 7.1 `chatStream()`
 
 特点：
 
@@ -236,7 +208,7 @@ system prompt 来源：`files/prompts/agent_system_prompt.txt`（由 `loadSystem
 - 最后把 assistant 最终回复写入 session
 - 中间通过伪流式 chunk 发给前端
 
-### 8.2 `chat()`
+### 7.2 `chat()`
 
 特点：
 
@@ -246,7 +218,7 @@ system prompt 来源：`files/prompts/agent_system_prompt.txt`（由 `loadSystem
 
 目前网页聊天主链路基本不会走它。
 
-## 9. 前端看到的历史和 session 里的历史
+## 8. 前端看到的历史和 session 里的历史
 
 前端 `sessionLoaded` 拿到的是 session 原始消息。
 
@@ -264,9 +236,9 @@ system prompt 来源：`files/prompts/agent_system_prompt.txt`（由 `loadSystem
 - 历史里图片消息是会保留的
 - 但 UI 当前不显示缩略图，只显示路径/来源
 
-## 10. compact 当前怎么做
+## 9. compact 当前怎么做
 
-### 10.1 compact 输入是什么
+### 9.1 compact 输入是什么
 
 compact 不是把原始消息数组直接发给模型，而是先把整段历史**序列化成一段纯文本**：
 
@@ -277,7 +249,7 @@ compact 不是把原始消息数组直接发给模型，而是先把整段历史
   - 如有 `tool_call_id`，再附加对应 id
 - 消息之间用 `---` 分隔
 
-### 10.2 compact prompt
+### 9.2 compact prompt
 
 compact 使用独立提示词：
 
@@ -289,7 +261,7 @@ compact 发送给模型的是两条消息：
 - system：压缩提示词
 - user：`<conversation> ... </conversation>` 包裹后的历史全文
 
-### 10.3 compact 如何处理图片
+### 9.3 compact 如何处理图片
 
 不管 compact 模型本身是否支持图片，当前 compact **一律不处理图片能力**。
 
@@ -301,7 +273,7 @@ compact 发送给模型的是两条消息：
 
 也就是说 compact 看到的始终是**纯文本历史摘要材料**。
 
-### 10.4 compact 完成后会写回什么
+### 9.4 compact 完成后会写回什么
 
 compact 成功后：
 
@@ -312,7 +284,7 @@ compact 成功后：
 
 所以 compact 是“**归档旧历史 + 用摘要重建会话**”，不是在原历史后追加一条 summary。
 
-## 11. lastProvider / lastModel 如何工作
+## 10. lastProvider / lastModel 如何工作
 
 session metadata 中会记录：
 
@@ -332,37 +304,37 @@ session metadata 中会记录：
 - 这是 session 级运行态信息
 - 不影响消息内容本身
 
-## 12. 当前值得记住的几个结论
+## 11. 当前值得记住的几个结论
 
-### 12.1 会话历史里会存什么
+### 11.1 会话历史里会存什么
 
 - 会存 user / assistant / assistant(tool_calls) / tool
 - **会存** reasoning_content（从历史消息中渲染为折叠的 Thinking 块）
 
-### 12.2 图片消息的真实行为
+### 11.2 图片消息的真实行为
 
 - 图片可以存进 session 历史
 - 但只有视觉模型会真正看到它们
 - 非视觉模型发请求前会把历史图片过滤掉
 
-### 12.3 非视觉模型带图发送
+### 11.3 非视觉模型带图发送
 
 - 当前轮直接报错
 - 不入库
 - 不调用模型
 
-### 12.4 DeepSeek thinking mode
+### 11.4 reasoning 与工具链历史
 
-- 会额外过滤旧工具链历史
-- 只保留普通 user / assistant / system
+- 不再区分 provider：所有模型的历史 reasoning_content 都随上下文发送（`sanitizeHistoryForProvider` 不剥离）
+- compact 对工具链历史无 provider 特判，统一按文本序列化处理
 
-### 12.5 compact
+### 11.5 compact
 
 - 永远只处理文本
 - 图片一律先过滤
 - compact 后当前 session 只保留“回顾请求 + 摘要结果”两条消息
 
-## 13. 后续如果继续演进，建议优先注意的地方
+## 12. 后续如果继续演进，建议优先注意的地方
 
 如果后面继续改会话控制逻辑，最容易出问题的是这几处：
 

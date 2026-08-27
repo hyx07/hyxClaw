@@ -265,7 +265,9 @@ export function createChatView({ state, documents, pickers, permissions, actions
     const modelThinking = Array.isArray(model?.thinking) ? model.thinking : [];
     const firstNonNone = modelThinking.find((level) => level.id !== "off");
     state.currentThinkingEffort = firstNonNone?.id || "off";
-    const levels = [{ id: "off", label: "off" }, ...modelThinking];
+    // 只有配置了 thinkingOff 的模型才提供 off 选项（未配置时选 off 与 API 默认行为无异，不显示避免误导）
+    const hasOff = model?.thinkingOff !== undefined;
+    const levels = hasOff ? [{ id: "off", label: "off" }, ...modelThinking] : modelThinking;
     state.thinkingEffortSelectEl.innerHTML = "";
     for (const level of levels) {
       const option = document.createElement("option");

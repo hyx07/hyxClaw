@@ -17,6 +17,8 @@
 
 在百炼 OpenAI 兼容接口中：Qwen3.6/3.7 使用 `enable_thinking` 和 `thinking_budget`；GLM-5.2 与 DeepSeek-V4 使用 `enable_thinking` 和 `reasoning_effort`；Kimi-K2.6 只使用 `enable_thinking`。
 
+历史思考回传（`preserve_thinking`）：项目现在会把所有 provider 的历史 `reasoning_content` 随消息发送。dashscope 默认不将历史 reasoning 拼接进输入，需要在请求参数中显式开启 `preserve_thinking: true`（支持 qwen3.6/3.7/3.8 系列与 kimi-k2.6/k2.7 等，qwen3.8 系列强制开启；未配置的模型不会自动添加）。因此 `qwen3.7-flash` / `qwen3.7-plus` 的 `thinking` 各档和 `thinkingOff` 都携带 `preserve_thinking: true`。
+
 本文档记录当前项目中各 LLM provider 的实际调用方式，重点覆盖：
 
 - 非流式调用方式
@@ -167,25 +169,20 @@ interface NormalizedUsage {
 
 ZAI 的 thinking 控制方式：
 
-- 开启：
+- 开启（保留历史思考）：
   ```json
-  { "thinking": { "type": "enabled" } }
+  { "thinking": { "type": "enabled", "clear_thinking": false } }
   ```
 - 关闭：
   ```json
   { "thinking": { "type": "disabled" } }
   ```
 
-当前实现特点：
-
-- `enableThinking === true` 时传 `enabled`
-- `enableThinking === false` 时传 `disabled`
-- `enableThinking === undefined` 时不传该字段
+`clear_thinking`（Preserved Thinking）：`false` 表示保留历史思考，供多轮 tool-call 中参考上一轮的 `reasoning_content`；与 dashscope 的 `preserve_thinking` 对应。当前模板中 `glm-5.3` / `glm-5.3-flash` 的各档 thinking 均携带 `clear_thinking: false`（这两个模型强制思考，不能关闭，故无 thinkingOff）。
 
 注意：
 
-- 从实现注释看，`GLM-4.7 / GLM-5` 可能会默认开启 thinking
-- 如果希望明确关闭，需要显式传 `disabled`
+- `GLM-5.3` / `GLM-5.3-FLASH` 强制思考，传 `disabled` 会报错，未配置 thinkingOff
 
 ### 3.3 Thinking Budget 映射
 
@@ -272,7 +269,7 @@ ZAI 非流式支持工具调用：
   "model": "...",
   "messages": [...],
   "temperature": 0.7,
-  "max_tokens": 4096,
+  "max_completion_tokens": 4096,
   "stream": false,
   "enable_thinking": false,
   "thinking_budget": 512,

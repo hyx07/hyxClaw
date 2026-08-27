@@ -103,7 +103,7 @@ describe("chat", () => {
     expect(getChatContextPreview(session)).toBe("(empty session)");
   });
 
-  it("sanitizeHistoryForProvider strips reasoning_content for non-deepseek models, keeps for deepseek with thinking", () => {
+  it("sanitizeHistoryForProvider keeps reasoning_content for all models, strips only images for non-vision models", () => {
     const messages: Message[] = [
       { id: "1", role: "user", content: "查天气", timestamp: "2024-01-01T00:00:00Z" },
       {
@@ -118,27 +118,19 @@ describe("chat", () => {
       { id: "4", role: "assistant", content: "杭州今天晴天 25C。", timestamp: "2024-01-01T00:00:03Z", reasoning_content: "整理结果" },
     ];
 
-    // deepseek model with thinking: keep reasoning
-    const deepseekMessages = sanitizeHistoryForProvider([...messages], "deepseek", "low", true, "deepseek-v4-flash");
-    expect(deepseekMessages).toHaveLength(4);
-    expect(deepseekMessages[1].tool_calls).toBeDefined();
-    expect(deepseekMessages[1].reasoning_content).toBe("先调用工具");
-    expect(deepseekMessages[3].reasoning_content).toBe("整理结果");
+    // 所有 provider 都保留历史 reasoning_content
+    for (const provider of ["zai", "dashscope", "deepseek"] as const) {
+      const result = sanitizeHistoryForProvider([...messages], true);
+      expect(result).toHaveLength(4);
+      expect(result[1].tool_calls).toBeDefined();
+      expect(result[1].reasoning_content).toBe("先调用工具");
+      expect(result[3].reasoning_content).toBe("整理结果");
+      void provider;
+    }
 
-    // deepseek model without thinking: strip reasoning
-    const deepseekNoThinking = sanitizeHistoryForProvider([...messages], "deepseek", "off", true, "deepseek-v4-flash");
-    expect(deepseekNoThinking[1].reasoning_content).toBeUndefined();
-
-    // non-deepseek model: strip reasoning regardless
-    const zaiMessages = sanitizeHistoryForProvider([...messages], "zai", "low", true, "GLM-5.2");
-    expect(zaiMessages).toHaveLength(4);
-    expect(zaiMessages[1].tool_calls).toBeDefined();
-    expect(zaiMessages[1].reasoning_content).toBeUndefined();
-    expect(zaiMessages[3].reasoning_content).toBeUndefined();
-
-    // deepseek model from dashscope provider: keep reasoning
-    const dashscopeDeepseek = sanitizeHistoryForProvider([...messages], "dashscope", "high", true, "deepseek-v4-flash");
-    expect(dashscopeDeepseek[1].reasoning_content).toBe("先调用工具");
+    // thinking off 也不影响历史 reasoning 保留
+    const offMessages = sanitizeHistoryForProvider([...messages], true);
+    expect(offMessages[1].reasoning_content).toBe("先调用工具");
   });
 
   it("sanitizeHistoryForProvider strips image parts for non-vision models", () => {
@@ -162,7 +154,7 @@ describe("chat", () => {
       },
     ];
 
-    const sanitized = sanitizeHistoryForProvider(messages, "zai", undefined, false);
+    const sanitized = sanitizeHistoryForProvider(messages, false);
     expect(sanitized).toHaveLength(1);
     expect(sanitized[0].content).toEqual([{ type: "text", text: "看看这张图" }]);
   });

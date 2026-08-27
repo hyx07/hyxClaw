@@ -93,27 +93,14 @@ function stripImageParts(message: Message): Message | null {
 
 export function sanitizeHistoryForProvider(
   messages: Message[],
-  providerName: ProviderName,
-  thinkingEffort?: string,
   supportsImages: boolean = true,
-  model?: string,
 ): Message[] {
-  const baseMessages = supportsImages
-    ? messages
-    : messages
-      .map(stripImageParts)
-      .filter((message): message is Message => Boolean(message));
-
-  // DeepSeek 模型开启 thinking 时需要历史 reasoning_content 来配对 tool_calls，
-  // 否则 API 返回 400。其他情况剥离 reasoning 避免上下文膨胀。
-  // 当前轮次的 reasoning_content 在 agent loop 内部的 extraMessages 中保留，不受此影响。
-  const keepReasoning = model?.toLowerCase().startsWith("deepseek") && thinkingEffort && thinkingEffort !== "off";
-  if (keepReasoning) return baseMessages;
-
-  return baseMessages.map((message) => {
-    const { reasoning_content: _reasoningContent, ...sanitized } = message;
-    return sanitized;
-  });
+  // 所有 provider 都保留历史 reasoning_content（供多轮上下文参考）；
+  // 仅图片需要按模型能力剥离。
+  if (supportsImages) return messages;
+  return messages
+    .map(stripImageParts)
+    .filter((message): message is Message => Boolean(message));
 }
 
 function formatToday(): string {
@@ -585,7 +572,7 @@ export async function chat(
   };
   const run = resolveChatRunSettings(config, options);
   const supportsImages = config.providers[run.providerName]?.models?.find((item) => item.id === run.model)?.modal === "vl";
-  const historyForProvider = sanitizeHistoryForProvider(session.messages, run.providerName, run.thinkingEffort, supportsImages, run.model);
+  const historyForProvider = sanitizeHistoryForProvider(session.messages, supportsImages);
 
   const systemPromptContent = await loadSystemPrompt(config);
   const systemMessages: Message[] = systemPromptContent
@@ -692,7 +679,7 @@ export async function* chatStream(
   };
   const run = resolveChatRunSettings(config, options);
   const supportsImages = config.providers[run.providerName]?.models?.find((item) => item.id === run.model)?.modal === "vl";
-  const historyForProvider = sanitizeHistoryForProvider(session.messages, run.providerName, run.thinkingEffort, supportsImages, run.model);
+  const historyForProvider = sanitizeHistoryForProvider(session.messages, supportsImages);
 
   const systemPromptContent = await loadSystemPrompt(config);
   const systemMessages: Message[] = systemPromptContent
