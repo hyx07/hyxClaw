@@ -35,10 +35,10 @@
           "modal": "vl",
           "cost": { "input": 0.2, "output": 0.8, "cachedRead": 0.04},
           "thinking": [
-            { "id": "512", "params": { "enable_thinking": true, "thinking_budget": 512, "preserve_thinking": true } },
-            { "id": "1024", "params": { "enable_thinking": true, "thinking_budget": 1024, "preserve_thinking": true } },
-            { "id": "4096", "params": { "enable_thinking": true, "thinking_budget": 4096, "preserve_thinking": true } },
-            { "id": "8192", "params": { "enable_thinking": true, "thinking_budget": 8192, "preserve_thinking": true } }
+            { "id": "low", "params": { "enable_thinking": true, "thinking_budget": 512, "preserve_thinking": true } },
+            { "id": "medium", "params": { "enable_thinking": true, "thinking_budget": 1024, "preserve_thinking": true } },
+            { "id": "high", "params": { "enable_thinking": true, "thinking_budget": 4096, "preserve_thinking": true } },
+            { "id": "max", "params": { "enable_thinking": true, "thinking_budget": 8192, "preserve_thinking": true } }
           ],
           "thinkingOff": { "enable_thinking": false, "preserve_thinking": true }
         },
@@ -48,10 +48,10 @@
           "modal": "vl",
           "cost": { "input": 1, "output": 3, "cachedRead": 0.1, "cachedWrite": 1.25 },
           "thinking": [
-            { "id": "512", "params": { "enable_thinking": true, "thinking_budget": 512, "preserve_thinking": true } },
-            { "id": "1024", "params": { "enable_thinking": true, "thinking_budget": 1024, "preserve_thinking": true } },
-            { "id": "4096", "params": { "enable_thinking": true, "thinking_budget": 4096, "preserve_thinking": true } },
-            { "id": "8192", "params": { "enable_thinking": true, "thinking_budget": 8192, "preserve_thinking": true } }
+            { "id": "low", "params": { "enable_thinking": true, "thinking_budget": 512, "preserve_thinking": true } },
+            { "id": "medium", "params": { "enable_thinking": true, "thinking_budget": 1024, "preserve_thinking": true } },
+            { "id": "high", "params": { "enable_thinking": true, "thinking_budget": 4096, "preserve_thinking": true } },
+            { "id": "max", "params": { "enable_thinking": true, "thinking_budget": 8192, "preserve_thinking": true } }
           ],
           "thinkingOff": { "enable_thinking": false, "preserve_thinking": true }
         },

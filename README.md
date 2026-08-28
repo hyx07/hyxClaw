@@ -66,10 +66,10 @@ pnpm start
           "label": "qwen3.6-flash",
           "modal": "vl",
           "thinking": [
-            { "id": "512", "params": { "enable_thinking": true, "thinking_budget": 512 } },
-            { "id": "1024", "params": { "enable_thinking": true, "thinking_budget": 1024 } },
-            { "id": "4096", "params": { "enable_thinking": true, "thinking_budget": 4096 } },
-            { "id": "8192", "params": { "enable_thinking": true, "thinking_budget": 8192 } }
+            { "id": "low", "params": { "enable_thinking": true, "thinking_budget": 512 } },
+            { "id": "medium", "params": { "enable_thinking": true, "thinking_budget": 1024 } },
+            { "id": "high", "params": { "enable_thinking": true, "thinking_budget": 4096 } },
+            { "id": "max", "params": { "enable_thinking": true, "thinking_budget": 8192 } }
           ],
           "thinkingOff": { "enable_thinking": false }
         },
