@@ -46,7 +46,7 @@
           "id": "qwen3.8-flash",
           "label": "qwen3.8-flash",
           "modal": "vl",
-          "cost": { "input": 1, "output": 3, "cachedRead": 0.1, "cachedWrite": 1.25 },
+          "cost": { "input": 0.8, "output": 2.7, "cachedRead": 0.1},
           "thinking": [
             { "id": "low", "params": { "enable_thinking": true, "thinking_budget": 512, "preserve_thinking": true } },
             { "id": "medium", "params": { "enable_thinking": true, "thinking_budget": 1024, "preserve_thinking": true } },
