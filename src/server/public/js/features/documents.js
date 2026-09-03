@@ -168,6 +168,7 @@ export function getRightPanelHTML(opts = {}) {
     <div id="doc-rail-resize" title="拖拽调整右栏宽度"></div>
     <aside id="action-rail" class="${railCollapsed ? "collapsed" : ""}" style="width:${width}px">
       ${toggleHTML}
+      <button id="doc-rail-edit-btn" class="icon-button" type="button" title="编辑" aria-label="编辑"><i data-lucide="pencil"></i></button>
       <div id="doc-browser">
         <div id="doc-root-tabs"></div>
         <div id="doc-columns"></div>
@@ -309,17 +310,19 @@ async function toggleDocEdit() {
 function updateDocSelectionStatus() {
   const linesEl = document.querySelector("#doc-selection-status .doc-selection-lines");
   const summaryEl = document.querySelector("#doc-selection-status .doc-selection-summary");
-  const editBtn = document.getElementById("doc-edit-btn");
   if (linesEl) linesEl.textContent = getDocSelectionStatusText();
   if (summaryEl) summaryEl.textContent = selectedPreviewSummary ? `"${selectedPreviewSummary}"` : "";
-  if (editBtn) {
-    const editIcon = getActiveTabEditMode() ? "log-out" : "pencil";
+  const editIcon = getActiveTabEditMode() ? "log-out" : "pencil";
+  const editDisabled = !activeTabPath || docPreviewKind !== "text";
+  // 同步预览工具栏和收起态竖条上的两个编辑按钮
+  for (const editBtn of [document.getElementById("doc-edit-btn"), document.getElementById("doc-rail-edit-btn")]) {
+    if (!editBtn) continue;
     if (editBtn.dataset.icon !== editIcon) {
       editBtn.dataset.icon = editIcon;
       editBtn.innerHTML = `<i data-lucide="${editIcon}"></i>`;
       window.lucide?.createIcons();
     }
-    editBtn.disabled = !activeTabPath || docPreviewKind !== "text";
+    editBtn.disabled = editDisabled;
   }
 }
 
@@ -775,6 +778,7 @@ export function initRightPanel() {
   document.getElementById("knowledge-btn")?.addEventListener("click", openKnowledgeModal);
   document.getElementById("doc-refresh-btn")?.addEventListener("click", refreshDocBrowser);
   document.getElementById("doc-edit-btn")?.addEventListener("click", toggleDocEdit);
+  document.getElementById("doc-rail-edit-btn")?.addEventListener("click", toggleDocEdit);
   document.getElementById("doc-preview-content")?.addEventListener("click", () => {
     const selection = window.getSelection();
     if (!selection || selection.toString().trim()) return;

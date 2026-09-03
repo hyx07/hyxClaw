@@ -969,6 +969,16 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
   border-color: var(--border);
   box-shadow: var(--shadow-sm);
 }
+/* Collapsed rail shows an edit button on the strip so the active document
+   can be toggled into edit mode without expanding the rail. */
+#action-rail > #doc-rail-edit-btn {
+  position: absolute;
+  top: var(--space-3);
+  left: 6px;
+  z-index: 3;
+  visibility: hidden;
+  pointer-events: none;
+}
 /* File browsing and preview share a single continuous rail surface. */
 #doc-browser {
   padding: 0;
@@ -1190,6 +1200,10 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
   visibility: visible;
   pointer-events: auto;
   left: 5px;
+}
+#action-rail.collapsed > #doc-rail-edit-btn {
+  visibility: visible;
+  pointer-events: auto;
 }
 
 /* Workspace modes exchange the preview content and chat content below its header. */
