@@ -170,29 +170,38 @@ async function loadUsageTotal() {
     return;
   }
   rows.sort((a, b) => `${a.provider}${a.model}`.localeCompare(`${b.provider}${b.model}`));
+  // 缓存输入口径与费用计算一致：cachedRead + cachedWrite，均为 inputTokens 的子集
+  const splitInput = (row) => {
+    const cached = (Number(row.cachedReadTokens) || 0) + (Number(row.cachedWriteTokens) || 0);
+    return { cached, uncached: (Number(row.inputTokens) || 0) - cached };
+  };
   const totals = rows.reduce((summary, row) => {
-    summary.inputTokens += Number(row.inputTokens) || 0;
+    const { cached, uncached } = splitInput(row);
+    summary.cachedInput += cached;
+    summary.uncachedInput += uncached;
     summary.billingOutputTokens += Number(row.billingOutputTokens ?? row.outputTokens) || 0;
-    summary.thinkingTokens += Number(row.thinkingTokens) || 0;
     summary.cost += Number(row.cost) || 0;
     return summary;
-  }, { inputTokens: 0, billingOutputTokens: 0, thinkingTokens: 0, cost: 0 });
-  body.innerHTML = rows.map((row) => `
+  }, { cachedInput: 0, uncachedInput: 0, billingOutputTokens: 0, cost: 0 });
+  body.innerHTML = rows.map((row) => {
+    const { cached, uncached } = splitInput(row);
+    return `
     <tr>
       <td>${escHtml(row.model || "")}</td>
       <td>${escHtml(row.provider || "")}</td>
-      <td>${formatTokens(row.inputTokens)}</td>
+      <td>${formatTokens(cached)}</td>
+      <td>${formatTokens(uncached)}</td>
       <td>${formatTokens(row.billingOutputTokens ?? row.outputTokens)}</td>
-      <td>${formatTokens(row.thinkingTokens || 0)}</td>
       <td>${formatCost(row.cost)}</td>
     </tr>
-  `).join("");
+  `;
+  }).join("");
   foot.innerHTML = `
     <tr>
       <th scope="row" colspan="2">总计</th>
-      <td>${formatTokens(totals.inputTokens)}</td>
+      <td>${formatTokens(totals.cachedInput)}</td>
+      <td>${formatTokens(totals.uncachedInput)}</td>
       <td>${formatTokens(totals.billingOutputTokens)}</td>
-      <td>${formatTokens(totals.thinkingTokens)}</td>
       <td>${formatCost(totals.cost)}</td>
     </tr>
   `;
