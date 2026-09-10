@@ -104,6 +104,7 @@
         {
           "id": "deepseek-flash",
           "label": "deepseek-flash",
+          "modal": "vl",
           "cost": {
             "input": 1,
             "output": 4,
