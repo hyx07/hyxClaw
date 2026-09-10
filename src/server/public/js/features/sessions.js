@@ -96,9 +96,23 @@ export function createSessionFeature({ state, socket, renderer, pickers, permiss
     }
   }
 
+  // 会话记录的 provider/model 可能已从 config 中删除（如模型下线），校验后回退到默认值
+  function resolveSessionRuntime(session) {
+    const provider = state.availableProviders.includes(session?.lastProvider)
+      && Array.isArray(state.providerConfigs?.[session.lastProvider]?.models)
+      ? session.lastProvider
+      : state.defaultProvider;
+    const models = state.providerConfigs?.[provider]?.models;
+    const model = Array.isArray(models) && models.some((item) => item.id === session?.lastModel)
+      ? session.lastModel
+      : state.defaultModel;
+    return { provider, model };
+  }
+
   function applySessionRuntimeState(session) {
-    state.currentProvider = session?.lastProvider || state.defaultProvider;
-    state.currentModel = session?.lastModel || state.defaultModel;
+    const runtime = resolveSessionRuntime(session);
+    state.currentProvider = runtime.provider;
+    state.currentModel = runtime.model;
     state.currentThinkingEffort = session?.lastThinkingEffort || state.defaultThinkingEffort;
     actions.syncModelControls();
   }
@@ -249,8 +263,9 @@ export function createSessionFeature({ state, socket, renderer, pickers, permiss
     state.pendingToolBlocks = {};
     state.typingPlaceholder = null;
     state.compactingBubble = null;
-    state.currentProvider = session?.lastProvider || state.defaultProvider;
-    state.currentModel = session?.lastModel || state.defaultModel;
+    const runtime = resolveSessionRuntime(session);
+    state.currentProvider = runtime.provider;
+    state.currentModel = runtime.model;
     state.currentThinkingEffort = session?.lastThinkingEffort || state.defaultThinkingEffort;
     state.latestUsage = null;
     state.currentSessionMessageCount = 0;

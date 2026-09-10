@@ -378,7 +378,9 @@ export function createChatView({ state, documents, pickers, permissions, actions
       fragments.push(row);
     }
 
+    // 最近列表可能残留已从 config 中删除的模型，渲染前先过滤（需在 slice 之前，避免陈旧条目占用展示位）
     const recent = (state.recentModels || [])
+      .filter((entry) => getModelsForProvider(entry.provider).some((model) => model.id === entry.model))
       .filter((entry) => !(entry.provider === state.currentProvider && entry.model === state.currentModel))
       .slice(0, 2)
       .reverse();
