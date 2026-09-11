@@ -183,16 +183,21 @@ async function loadUsageTotal() {
     summary.cost += Number(row.cost) || 0;
     return summary;
   }, { cachedInput: 0, uncachedInput: 0, billingOutputTokens: 0, cost: 0 });
+  // 费用/百万token = 总费用 ÷ (总输入 + 总输出) × 1,000,000，无 token 时记 0
+  const costPerMillion = (cost, tokens) => (tokens > 0 ? Number(((cost / tokens) * 1_000_000).toFixed(2)) : 0);
   body.innerHTML = rows.map((row) => {
     const { cached, uncached } = splitInput(row);
+    const output = Number(row.billingOutputTokens ?? row.outputTokens) || 0;
+    const cost = Number(row.cost) || 0;
     return `
     <tr>
       <td>${escHtml(row.model || "")}</td>
       <td>${escHtml(row.provider || "")}</td>
       <td>${formatTokens(cached)}</td>
       <td>${formatTokens(uncached)}</td>
-      <td>${formatTokens(row.billingOutputTokens ?? row.outputTokens)}</td>
-      <td>${formatCost(row.cost)}</td>
+      <td>${formatTokens(output)}</td>
+      <td>${formatCost(cost)}</td>
+      <td>${formatCost(costPerMillion(cost, cached + uncached + output))}</td>
     </tr>
   `;
   }).join("");
@@ -203,6 +208,7 @@ async function loadUsageTotal() {
       <td>${formatTokens(totals.uncachedInput)}</td>
       <td>${formatTokens(totals.billingOutputTokens)}</td>
       <td>${formatCost(totals.cost)}</td>
+      <td>${formatCost(costPerMillion(totals.cost, totals.cachedInput + totals.uncachedInput + totals.billingOutputTokens))}</td>
     </tr>
   `;
   empty.style.display = "none";

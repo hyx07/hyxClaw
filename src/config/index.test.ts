@@ -51,21 +51,21 @@ describe("config", () => {
     const saved = JSON.parse(await readFile(path.join(testDir, "config.json"), "utf-8")) as Record<string, unknown>;
 
     expect(config.defaultProvider).toBe("deepseek");
-    expect(config.defaultModel).toBe("deepseek-v4-flash");
+    expect(config.defaultModel).toBe("deepseek-flash");
     expect(config.defaultThinkingEffort).toBe("high");
     expect(config.providers.deepseek.models[0].thinking?.map((option) => option.id)).toEqual(["low", "high", "max"]);
-    expect(resolveModelThinking(config, "deepseek", "deepseek-v4-flash", "max")).toEqual({
+    expect(resolveModelThinking(config, "deepseek", "deepseek-flash", "max")).toEqual({
       level: "max",
       params: { thinking: { type: "enabled" }, reasoning_effort: "max" },
     });
-    expect(resolveModelThinking(config, "deepseek", "deepseek-v4-flash", "off")).toEqual({
+    expect(resolveModelThinking(config, "deepseek", "deepseek-flash", "off")).toEqual({
       level: "off",
       params: { thinking: { type: "disabled" } },
     });
     expect(config.providers.zai.baseUrl).toBe("https://open.bigmodel.cn/api/paas/v4");
     expect(config.compaction).toEqual({
       provider: "deepseek",
-      model: "deepseek-v4-flash",
+      model: "deepseek-flash",
       thinkingEffort: "off",
       keepRecentRounds: 0,
     });
