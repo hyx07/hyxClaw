@@ -120,6 +120,25 @@
             { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }
           ],
           "thinkingOff": { "thinking": { "type": "disabled" } }
+        },
+        {
+          "id": "deepseek-v4-pro",
+          "label": "ds-v4-pro",
+          "cost": {
+            "input": 4.5,
+            "output": 13.5,
+            "cachedRead": 0.15,
+            "schedules": [
+              { "name": "peak-am", "weekdays": [1, 2, 3, 4, 5], "start": "09:00", "end": "12:00", "input": 9.0, "output": 27.0, "cachedRead": 0.3 },
+              { "name": "peak-pm", "weekdays": [1, 2, 3, 4, 5], "start": "14:00", "end": "18:00", "input": 9.0, "output": 27.0, "cachedRead": 0.3 }
+            ]
+          },
+          "thinking": [
+            { "id": "low", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "low" } },
+            { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
+            { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }
+          ],
+          "thinkingOff": { "thinking": { "type": "disabled" } }
         }
       ]
     }
