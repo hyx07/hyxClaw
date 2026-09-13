@@ -1799,6 +1799,8 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
 }
 .usage-panel-body {
   padding: var(--space-5) var(--space-6) var(--space-6);
+  /* 预留滚动条槽位，避免滚动条出现/消失导致内容宽度变化、图例重新换行 */
+  scrollbar-gutter: stable;
 }
 .usage-toolbar {
   justify-content: space-between;

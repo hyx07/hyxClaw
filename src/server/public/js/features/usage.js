@@ -70,6 +70,14 @@ function renderChart(containerId, legendId, data, groupKey, totalKey, formatFn, 
       return `<span class="usage-legend-item"><span class="usage-legend-swatch" style="background:${colors[key]}"></span>${escHtml(key)}<span style="margin-left:12px">${formatFn(count)}</span></span>`;
     }).join("") + `<span class="usage-legend-sep"></span><span class="usage-legend-item usage-legend-total"><span class="usage-legend-swatch usage-legend-total-swatch"></span>合计<span style="margin-left:12px">${formatFn(total)}</span></span>`;
   };
+  // 合计是各天模型的并集，行数一定不少于任意一天；把合计渲染后的高度锁成
+  // min-height，悬停时图例只会在锁定高度内变短，不再带动面板上下跳。
+  const showTotalsLegend = () => {
+    legend.style.minHeight = "";
+    renderLegend(totals);
+    const height = legend.getBoundingClientRect().height;
+    legend.style.minHeight = height > 0 ? `${height}px` : "";
+  };
 
   for (const entry of data) {
     const group = document.createElement("div");
@@ -88,15 +96,16 @@ function renderChart(containerId, legendId, data, groupKey, totalKey, formatFn, 
       group.appendChild(segment);
     }
     group.addEventListener("mouseenter", () => renderLegend(values));
-    group.addEventListener("mouseleave", () => renderLegend(totals));
     const dateLabel = document.createElement("div");
     dateLabel.className = "usage-chart-bar-label";
     dateLabel.textContent = entry.date.slice(5);
     group.appendChild(dateLabel);
     chart.appendChild(group);
   }
+  // mouseleave 挂在整个图表上：柱间移动（A 天→B 天）不会先闪一下合计
+  chart.addEventListener("mouseleave", showTotalsLegend);
   wrapper.appendChild(chart);
-  renderLegend(totals);
+  showTotalsLegend();
 }
 
 function padDateRange(apiData, days) {
@@ -138,6 +147,17 @@ function renderUsageDailyCharts() {
   const formatFn = isCost ? formatCost : formatTokens;
   renderChart("usage-chart-model", "usage-legend-model", cachedDailyData, groupKey, totalKey, formatFn, isCost);
   renderChart("usage-chart-provider", "usage-legend-provider", cachedDailyData, providerGroupKey, totalKey, formatFn, isCost);
+}
+
+// 窗口宽度变化会改变图例换行，重新渲染以重算锁定的高度（仅弹窗打开且停留在每日页时）
+let usageResizeFrame = 0;
+if (typeof window !== "undefined") {
+  window.addEventListener("resize", () => {
+    if (activeUsageTab !== "daily") return;
+    if (!document.getElementById("usage-modal")?.classList.contains("open")) return;
+    cancelAnimationFrame(usageResizeFrame);
+    usageResizeFrame = requestAnimationFrame(() => renderUsageDailyCharts());
+  });
 }
 
 function showEmptyLoading(el) {
