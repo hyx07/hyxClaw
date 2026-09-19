@@ -1,4 +1,5 @@
 import { renderContent } from "../markdown.js";
+import { openImagePreview } from "./image-preview.js";
 
 const USER_MESSAGE_COLLAPSE_THRESHOLD = 400;
 const USER_MESSAGE_COLLAPSE_LINE_THRESHOLD = 5;
@@ -139,7 +140,9 @@ export function createMessageRenderer({ state, streaming, onRestart, scrollToBot
     contentDiv.className = "message-content";
     const renderedText = role === "user" ? formatUserMessageContent(content) : formatMessageContent(content);
     contentDiv.dataset.raw = renderedText;
-    if (role === "assistant" && typeof content === "string" && content) {
+    if (role === "user" && Array.isArray(content)) {
+      appendUserMessageParts(contentDiv, content);
+    } else if (role === "assistant" && typeof content === "string" && content) {
       contentDiv.classList.add("markdown-body");
       renderContent(contentDiv, renderedText);
     } else {
@@ -180,6 +183,31 @@ export function buildUserMessageContent(text, images) {
     parts.push({ type: "image_url", image_url: { url: image.url, path: image.path } });
   }
   return parts;
+}
+
+/** 用户消息（含图片）按内容分支构建 DOM：文本段 + 可点击预览的缩略图。 */
+function appendUserMessageParts(contentDiv, parts) {
+  for (const part of parts) {
+    if (part.type === "text" && part.text) {
+      const textEl = document.createElement("div");
+      textEl.className = "user-message-text";
+      textEl.textContent = extractDisplayUserText(part.text);
+      contentDiv.appendChild(textEl);
+    } else if (part.type === "image_url" && part.image_url?.url) {
+      contentDiv.appendChild(createImageThumb(part.image_url.url, part.image_url.path));
+    }
+  }
+}
+
+function createImageThumb(url, path) {
+  const img = document.createElement("img");
+  img.className = "message-image-thumb";
+  img.src = url;
+  img.alt = path || "clipboard:image.png";
+  img.title = path || "clipboard:image.png";
+  img.loading = "lazy";
+  img.addEventListener("click", () => openImagePreview(url, path));
+  return img;
 }
 
 export function extractUserText(content) {
