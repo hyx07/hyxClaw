@@ -185,16 +185,24 @@ export function buildUserMessageContent(text, images) {
   return parts;
 }
 
-/** 用户消息（含图片）按内容分支构建 DOM：文本段 + 可点击预览的缩略图。 */
+/** 用户消息（含图片）按内容分支构建 DOM：文本段 + 可点击预览的缩略图。
+    连续图片归入同一个横向 flex 行（.message-image-row），多图不竖向堆叠。 */
 function appendUserMessageParts(contentDiv, parts) {
+  let imageRow = null;
   for (const part of parts) {
     if (part.type === "text" && part.text) {
+      imageRow = null;
       const textEl = document.createElement("div");
       textEl.className = "user-message-text";
       textEl.textContent = extractDisplayUserText(part.text);
       contentDiv.appendChild(textEl);
     } else if (part.type === "image_url" && part.image_url?.url) {
-      contentDiv.appendChild(createImageThumb(part.image_url.url, part.image_url.path));
+      if (!imageRow) {
+        imageRow = document.createElement("div");
+        imageRow.className = "message-image-row";
+        contentDiv.appendChild(imageRow);
+      }
+      imageRow.appendChild(createImageThumb(part.image_url.url, part.image_url.path));
     }
   }
 }

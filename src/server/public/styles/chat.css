@@ -540,8 +540,21 @@
       white-space: pre-wrap;
     }
 
+    /* 连续图片横向排列，超出换行 */
+    .message-image-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .message-image-row + .user-message-text { margin-top: 6px; }
+
+    .message-content > .message-image-row:first-child { margin-top: 0; }
+
     .message-image-thumb {
       display: block;
+      flex-shrink: 0;
       width: 54px;
       height: 54px;
       object-fit: cover;
