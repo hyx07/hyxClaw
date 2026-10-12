@@ -243,7 +243,9 @@ function makeEditTool(policy: FilePolicy): ToolDefinition<EditInput> {
 
         // Try exact match first
         if (original.includes(input.old_string)) {
-          const updated = original.replace(input.old_string, input.new_string);
+          // 用函数形式替换：字符串替换串会被解释特殊模式（$$ → $、$& → 匹配文本等），
+          // 导致 new_string 中的 $$（如 LaTeX 公式）被静默折叠。
+          const updated = original.replace(input.old_string, () => input.new_string);
           await fs.writeFile(resolved, updated, "utf-8");
           return { content: `Edited ${input.path}` };
         }
@@ -253,7 +255,8 @@ function makeEditTool(policy: FilePolicy): ToolDefinition<EditInput> {
         const normalizedOld = input.old_string.replace(/\r\n/g, "\n");
         if (normalized.includes(normalizedOld)) {
           const normalizedNew = input.new_string.replace(/\r\n/g, "\n");
-          const updated = normalized.replace(normalizedOld, normalizedNew);
+          // 函数形式替换，理由同上
+          const updated = normalized.replace(normalizedOld, () => normalizedNew);
           await fs.writeFile(resolved, updated, "utf-8");
           return { content: `Edited ${input.path}` };
         }

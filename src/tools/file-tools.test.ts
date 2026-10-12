@@ -138,6 +138,18 @@ describe("edit tool", () => {
     expect(readResult.content).toBe("baz bar foo");
   });
 
+  it("preserves $$ and $ special sequences in new_string", async () => {
+    await getTool("write").execute({ path: "inputs/edit-dollar.txt", content: "FORMULA_PLACEHOLDER" });
+    const result = await getTool("edit").execute({
+      path: "inputs/edit-dollar.txt",
+      old_string: "FORMULA_PLACEHOLDER",
+      new_string: "$$ x = 1 $$ | $& | $' | $` | $1",
+    });
+    expect(result.isError).toBeUndefined();
+    const readResult = await getTool("read").execute({ path: "inputs/edit-dollar.txt" });
+    expect(readResult.content).toBe("$$ x = 1 $$ | $& | $' | $` | $1");
+  });
+
   it("returns error when old_string not found", async () => {
     await getTool("write").execute({ path: "inputs/edit2.txt", content: "hello" });
     const result = await getTool("edit").execute({ path: "inputs/edit2.txt", old_string: "nothere", new_string: "x" });
