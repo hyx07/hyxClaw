@@ -23,6 +23,8 @@
 ### 1.4 LLM Providers (built-in)
 - **智谱 (Zai)** — via `open.bigmodel.cn/api/paas/v4`, OpenAI-compatible API
 - **阿里百炼 (DashScope)** — via `dashscope.aliyuncs.com/compatible-mode/v1`, OpenAI-compatible API
+- **DeepSeek** — via `api.deepseek.com`, OpenAI-compatible API
+- **Command Code** — via `api.commandcode.ai/provider/v1`, OpenAI-compatible API（Claude 系模型只在其 `/v1/messages` 端点提供，chat/completions 不可用）
 
 No third-party LLM SDKs — all providers use raw `fetch` over OpenAI-compatible HTTP endpoints.
 
@@ -63,7 +65,9 @@ src/
 │   ├── types.ts          # LLMProvider interface, CompletionOptions, UsageRecord
 │   └── providers/
 │       ├── zai.ts        # 智谱 OpenAI-compatible provider
-│       └── dashscope.ts  # 阿里百炼 OpenAI-compatible provider
+│       ├── dashscope.ts  # 阿里百炼 OpenAI-compatible provider
+│       ├── deepseek.ts   # DeepSeek OpenAI-compatible provider
+│       └── commandcode.ts # Command Code OpenAI-compatible provider
 ├── tools/                # Tool system
 │   ├── index.ts          # initTools() - register all tools from config
 │   ├── types.ts          # ToolDefinition, ToolResult, ToolContext, LLMTool
@@ -219,7 +223,7 @@ Server → Client:
 
 ### 3.9 Config (`src/config/`)
 - **Schema** (Zod): `providers` map, `defaultProvider`, `defaultModel`, `defaultThinkingEffort`, `maxTokens`, `contextMaxTokens`, `contextMaxMessages`, `maxToolCalls`, `server` (port/host), `fs` (allowedDirs/allowedFiles), `compaction` (provider/model/thinkingEffort). Each model may declare native `thinking` values.
-- **Supported providers**: `zai` (智谱), `dashscope` (阿里百炼)
+- **Supported providers**: `zai` (智谱), `dashscope` (阿里百炼), `deepseek`, `commandcode`
 - **Thinking levels**: the UI always adds `none`; each model's `thinking` list supplies provider-native values (for example, DeepSeek `high` / `max`). `none` is sent explicitly as that provider's disable parameter.
 - **`$HYXCLAW_DATA_DIR`** must be set via `.env` file, no default fallback
 

@@ -31,12 +31,14 @@
 - `zai`
 - `dashscope`
 - `deepseek`
+- `commandcode`
 
 相关实现文件：
 
 - `src/llm/providers/zai.ts`
 - `src/llm/providers/dashscope.ts`
 - `src/llm/providers/deepseek.ts`
+- `src/llm/providers/commandcode.ts`
 - 公共类型：`src/llm/types.ts`
 
 ---
@@ -500,9 +502,112 @@ DeepSeek 为 OpenAI-compatible 风格接口，工具调用阶段可按非流式 
 
 ---
 
-## 6. 三家 provider 的关键差异
+## 6. Command Code
 
-### 6.1 Thinking 写法不同
+实现文件：
+
+- `src/llm/providers/commandcode.ts`
+
+官方文档：`https://commandcode.ai/docs/provider`
+
+默认 endpoint：
+
+- `https://api.commandcode.ai/provider/v1`
+
+请求路径：
+
+- `POST {baseUrl}/chat/completions`
+
+### 6.1 非流式调用
+
+请求体按 OpenAI Chat Completions schema 组织：
+
+```json
+{
+  "model": "z-ai/glm-5.3-flash",
+  "messages": [...],
+  "max_tokens": 4096,
+  "stream": false,
+  "tools": [...]
+}
+```
+
+说明：
+
+- `stream` 固定为 `false`
+- 有工具时才传 `tools`
+- `responseFormat` 存在时传 `response_format`
+- thinking 通过 `reasoning_effort` 控制（见 6.2）
+
+### 6.2 Thinking 控制方式（2026-10 实测）
+
+`reasoning_effort` 是该端点的受校验参数，合法枚举：`off | low | medium | high | xhigh | max`（其他值返回 400）。`off` 用于关闭思考，但仅对支持关闭思考的模型生效，`z-ai/glm-5.3-flash` 传 `off` 返回 400 `unsupported_value`。
+
+档位实测（`z-ai/glm-5.3-flash`，同一 prompt「用两种方法心算 17×23」，单次采样，reasoning_tokens 口径）：
+
+| 参数写法 | reasoning_tokens | 说明 |
+| --- | --- | --- |
+| 无参数 | 1054（带 reasoning_content） | 默认自适应思考，甚至比显式低档更深 |
+| `reasoning_effort: "low"` | 0（无 reasoning_content） | 接近关闭思考；该模型不支持 `off`，`low` 即实测最浅档 |
+| `"medium"` | 22 | 浅思考 |
+| `"high"` | 140 | 中思考 |
+| `"xhigh"` | 92 | 与 high 同量级（单次采样有波动） |
+| `"max"` | 161 | 中强思考 |
+| `{ thinking.enabled } + effort=max` | 2032 | enabled 组合把 max 档思考预算放大数倍 |
+
+注意：
+
+- 各模型在「1+1」式琐题上会自适应跳过思考，小样本下容易误判为「档位无效」，对照必须用会触发推理的题目
+- `{ "thinking": { "type": "disabled" } }`、`{ "enable_thinking": false }` 单独传入不生效，仍然思考
+- `deepseek/deepseek-v4.1-flash` 实测支持 `reasoning_effort: "off"` 关闭思考（off 配 reasoning_tokens=0、无 reasoning_content；zai 式 `thinking.disabled` 对它同样无效），模板为其配 `thinkingOff: { "reasoning_effort": "off" }`
+- 模板为 glm-5.3-flash 统一采用 `thinking.enabled + reasoning_effort` 组合写法，配 low / high / max 三档（enabled+low/high 未单独复核，不对档位行为负责）；不配 `thinkingOff`（模型不支持 `off`，会话选 `none` 时不传参数 = 默认自适应思考）；上表为 effort 单独传入的档位实测，仅作参数行为参考
+
+各模型想要启用/关闭思考，在数据目录 config.json 按现有 `thinking: [...]` / `thinkingOff` 机制按模型自行配置；支持关闭思考的模型示例：
+
+```json
+{ "thinkingOff": { "reasoning_effort": "off" } }
+```
+
+### 6.3 历史消息回传与工具调用
+
+- assistant 消息携带 `reasoning_content`（单独发送或与 tool_calls 同发）实测均被接受，无需剥离，与其他 provider 一致
+- `tool` 消息 + `tool_call_id` 回传正常；响应中的工具调用在 `choice.message.tool_calls`
+
+### 6.4 Token usage 返回格式
+
+实测 usage 结构（流式终帧同构）：
+
+```json
+{
+  "prompt_tokens": 28,
+  "completion_tokens": 49,
+  "total_tokens": 77,
+  "prompt_tokens_details": { "cached_tokens": 0, "cache_write_tokens": 0, "created_cache_tokens": 0, "cache_read_input_tokens": 0 },
+  "completion_tokens_details": { "reasoning_tokens": 47 }
+}
+```
+
+标准化映射规则：
+
+- `inputTokens = prompt_tokens`
+- `thinkingTokens = completion_tokens_details.reasoning_tokens`
+- `outputTokens = completion_tokens - thinkingTokens`（`completion_tokens` 含 thinking）
+- `billingOutputTokens = completion_tokens`
+- `cachedRead = prompt_tokens_details.cached_tokens`（缺省时回落 `cache_read_input_tokens`）
+- `cachedWrite = prompt_tokens_details.cache_write_tokens`（流式缺省时回落 `created_cache_tokens`）
+
+### 6.5 流式、模型清单与限制
+
+- 标准 OpenAI SSE：`delta.content` / `delta.reasoning_content` / `delta.tool_calls`，`[DONE]` 收尾；流式自带终帧 usage（请求仍显式带 `stream_options.include_usage`）
+- 模型清单：`GET {baseUrl}/models` 可实时拉取
+- 模型 ID 为厂商前缀格式（如 `deepseek/deepseek-v4.1-flash`、`z-ai/glm-5.3-flash`）
+- Claude 系模型只提供 `/v1/messages`（Anthropic 格式）端点，本项目用 chat/completions 无法调用 Claude 模型
+
+---
+
+## 7. 各 provider 的关键差异
+
+### 7.1 Thinking 写法不同
 
 - `zai`
   - `thinking: { type: "enabled" | "disabled" }`
@@ -511,8 +616,10 @@ DeepSeek 为 OpenAI-compatible 风格接口，工具调用阶段可按非流式 
 - `deepseek`
   - `thinking: { type: "enabled" | "disabled" }`
   - 配合 `reasoning_effort`
+- `commandcode`
+  - `reasoning_effort`（合法值 `off|low|medium|high|xhigh|max`，`off` 仅对支持关闭思考的模型生效）
 
-### 6.2 Thinking Budget 支持不同
+### 7.2 Thinking Budget 支持不同
 
 - `zai`
   - 当前不支持数值型 budget
@@ -520,8 +627,10 @@ DeepSeek 为 OpenAI-compatible 风格接口，工具调用阶段可按非流式 
 - `dashscope`
   - 当前支持数值型 budget
   - 五档可映射到不同数值
+- `commandcode`
+  - 无数值 budget，档位由 `reasoning_effort` 表达（见 6.2 的实测说明）
 
-### 6.3 outputTokens 映射方式不同
+### 7.3 outputTokens 映射方式不同
 
 - `zai`
   - `outputTokens = completion_tokens - reasoning_tokens`
@@ -529,15 +638,17 @@ DeepSeek 为 OpenAI-compatible 风格接口，工具调用阶段可按非流式 
   - `outputTokens = completion_tokens_details.text_tokens`
 - `deepseek`
   - `outputTokens = completion_tokens - reasoning_tokens`
+- `commandcode`
+  - `outputTokens = completion_tokens - reasoning_tokens`
 
-### 6.4 DeepSeek 补充
+### 7.4 DeepSeek 补充
 
 - `deepseek` 的 thinking budget 不建议依赖数值型 `thinking_budget`
 - 当前更适合映射到 `reasoning_effort`
 
 ---
 
-## 7. 维护建议
+## 8. 维护建议
 
 后续维护时，新增或修改 provider，建议逐项确认以下内容：
 

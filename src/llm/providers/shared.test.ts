@@ -67,6 +67,21 @@ describe("mapMessage", () => {
     });
   });
 
+  it("keeps reasoning_content on plain assistant messages even without tool_calls", () => {
+    const m = message({ role: "assistant", content: "2", reasoning_content: "1+1=2" });
+    expect(mapMessage(m)).toEqual({ role: "assistant", content: "2", reasoning_content: "1+1=2" });
+  });
+
+  it("keeps reasoning_content on tool messages too", () => {
+    const m = message({
+      role: "tool",
+      tool_call_id: "call_1",
+      content: "结果",
+      reasoning_content: "核对一下再回答",
+    });
+    expect(mapMessage(m).reasoning_content).toBe("核对一下再回答");
+  });
+
   it("does not mutate the original message", () => {
     const m = message({
       role: "user",
