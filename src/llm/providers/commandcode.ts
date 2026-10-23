@@ -57,7 +57,10 @@ interface CommandCodeChunk {
     delta: {
       role?: string;
       content?: string | null;
+      /** 思考文本：不同模型字段名不同（glm-5.3-flash 用 reasoning_content，flashx 用 reasoning） */
       reasoning_content?: string | null;
+      reasoning?: string | null;
+      reasoning_text?: string | null;
       tool_calls?: Array<{ index: number; id?: string; function?: { name?: string; arguments?: string } }>;
     };
     finish_reason: string | null;
@@ -68,10 +71,25 @@ interface CommandCodeChunk {
 interface CommandCodeResponse {
   choices: Array<{
     index: number;
-    message: { role: string; content: string | null; tool_calls?: LLMToolCall[]; reasoning_content?: string };
+    message: {
+      role: string;
+      content: string | null;
+      tool_calls?: LLMToolCall[];
+      reasoning_content?: string;
+      reasoning?: string;
+      reasoning_text?: string;
+    };
     finish_reason: string;
   }>;
   usage?: CommandCodeRawUsage;
+}
+
+/** 思考字段兼容：网关不同模型的回传字段名不统一 */
+function pickReasoning(...candidates: Array<string | null | undefined>): string | undefined {
+  for (const c of candidates) {
+    if (c) return c;
+  }
+  return undefined;
 }
 
 export class CommandCodeProvider implements LLMProvider {
@@ -91,7 +109,7 @@ export class CommandCodeProvider implements LLMProvider {
     const body = {
       model,
       messages: messages.map(mapMessage),
-      max_tokens: maxTokens,
+      max_completion_tokens: maxTokens,
       stream: false,
       ...(tools && tools.length > 0 ? { tools } : {}),
       ...thinkingParams,
@@ -117,7 +135,7 @@ export class CommandCodeProvider implements LLMProvider {
       content: choice.message.content,
       tool_calls: choice.message.tool_calls,
       finish_reason: choice.finish_reason,
-      reasoning_content: choice.message.reasoning_content,
+      reasoning_content: pickReasoning(choice.message.reasoning_content, choice.message.reasoning, choice.message.reasoning_text),
       usage: data.usage ? mapUsage(data.usage) : undefined,
     };
   }
@@ -139,7 +157,7 @@ export class CommandCodeProvider implements LLMProvider {
     const body = {
       model,
       messages: messages.map(mapMessage),
-      max_tokens: maxTokens,
+      max_completion_tokens: maxTokens,
       stream: true,
       stream_options: { include_usage: true },
       ...(tools && tools.length > 0 ? { tools } : {}),
@@ -183,7 +201,8 @@ export class CommandCodeProvider implements LLMProvider {
             const parsed = JSON.parse(data) as CommandCodeChunk;
             const choice = parsed.choices?.[0];
             const delta = choice?.delta;
-            if (delta?.reasoning_content) yield { type: "reasoning", text: delta.reasoning_content };
+            const reasoningText = pickReasoning(delta?.reasoning_content, delta?.reasoning, delta?.reasoning_text);
+            if (reasoningText) yield { type: "reasoning", text: reasoningText };
             if (delta?.content) yield { type: "content", text: delta.content };
             if (delta?.tool_calls) {
               for (const tc of delta.tool_calls) {
