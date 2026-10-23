@@ -13,7 +13,8 @@ function sendGitError(error: unknown, res: Parameters<typeof sendJson>[0]): void
 }
 
 export const handleGitSyncRoutes: RouteHandler = async ({ req, res, url, gitSyncEnabled }) => {
-  const isGitRoute = url.pathname === "/api/git/status" || url.pathname === "/api/git/pull" || url.pathname === "/api/git/push";
+  const isGitRoute =
+    url.pathname === "/api/git/status" || url.pathname === "/api/git/pull" || url.pathname === "/api/git/push";
   if (!isGitRoute) return false;
 
   if (!gitSyncEnabled) {

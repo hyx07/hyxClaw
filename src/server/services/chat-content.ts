@@ -1,6 +1,9 @@
 import type { MessageContentPart } from "../../types/index.js";
 
-function buildUserContent(content: string, images?: Array<{ url: string; path?: string }>): string | MessageContentPart[] {
+function buildUserContent(
+  content: string,
+  images?: Array<{ url: string; path?: string }>,
+): string | MessageContentPart[] {
   if (!images?.length) return content;
   const parts: MessageContentPart[] = [];
   if (content) parts.push({ type: "text", text: content });

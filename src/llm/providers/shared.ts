@@ -38,9 +38,7 @@ export function retryDelay(attempt: number, cfg: RetryConfig) {
 function stripImagePath(content: Message["content"]): Message["content"] {
   if (!Array.isArray(content)) return content;
   return content.map((part) =>
-    part.type === "image_url"
-      ? { type: "image_url", image_url: { url: part.image_url.url } }
-      : part,
+    part.type === "image_url" ? { type: "image_url", image_url: { url: part.image_url.url } } : part,
   );
 }
 

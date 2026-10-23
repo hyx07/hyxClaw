@@ -28,18 +28,19 @@
 ```typescript
 interface UsageRecord {
   model: string;
-  provider: string;         // "zai" | "anthropic" | "openrouter"
-  inputTokens: number;      // 非 thinking 的输入 token
-  outputTokens: number;     // completion_tokens - reasoning_tokens（纯回复内容，用于上下文判断）
+  provider: string; // "zai" | "anthropic" | "openrouter"
+  inputTokens: number; // 非 thinking 的输入 token
+  outputTokens: number; // completion_tokens - reasoning_tokens（纯回复内容，用于上下文判断）
   billingOutputTokens: number; // completion_tokens（含 thinking，用于计费统计）
-  thinkingTokens?: number;  // thinking 消耗的 token（如有）
-  cachedTokens?: number;    // 缓存命中的 token（如有）
-  timestamp: string;        // ISO 8601
+  thinkingTokens?: number; // thinking 消耗的 token（如有）
+  cachedTokens?: number; // 缓存命中的 token（如有）
+  timestamp: string; // ISO 8601
   sessionId: string;
 }
 ```
 
 各供应商映射规则（以 ZAI 为例）：
+
 - `inputTokens` ← `prompt_tokens`
 - `outputTokens` ← `completion_tokens - reasoning_tokens`（纯回复，不含 thinking）
 - `billingOutputTokens` ← `completion_tokens`（含 thinking，计费用）
@@ -70,9 +71,9 @@ interface UsageRecord {
 - 统计面板内容：按 `provider + model` 分组，展示累计 inputTokens 和 outputTokens
 - 格式示例：
 
-  | 模型 | 供应商 | 累计输入 | 累计输出（含 thinking） | 累计 Thinking |
-  |------|--------|----------|------------------------|---------------|
-  | glm-4.7 | zai | 12,345 | 5,801 | 1,234 |
+  | 模型    | 供应商 | 累计输入 | 累计输出（含 thinking） | 累计 Thinking |
+  | ------- | ------ | -------- | ----------------------- | ------------- |
+  | glm-4.7 | zai    | 12,345   | 5,801                   | 1,234         |
 
 - 数据来源：读取 `GET /api/usage/stats`，后端合并 `usage.jsonl` 和历史归档后聚合返回
 
@@ -160,6 +161,7 @@ interface UsageRecord {
 当前 `zai.ts` 的 `stream()` 在 `finish_reason` 非空时直接 `return`，没有读顶层 `usage`，需要补上。
 
 实现方案：
+
 - `ZaiChunk` 接口补充顶层 `usage` 字段
 - `StreamChunk` 新增 `{ type: "usage", ... }` 类型
 - `stream()` 在 `finish_reason` 非空时，先 yield `{ type: "usage", usage }` 再 return

@@ -48,11 +48,16 @@ function getModelModal(config: Config, provider: ProviderName, model: string): "
 
 function buildPermissionDetails(toolName: string, input: Record<string, unknown>): Record<string, string> {
   const str = (value: unknown, max: number) => String(value ?? "").slice(0, max);
-  const list = (value: unknown, max: number) => Array.isArray(value)
-    ? value.map((item) => String(item)).join("\n").slice(0, max)
-    : str(value, max);
+  const list = (value: unknown, max: number) =>
+    Array.isArray(value)
+      ? value
+          .map((item) => String(item))
+          .join("\n")
+          .slice(0, max)
+      : str(value, max);
   if (toolName === "write") return { path: str(input.path, 200), preview: str(input.content, 100) };
-  if (toolName === "edit") return { path: str(input.path, 200), oldPreview: str(input.old_string, 80), newPreview: str(input.new_string, 80) };
+  if (toolName === "edit")
+    return { path: str(input.path, 200), oldPreview: str(input.old_string, 80), newPreview: str(input.new_string, 80) };
   if (toolName === "delete") return { path: str(input.path, 200) };
   if (toolName === "move") return { path: str(input.path, 200), newPath: str(input.new_path, 200) };
   if (toolName === "web_search") return { query: str(input.query, 500) };
@@ -74,8 +79,21 @@ export async function processChatMessage(options: {
   config: Config;
   logger: ReturnType<typeof getLogger>;
 }): Promise<void> {
-  const { client, sessionId, content, images, provider, model, thinkingEffort, previewPath, selectedPreviewText, pendingPermissions, config, logger } = options;
-  
+  const {
+    client,
+    sessionId,
+    content,
+    images,
+    provider,
+    model,
+    thinkingEffort,
+    previewPath,
+    selectedPreviewText,
+    pendingPermissions,
+    config,
+    logger,
+  } = options;
+
   // Abort any existing chat for this session
   cancelChat(sessionId, pendingPermissions);
   const runId = randomUUID();
@@ -103,7 +121,12 @@ export async function processChatMessage(options: {
     }
     const userMessageId = randomUUID();
     sendChatEvent({ type: "chatStart", userMessageId });
-    const { llmUserContent, persistedUserContent } = buildAugmentedUserContent(content, normalizedImages, previewPath, selectedPreviewText);
+    const { llmUserContent, persistedUserContent } = buildAugmentedUserContent(
+      content,
+      normalizedImages,
+      previewPath,
+      selectedPreviewText,
+    );
     let fullResponse = "";
     let usage: UsageRecord | undefined;
     let contextUsage: UsageRecord | undefined;
@@ -116,7 +139,8 @@ export async function processChatMessage(options: {
       userMessageId,
       signal: controller.signal,
       onToolCall: (name, input, callId) => sendChatEvent({ type: "toolCall", name, input, callId }),
-      onToolResult: (name, resultContent, isError, callId) => sendChatEvent({ type: "toolResult", name, content: resultContent, isError, callId }),
+      onToolResult: (name, resultContent, isError, callId) =>
+        sendChatEvent({ type: "toolResult", name, content: resultContent, isError, callId }),
       checkPermission: async (toolName, input) => {
         if (!requiresToolPermission(client, toolName)) return true;
         const requestId = randomUUID();
@@ -146,22 +170,31 @@ export async function processChatMessage(options: {
     }
 
     if (usage) await appendUsageRecord(usage);
-    const summarize = (record: UsageRecord | undefined) => record ? {
-      model: record.model,
-      provider: record.provider,
-      inputTokens: record.inputTokens,
-      outputTokens: record.outputTokens,
-      billingOutputTokens: record.billingOutputTokens,
-      thinkingTokens: record.thinkingTokens,
-      cachedReadTokens: record.cachedReadTokens,
-      cachedWriteTokens: record.cachedWriteTokens,
-      cost: record.cost,
-    } : undefined;
+    const summarize = (record: UsageRecord | undefined) =>
+      record
+        ? {
+            model: record.model,
+            provider: record.provider,
+            inputTokens: record.inputTokens,
+            outputTokens: record.outputTokens,
+            billingOutputTokens: record.billingOutputTokens,
+            thinkingTokens: record.thinkingTokens,
+            cachedReadTokens: record.cachedReadTokens,
+            cachedWriteTokens: record.cachedWriteTokens,
+            cost: record.cost,
+          }
+        : undefined;
     sendChatEvent({ type: "chatEnd", fullResponse, usage: summarize(usage), contextUsage: summarize(contextUsage) });
     logger.info(`Chat completed: ${(await loadSession(sessionId)).title}`);
   } catch (error) {
     logger.error(`Chat processing error: ${(error as Error).message}`);
-    sendToClient(client, { type: "error", sessionId, runId, sequence: ++sequence, message: `Chat failed: ${(error as Error).message}` });
+    sendToClient(client, {
+      type: "error",
+      sessionId,
+      runId,
+      sequence: ++sequence,
+      message: `Chat failed: ${(error as Error).message}`,
+    });
   } finally {
     if (activeChats.get(sessionId)?.runId === runId) activeChats.delete(sessionId);
   }

@@ -33,9 +33,13 @@ function resolveInside(root: string, requestPath: string): string {
 }
 
 function resolveVendorAsset(requestPath: string): string {
-  const parts = requestPath.replace(/^\/vendor\//, "").split("/").filter(Boolean);
+  const parts = requestPath
+    .replace(/^\/vendor\//, "")
+    .split("/")
+    .filter(Boolean);
   const packageName = parts.shift();
-  if (!packageName || !(packageName in VENDOR_ASSET_ROOTS) || parts.length === 0) throw new Error("Vendor asset not found");
+  if (!packageName || !(packageName in VENDOR_ASSET_ROOTS) || parts.length === 0)
+    throw new Error("Vendor asset not found");
   return resolveInside(VENDOR_ASSET_ROOTS[packageName as keyof typeof VENDOR_ASSET_ROOTS], parts.join("/"));
 }
 
@@ -49,7 +53,8 @@ export async function handleStaticRequest(
     if (pathname.startsWith("/vendor/")) assetPath = resolveVendorAsset(pathname);
     else if (pathname === "/" || pathname === "/index.html") assetPath = join(PUBLIC_DIR, "index.html");
     else if (pathname === "/icon-demo.html") assetPath = join(PUBLIC_DIR, "icon-demo.html");
-    else if (pathname.startsWith("/styles/") || pathname.startsWith("/js/")) assetPath = resolveInside(PUBLIC_DIR, pathname.slice(1));
+    else if (pathname.startsWith("/styles/") || pathname.startsWith("/js/"))
+      assetPath = resolveInside(PUBLIC_DIR, pathname.slice(1));
     else return false;
 
     res.setHeader("Content-Type", contentType(assetPath));

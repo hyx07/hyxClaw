@@ -11,12 +11,12 @@ export type { LLMTool, LLMToolCall };
  * A yielded item from a streaming completion
  */
 export interface NormalizedUsage {
-  inputTokens: number;           // prompt_tokens 总数
-  cachedReadTokens?: number;     // prompt 缓存命中
-  cachedWriteTokens?: number;    // prompt 缓存写入
-  billingOutputTokens: number;   // completion_tokens（计费用，含 thinking）
-  thinkingTokens?: number;       // reasoning_tokens
-  outputTokens: number;          // completion_tokens - thinkingTokens（纯输出）
+  inputTokens: number; // prompt_tokens 总数
+  cachedReadTokens?: number; // prompt 缓存命中
+  cachedWriteTokens?: number; // prompt 缓存写入
+  billingOutputTokens: number; // completion_tokens（计费用，含 thinking）
+  thinkingTokens?: number; // reasoning_tokens
+  outputTokens: number; // completion_tokens - thinkingTokens（纯输出）
 }
 
 export interface UsageRecord extends NormalizedUsage {
@@ -72,11 +72,7 @@ export interface LLMProvider {
   /**
    * Non-streaming completion (used in agentic tool-call loop)
    */
-  complete(
-    apiKey: string,
-    messages: Message[],
-    options?: CompletionOptions,
-  ): Promise<CompletionResponse>;
+  complete(apiKey: string, messages: Message[], options?: CompletionOptions): Promise<CompletionResponse>;
 
   /**
    * Streaming completion — yields chunks (content, reasoning, toolCallDelta, usage),

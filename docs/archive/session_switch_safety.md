@@ -40,8 +40,7 @@ WebSocket 连接上的 `client.sessionId` 表示该连接当前订阅哪个会�
 
 ```js
 {
-  type: "joinSession",
-  sessionId
+  type: ("joinSession", sessionId);
 }
 ```
 

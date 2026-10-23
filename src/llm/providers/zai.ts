@@ -10,7 +10,14 @@ import type { Message } from "../../types/index.js";
 import { LLMError } from "../../errors/index.js";
 import { logger } from "../../logger/index.js";
 import type { LLMToolCall } from "../../tools/types.js";
-import type { LLMProvider, CompletionResponse, CompletionOptions, StreamChunk, StreamFinish, NormalizedUsage } from "../types.js";
+import type {
+  LLMProvider,
+  CompletionResponse,
+  CompletionOptions,
+  StreamChunk,
+  StreamFinish,
+  NormalizedUsage,
+} from "../types.js";
 import { DEFAULT_TIMEOUT, mapMessage, fetchWithRetry } from "./shared.js";
 
 export const ZAI_ENDPOINTS = {
@@ -41,7 +48,12 @@ interface ZaiRawUsage {
 interface ZaiChunk {
   choices: Array<{
     index: number;
-    delta: { role?: string; content?: string; reasoning_content?: string; tool_calls?: Array<{ index: number; id?: string; function?: { name?: string; arguments?: string } }> };
+    delta: {
+      role?: string;
+      content?: string;
+      reasoning_content?: string;
+      tool_calls?: Array<{ index: number; id?: string; function?: { name?: string; arguments?: string } }>;
+    };
     finish_reason: string | null;
   }>;
   usage?: ZaiRawUsage;
@@ -82,11 +94,17 @@ export class ZaiProvider implements LLMProvider {
     };
 
     logger.debug(`[zai] complete`, { model, messageCount: messages.length });
-    const res = await fetchWithRetry(this.label, `${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }, timeout, options.signal);
+    const res = await fetchWithRetry(
+      this.label,
+      `${baseUrl}/chat/completions`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      timeout,
+      options.signal,
+    );
 
     const data = (await res.json()) as ZaiResponse;
     const choice = data.choices[0];
@@ -101,7 +119,11 @@ export class ZaiProvider implements LLMProvider {
     };
   }
 
-  async *stream(apiKey: string, messages: Message[], options: CompletionOptions = {}): AsyncGenerator<StreamChunk, StreamFinish, unknown> {
+  async *stream(
+    apiKey: string,
+    messages: Message[],
+    options: CompletionOptions = {},
+  ): AsyncGenerator<StreamChunk, StreamFinish, unknown> {
     const {
       model = "glm-5",
       baseUrl = ZAI_ENDPOINTS.global,
@@ -120,12 +142,18 @@ export class ZaiProvider implements LLMProvider {
       ...thinkingParams,
     };
 
-    logger.debug(`[zai] stream`, { model, messageCount: messages.length, hasTools: !!(tools?.length) });
-    const res = await fetchWithRetry(this.label, `${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }, timeout, options.signal);
+    logger.debug(`[zai] stream`, { model, messageCount: messages.length, hasTools: !!tools?.length });
+    const res = await fetchWithRetry(
+      this.label,
+      `${baseUrl}/chat/completions`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      timeout,
+      options.signal,
+    );
 
     if (!res.body) throw new LLMError("响应 body 为空", { code: "llm_empty_response" });
 
@@ -159,14 +187,22 @@ export class ZaiProvider implements LLMProvider {
                 if (tc.function?.name) existing.name = tc.function.name;
                 if (tc.function?.arguments) existing.arguments += tc.function.arguments;
                 toolCallsMap.set(tc.index, existing);
-                yield { type: "toolCallDelta", index: tc.index, id: tc.id, name: tc.function?.name, arguments: tc.function?.arguments };
+                yield {
+                  type: "toolCallDelta",
+                  index: tc.index,
+                  id: tc.id,
+                  name: tc.function?.name,
+                  arguments: tc.function?.arguments,
+                };
               }
             }
             if (parsed.choices[0]?.finish_reason) {
               finishReason = parsed.choices[0].finish_reason;
               if (parsed.usage) yield { type: "usage", usage: mapUsage(parsed.usage) };
             }
-          } catch { logger.warn(`[zai] 无法解析 chunk`); }
+          } catch {
+            logger.warn(`[zai] 无法解析 chunk`);
+          }
         }
       }
     } finally {

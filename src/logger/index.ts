@@ -53,7 +53,7 @@ export class Logger {
     level: LogLevel,
     config: LogLevelConfig,
     message: string,
-    data?: Record<string, unknown>
+    data?: Record<string, unknown>,
   ): string {
     const timestamp = this.formatTimestamp();
     const dataStr = data ? ` ${JSON.stringify(data)}` : "";
@@ -131,9 +131,9 @@ export function getLogger(logDir?: string): Logger {
       } else {
         // No default - require explicit configuration
         throw new Error(
-          'HYXCLAW_DATA_DIR environment variable is not set!\n' +
-          'Please create a .env file in the project root with:\n' +
-          'HYXCLAW_DATA_DIR=/path/to/your/data/directory'
+          "HYXCLAW_DATA_DIR environment variable is not set!\n" +
+            "Please create a .env file in the project root with:\n" +
+            "HYXCLAW_DATA_DIR=/path/to/your/data/directory",
         );
       }
     }

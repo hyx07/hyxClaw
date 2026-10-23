@@ -6,7 +6,13 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { randomBytes } from "node:crypto";
 import { rm, mkdir } from "node:fs/promises";
 import path from "node:path";
-import { chat, chatStream, truncateMessagesForContext, getChatContextPreview, sanitizeHistoryForProvider } from "./index.js";
+import {
+  chat,
+  chatStream,
+  truncateMessagesForContext,
+  getChatContextPreview,
+  sanitizeHistoryForProvider,
+} from "./index.js";
 import { createSession } from "../session/index.js";
 import type { Message, Session } from "../types/index.js";
 import type { Config } from "../config/index.js";
@@ -24,16 +30,12 @@ const mockConfig: Config = {
     dashscope: {
       apiKey: "",
       baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
-      models: [
-        { id: "qwen3.6-plus", label: "qwen3.6-plus" },
-      ],
+      models: [{ id: "qwen3.6-plus", label: "qwen3.6-plus" }],
     },
     deepseek: {
       apiKey: "",
       baseUrl: "https://api.deepseek.com",
-      models: [
-        { id: "deepseek-v4-flash", label: "v4-flash" },
-      ],
+      models: [{ id: "deepseek-v4-flash", label: "v4-flash" }],
     },
     commandcode: {
       apiKey: "",
@@ -86,20 +88,26 @@ describe("chat", () => {
   });
 
   it("truncateMessagesForContext keeps all messages within limit", () => {
-    const result = truncateMessagesForContext([
-      { id: "1", role: "user", content: "Hello", timestamp: "2024-01-01T00:00:00Z" },
-      { id: "2", role: "assistant", content: "Hi", timestamp: "2024-01-01T00:00:01Z" },
-    ], 1000);
+    const result = truncateMessagesForContext(
+      [
+        { id: "1", role: "user", content: "Hello", timestamp: "2024-01-01T00:00:00Z" },
+        { id: "2", role: "assistant", content: "Hi", timestamp: "2024-01-01T00:00:01Z" },
+      ],
+      1000,
+    );
 
     expect(result).toHaveLength(2);
   });
 
   it("truncateMessagesForContext keeps latest message under tight token limit", () => {
-    const result = truncateMessagesForContext([
-      { id: "1", role: "user", content: "A".repeat(100), timestamp: "2024-01-01T00:00:00Z" },
-      { id: "2", role: "assistant", content: "B".repeat(100), timestamp: "2024-01-01T00:00:01Z" },
-      { id: "3", role: "user", content: "C".repeat(100), timestamp: "2024-01-01T00:00:02Z" },
-    ], 50);
+    const result = truncateMessagesForContext(
+      [
+        { id: "1", role: "user", content: "A".repeat(100), timestamp: "2024-01-01T00:00:00Z" },
+        { id: "2", role: "assistant", content: "B".repeat(100), timestamp: "2024-01-01T00:00:01Z" },
+        { id: "3", role: "user", content: "C".repeat(100), timestamp: "2024-01-01T00:00:02Z" },
+      ],
+      50,
+    );
 
     expect(result[result.length - 1].content).toBe("C".repeat(100));
   });
@@ -116,11 +124,19 @@ describe("chat", () => {
         role: "assistant",
         content: null,
         timestamp: "2024-01-01T00:00:01Z",
-        tool_calls: [{ id: "tool-1", type: "function", function: { name: "get_weather", arguments: "{\"city\":\"杭州\"}" } }],
+        tool_calls: [
+          { id: "tool-1", type: "function", function: { name: "get_weather", arguments: '{"city":"杭州"}' } },
+        ],
         reasoning_content: "先调用工具",
       },
       { id: "3", role: "tool", content: "晴天 25C", timestamp: "2024-01-01T00:00:02Z", tool_call_id: "tool-1" },
-      { id: "4", role: "assistant", content: "杭州今天晴天 25C。", timestamp: "2024-01-01T00:00:03Z", reasoning_content: "整理结果" },
+      {
+        id: "4",
+        role: "assistant",
+        content: "杭州今天晴天 25C。",
+        timestamp: "2024-01-01T00:00:03Z",
+        reasoning_content: "整理结果",
+      },
     ];
 
     // 所有 provider 都保留历史 reasoning_content
@@ -152,9 +168,7 @@ describe("chat", () => {
       {
         id: "2",
         role: "assistant",
-        content: [
-          { type: "image_url", image_url: { url: "data:image/png;base64,def", path: "inputs/b.png" } },
-        ],
+        content: [{ type: "image_url", image_url: { url: "data:image/png;base64,def", path: "inputs/b.png" } }],
         timestamp: "2024-01-01T00:00:01Z",
       },
     ];

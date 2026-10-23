@@ -18,11 +18,13 @@ HYXCLAW_DATA_DIR=C:\Virtual_D\hyxClaw
 ```
 
 **Windows 推荐路径:**
+
 ```
 C:\Virtual_D\hyxClaw\
 ```
 
 **Linux/macOS 推荐路径:**
+
 ```
 ~/.hyxclaw/
 ```
@@ -36,6 +38,7 @@ C:\Virtual_D\hyxClaw\
 ```
 
 这个目录：
+
 - 由 `vitest.config.ts` 自动配置
 - 在 `.gitignore` 中，不会提交到 git
 - 每次测试运行前清理
@@ -76,6 +79,7 @@ HYXCLAW_DATA_DIR=C:\Virtual_D\hyxClaw
 ```
 
 为什么使用 `.env` 文件：
+
 - 配置持久化保存
 - 不会意外提交到 git（.env 已在 .gitignore 中）
 - 团队成员可以有自己的本地配置
@@ -140,6 +144,7 @@ hyxClaw/
 如果需要在测试环境使用正式环境的配置：
 
 **方法 1：使用脚本（推荐）**
+
 ```bash
 # 查看当前测试配置
 pnpm test:config show
@@ -152,18 +157,21 @@ pnpm test:config clean
 ```
 
 **方法 2：手动复制**
+
 ```bash
 # 复制正式配置到测试环境
 cp C:\Virtual_D\hyxClaw\config.json .test-data/global-test/config.json
 ```
 
 **方法 3：复制示例配置**
+
 ```bash
 # 项目根目录有示例配置文件
 cp .test-data.config.example.json .test-data/global-test/config.json
 ```
 
 测试配置说明：
+
 - 测试配置位于 `.test-data/global-test/config.json`
 - 示例配置位于项目根目录的 `.test-data.config.example.json`
 - 每次测试运行前，测试目录会被清理

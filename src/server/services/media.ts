@@ -18,10 +18,37 @@ export const IMAGE_MIME_BY_EXT: Record<string, string> = {
 
 const IMAGE_EXTENSIONS = new Set(Object.keys(IMAGE_MIME_BY_EXT));
 const BINARY_EXTENSIONS = new Set([
-  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".ico", ".tiff", ".svg",
-  ".mp4", ".mov", ".avi", ".mkv", ".mp3", ".wav", ".ogg", ".flac",
-  ".zip", ".tar", ".gz", ".rar", ".7z", ".exe", ".dll", ".so", ".bin",
-  ".pdf", ".woff", ".woff2", ".ttf", ".eot",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".bmp",
+  ".ico",
+  ".tiff",
+  ".svg",
+  ".mp4",
+  ".mov",
+  ".avi",
+  ".mkv",
+  ".mp3",
+  ".wav",
+  ".ogg",
+  ".flac",
+  ".zip",
+  ".tar",
+  ".gz",
+  ".rar",
+  ".7z",
+  ".exe",
+  ".dll",
+  ".so",
+  ".bin",
+  ".pdf",
+  ".woff",
+  ".woff2",
+  ".ttf",
+  ".eot",
 ]);
 
 export function isImageFile(filePath: string): boolean {
@@ -37,7 +64,11 @@ function getAllowedRoots(config: Config): Array<{ root: string; source: string }
   return config.fs.allowedDirs.map((dir) => ({ source: dir, root: resolve(base, dir) }));
 }
 
-async function collectFiles(root: string, source: string, accepts: (filePath: string) => boolean): Promise<FileSummary[]> {
+async function collectFiles(
+  root: string,
+  source: string,
+  accepts: (filePath: string) => boolean,
+): Promise<FileSummary[]> {
   let entries;
   try {
     entries = await readdir(root, { withFileTypes: true });
@@ -48,7 +79,7 @@ async function collectFiles(root: string, source: string, accepts: (filePath: st
   for (const entry of entries) {
     const fullPath = join(root, entry.name);
     if (entry.isDirectory()) {
-      files.push(...await collectFiles(fullPath, source, accepts));
+      files.push(...(await collectFiles(fullPath, source, accepts)));
       continue;
     }
     if (!entry.isFile() || !accepts(fullPath)) continue;
@@ -59,9 +90,13 @@ async function collectFiles(root: string, source: string, accepts: (filePath: st
 }
 
 export async function listAllowedFiles(config: Config, query: string): Promise<FileSummary[]> {
-  const all = (await Promise.all(
-    getAllowedRoots(config).map(({ root, source }) => collectFiles(root, source, (filePath) => isTextFile(filePath) || isImageFile(filePath))),
-  )).flat();
+  const all = (
+    await Promise.all(
+      getAllowedRoots(config).map(({ root, source }) =>
+        collectFiles(root, source, (filePath) => isTextFile(filePath) || isImageFile(filePath)),
+      ),
+    )
+  ).flat();
   const normalizedQuery = query.trim().toLowerCase();
   const filtered = normalizedQuery ? all.filter((file) => file.path.toLowerCase().includes(normalizedQuery)) : all;
   return filtered.slice(0, 200).sort((a, b) => a.path.localeCompare(b.path, "zh-CN"));

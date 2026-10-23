@@ -8,15 +8,15 @@
 
 ## 涉及文件
 
-| 文件 | 改动类型 |
-|------|----------|
-| `src/config/schema.ts` | 新增 `CompactionConfig`，加入顶层 `Config`；移除 `fs.agentSystemPromptFile` |
-| `src/config/paths.ts` | 新增 `conversationArchive`、`compactionPromptFile`、`agentSystemPromptFile` 路径 |
-| `src/config/index.ts` | `initConfig()` 补充初始化 `compaction_prompt.txt`；移除 `agentSystemPromptFile` 写入 config.json；`mergeWithDefaults()` 删除对应字段 |
-| `src/chat/index.ts` | `loadSystemPrompt()` 改用 `paths.agentSystemPromptFile`，移除对 `config.fs.agentSystemPromptFile` 的引用 |
-| `src/chat/compaction.ts` | 新增文件，实现 `compactSession()` |
-| `src/server/index.ts` | 新增 `POST /api/sessions/:id/compact` 路由 |
-| `src/server/public/index.html` | 新增压缩按钮、压缩中状态、压缩完成后刷新会话 |
+| 文件                           | 改动类型                                                                                                                             |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/config/schema.ts`         | 新增 `CompactionConfig`，加入顶层 `Config`；移除 `fs.agentSystemPromptFile`                                                          |
+| `src/config/paths.ts`          | 新增 `conversationArchive`、`compactionPromptFile`、`agentSystemPromptFile` 路径                                                     |
+| `src/config/index.ts`          | `initConfig()` 补充初始化 `compaction_prompt.txt`；移除 `agentSystemPromptFile` 写入 config.json；`mergeWithDefaults()` 删除对应字段 |
+| `src/chat/index.ts`            | `loadSystemPrompt()` 改用 `paths.agentSystemPromptFile`，移除对 `config.fs.agentSystemPromptFile` 的引用                             |
+| `src/chat/compaction.ts`       | 新增文件，实现 `compactSession()`                                                                                                    |
+| `src/server/index.ts`          | 新增 `POST /api/sessions/:id/compact` 路由                                                                                           |
+| `src/server/public/index.html` | 新增压缩按钮、压缩中状态、压缩完成后刷新会话                                                                                         |
 
 ---
 
@@ -27,10 +27,10 @@
 ```typescript
 // src/config/schema.ts
 export interface CompactionConfig {
-  provider?: string;        // 空/省略时继承 agent.provider
-  model?: string;           // 空/省略时继承 agent.model
-  apiKey?: string;          // 空/省略时继承 agent.apiKey
-  baseUrl?: string;         // 空/省略时继承 agent.baseUrl
+  provider?: string; // 空/省略时继承 agent.provider
+  model?: string; // 空/省略时继承 agent.model
+  apiKey?: string; // 空/省略时继承 agent.apiKey
+  baseUrl?: string; // 空/省略时继承 agent.baseUrl
   enableThinking?: boolean; // 省略时继承 agent.enableThinking
 }
 ```
@@ -75,6 +75,7 @@ agentSystemPromptFile: path.join(base, "files", "prompts", "agent_system_prompt.
 `config.fs.agentSystemPromptFile` 从 schema 和 `DEFAULT_CONFIG` 中删除，改为约定路径 `paths.agentSystemPromptFile`。
 
 涉及改动：
+
 - `src/config/schema.ts`：`FSConfigSchema` 删除 `agentSystemPromptFile` 字段
 - `src/config/index.ts`：`initConfig()` 中写入 config.json 时去掉 `fs.agentSystemPromptFile`；`mergeWithDefaults()` 中删除对应合并逻辑
 - `src/chat/index.ts`：`loadSystemPrompt()` 改为直接读取 `paths.agentSystemPromptFile`，不再从 config 读取
@@ -105,11 +106,7 @@ if (!(await pathExists(compactionPromptFile))) {
 **函数签名**：
 
 ```typescript
-export async function compactSession(
-  sessionId: string,
-  config: Config,
-  logger: Logger,
-): Promise<void>
+export async function compactSession(sessionId: string, config: Config, logger: Logger): Promise<void>;
 ```
 
 **执行步骤**：
@@ -125,6 +122,7 @@ export async function compactSession(
    - 模型：`config.compaction.model || config.agent.model`
    - 构造消息：将所有历史消息序列化为文本，作为 user 消息内容，附加压缩提示词
    - 消息格式：
+
      ```
      <conversation>
      [role]: [content]
@@ -199,6 +197,7 @@ export async function compactSession(
 ```
 
 **实现要点**：
+
 - 压缩期间若有 WebSocket 客户端正在该会话中流式输出，应返回 409（暂不实现，留作后续）
 - 压缩完成后，服务端通过 WebSocket 向所有加入该会话的客户端广播 `sessionLoaded`（重新加载会话）
 
@@ -240,12 +239,12 @@ export async function compactSession(
 
 ```typescript
 describe("compactSession", () => {
-  it("should throw if session has fewer than 2 messages")
-  it("should archive original file before overwriting")
-  it("should write exactly 2 messages to session file after compaction")
-  it("should use compaction_prompt.txt if it exists")
-  it("should fall back to built-in prompt if compaction_prompt.txt does not exist")
-})
+  it("should throw if session has fewer than 2 messages");
+  it("should archive original file before overwriting");
+  it("should write exactly 2 messages to session file after compaction");
+  it("should use compaction_prompt.txt if it exists");
+  it("should fall back to built-in prompt if compaction_prompt.txt does not exist");
+});
 ```
 
 测试策略：mock `LLMProvider.complete()`，使用临时目录（`tmp` 或 `os.tmpdir()`）验证文件操作。
@@ -255,8 +254,8 @@ describe("compactSession", () => {
 在 `describe("HTTP")` 块内新增：
 
 ```typescript
-it("should return 200 at POST /api/sessions/:id/compact for valid session")
-it("should return 400 if session has fewer than 2 messages")
+it("should return 200 at POST /api/sessions/:id/compact for valid session");
+it("should return 400 if session has fewer than 2 messages");
 ```
 
 ---

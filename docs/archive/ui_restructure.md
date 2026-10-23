@@ -2,15 +2,15 @@
 
 ## 范围与约束
 
-| 维度 | 约束 |
-|---|---|
-| 后端代码 | 小幅改动（`static-assets.ts` 加 vendor 白名单、`package.json` 加 lucide 依赖），不动功能逻辑 |
-| 前端代码 | 只改 `src/server/public/` 下的 HTML/CSS/JS |
-| 构建/API/协议/CLI | ❌ 不动 |
-| 现有功能 | ✅ 全部保留（三套主题、字体选择、字号滑块等）；左栏拖拽 resize 经确认替换为折叠切换 |
-| 新增/修改的文件 | `package.json`、`pnpm-lock.yaml`、`static-assets.ts`（仅加 vendor 白名单） |
-| 新依赖 | `lucide`（通过 `/vendor/lucide/...` 路径，UMD 脚本标签接入） |
-| 目标风格 | 简洁现代风（参考 ChatGPT / Claude） |
+| 维度              | 约束                                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------------- |
+| 后端代码          | 小幅改动（`static-assets.ts` 加 vendor 白名单、`package.json` 加 lucide 依赖），不动功能逻辑 |
+| 前端代码          | 只改 `src/server/public/` 下的 HTML/CSS/JS                                                   |
+| 构建/API/协议/CLI | ❌ 不动                                                                                      |
+| 现有功能          | ✅ 全部保留（三套主题、字体选择、字号滑块等）；左栏拖拽 resize 经确认替换为折叠切换          |
+| 新增/修改的文件   | `package.json`、`pnpm-lock.yaml`、`static-assets.ts`（仅加 vendor 白名单）                   |
+| 新依赖            | `lucide`（通过 `/vendor/lucide/...` 路径，UMD 脚本标签接入）                                 |
+| 目标风格          | 简洁现代风（参考 ChatGPT / Claude）                                                          |
 
 ---
 
@@ -159,6 +159,7 @@ Composer toolbar 控件挤在一起，toggle、select、按钮风格不统一，
 #### 1.4 配色调整
 
 当前三套主题保留，但每套内部调整：
+
 - 侧栏与主区域要有明确区分度（侧栏稍暗/稍灰）
 - accent 色要更活跃地使用（链接、选中态、高亮）
 - 增加一个微妙的 surface 层级（`--bg-surface`），用于卡片和气泡
@@ -203,13 +204,17 @@ Composer toolbar 控件挤在一起，toggle、select、按钮风格不统一，
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
-  transition: visibility 0s 0.2s, opacity 0.2s;
+  transition:
+    visibility 0s 0.2s,
+    opacity 0.2s;
 }
 .modal.open {
   visibility: visible;
   opacity: 1;
   pointer-events: auto;
-  transition: visibility 0s 0s, opacity 0.2s;
+  transition:
+    visibility 0s 0s,
+    opacity 0.2s;
 }
 
 /* 面板 scale 弹入 */
@@ -223,6 +228,7 @@ Composer toolbar 控件挤在一起，toggle、select、按钮风格不统一，
 ```
 
 关键细节：
+
 - **打开瞬间**：`visibility` 立即可见（delay 0s），`opacity` 淡入
 - **关闭时**：`opacity` 先淡出 0.2s，然后 `visibility` 延迟隐藏（delay 0.2s）
 - **`pointer-events: none`**：保证隐藏时不拦截底层按钮点击
@@ -231,8 +237,14 @@ Composer toolbar 控件挤在一起，toggle、select、按钮风格不统一，
 
 ```css
 /* 全局补齐 hover 过渡 */
-button, .session-item, .doc-entry {
-  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+button,
+.session-item,
+.doc-entry {
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
 }
 
 /* 新消息淡入上移（仅新追加的消息，非全量） */
@@ -240,8 +252,14 @@ button, .session-item, .doc-entry {
   animation: fadeInUp 0.3s ease-out;
 }
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 切换会话时只给容器加快速淡入，不给内部消息加动画 */
@@ -259,12 +277,12 @@ button, .session-item, .doc-entry {
 
 ```js
 function switchSession() {
-  const container = document.getElementById('messages');
-  container.classList.add('session-transition');
+  const container = document.getElementById("messages");
+  container.classList.add("session-transition");
 
   requestAnimationFrame(() => {
     // 渲染新会话消息...
-    container.classList.remove('session-transition');
+    container.classList.remove("session-transition");
   });
 }
 ```
@@ -273,7 +291,9 @@ function switchSession() {
 
 ```css
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation: none !important;
     transition: none !important;
   }
@@ -284,20 +304,21 @@ function switchSession() {
 
 #### 需要处理的位置
 
-| 位置 | 动画 | 方式 |
-|---|---|---|
-| `#usage-modal` / `#knowledge-modal` / `#compact-modal` | backdrop 淡入 + 面板 scale 弹入 | visibility/opacity + transform transition |
-| `#settings-dropdown` | 从底部滑入 | opacity + translateY |
-| `.settings-submenu` | 从左淡入 | opacity + translateX(-4px) |
-| `#file-picker-popover` / `#command-picker-popover` | 从底部弹入 | opacity + translateY |
-| `#tool-permission-dialog` | 从底部弹入 | opacity + translateY |
-| 新消息出现 | 淡入 + 微微上移 | `.message-new` 一次性类，animation 结束后移除 |
-| 会话切换 | 消息容器快速淡入 | `.session-transition` 容器级 transition |
-| 按钮/链接 hover | 背景色、边框色过渡 | 补全 transition |
+| 位置                                                   | 动画                            | 方式                                          |
+| ------------------------------------------------------ | ------------------------------- | --------------------------------------------- |
+| `#usage-modal` / `#knowledge-modal` / `#compact-modal` | backdrop 淡入 + 面板 scale 弹入 | visibility/opacity + transform transition     |
+| `#settings-dropdown`                                   | 从底部滑入                      | opacity + translateY                          |
+| `.settings-submenu`                                    | 从左淡入                        | opacity + translateX(-4px)                    |
+| `#file-picker-popover` / `#command-picker-popover`     | 从底部弹入                      | opacity + translateY                          |
+| `#tool-permission-dialog`                              | 从底部弹入                      | opacity + translateY                          |
+| 新消息出现                                             | 淡入 + 微微上移                 | `.message-new` 一次性类，animation 结束后移除 |
+| 会话切换                                               | 消息容器快速淡入                | `.session-transition` 容器级 transition       |
+| 按钮/链接 hover                                        | 背景色、边框色过渡              | 补全 transition                               |
 
 #### details 展开折叠（推理块/工具块）
 
 原生 `<details>` 展开是瞬时的。目前方案：
+
 - **先只做 summary caret 旋转动画**（已有），内容展开保持瞬时
 - 等 `interpolate-size: allow-keywords` 浏览器支持成熟后再加平滑展开
 - 不动 JS 逻辑
@@ -369,6 +390,7 @@ iconObserver.observe(document.body, { childList: true, subtree: true });
 #### 无障碍要求
 
 所有纯图标按钮必须保留 `aria-label`（不能只依赖 `title`）：
+
 ```html
 <button aria-label="设置" title="设置"><i data-lucide="settings"></i></button>
 ```
@@ -377,27 +399,27 @@ iconObserver.observe(document.body, { childList: true, subtree: true });
 
 #### 需要替换的图标清单
 
-| 位置 | 现状 | 改为 lucide icon |
-|---|---|---|
-| 设置按钮 | `⚙` | `settings` |
-| 关闭按钮 | `×` | `x` |
-| 发送按钮 | `↑` | `arrow-up` |
-| 折叠箭头 | `›` | `chevron-right` |
-| 新建会话 | 文字 "+ 新建" | `plus` + 文字 |
-| Compact | 文字 "Compact" | `shrink` |
-| 删除会话 | `×` | `trash-2` |
-| 刷新文档 | 文字 "刷新" | `refresh-cw` |
-| 编辑文档 | 文字 "编辑" | `pencil` |
-| 清除选择 | 文字 "清除" | `x-circle` |
-| 文件选择器按钮 | 无 | `paperclip` |
-| 命令选择器按钮 | 无 | `terminal` |
-| 知识库按钮 | 现有内联 SVG | `book-open` |
-| Token 按钮 | 现有内联 SVG | `bar-chart-3` |
-| 重启按钮 | 现有内联 SVG | `refresh-ccw` |
-| 空状态图标 | 现有内联 SVG | `message-circle` |
-| 左栏折叠 | 无 | `panel-left-close` / `panel-left-open` |
-| 右栏折叠 | 无 | `panel-right-close` / `panel-right-open` |
-| 状态指示灯 | `.status-dot` div | 保留，不需要改 |
+| 位置           | 现状              | 改为 lucide icon                         |
+| -------------- | ----------------- | ---------------------------------------- |
+| 设置按钮       | `⚙`               | `settings`                               |
+| 关闭按钮       | `×`               | `x`                                      |
+| 发送按钮       | `↑`               | `arrow-up`                               |
+| 折叠箭头       | `›`               | `chevron-right`                          |
+| 新建会话       | 文字 "+ 新建"     | `plus` + 文字                            |
+| Compact        | 文字 "Compact"    | `shrink`                                 |
+| 删除会话       | `×`               | `trash-2`                                |
+| 刷新文档       | 文字 "刷新"       | `refresh-cw`                             |
+| 编辑文档       | 文字 "编辑"       | `pencil`                                 |
+| 清除选择       | 文字 "清除"       | `x-circle`                               |
+| 文件选择器按钮 | 无                | `paperclip`                              |
+| 命令选择器按钮 | 无                | `terminal`                               |
+| 知识库按钮     | 现有内联 SVG      | `book-open`                              |
+| Token 按钮     | 现有内联 SVG      | `bar-chart-3`                            |
+| 重启按钮       | 现有内联 SVG      | `refresh-ccw`                            |
+| 空状态图标     | 现有内联 SVG      | `message-circle`                         |
+| 左栏折叠       | 无                | `panel-left-close` / `panel-left-open`   |
+| 右栏折叠       | 无                | `panel-right-close` / `panel-right-open` |
+| 状态指示灯     | `.status-dot` div | 保留，不需要改                           |
 
 ---
 
@@ -414,22 +436,15 @@ iconObserver.observe(document.body, { childList: true, subtree: true });
 #### 6.1 字号阶梯
 
 ```css
---text-xs:   12px   /* 辅助信息（时间戳、meta） */
---text-sm:   13px   /* 次要文本 */
---text-base: 15px   /* 正文（从 14px 提升） */
---text-lg:   17px   /* h3 */
---text-xl:   20px   /* h2 */
---text-2xl:  26px   /* h1 */
+--text-xs: 12px /* 辅助信息（时间戳、meta） */ --text-sm: 13px /* 次要文本 */ --text-base: 15px
+  /* 正文（从 14px 提升） */ --text-lg: 17px /* h3 */ --text-xl: 20px /* h2 */ --text-2xl: 26px /* h1 */;
 ```
 
 #### 6.2 字重分层
 
 ```css
---weight-normal:   400  /* 正文 */
---weight-medium:   500  /* 强调、h4 */
---weight-semibold: 600  /* h3 */
---weight-bold:     700  /* h2、strong */
---weight-extrabold:800  /* h1 */
+--weight-normal: 400 /* 正文 */ --weight-medium: 500 /* 强调、h4 */ --weight-semibold: 600 /* h3 */ --weight-bold: 700
+  /* h2、strong */ --weight-extrabold: 800 /* h1 */;
 ```
 
 > 不用 550——多数非可变字体会映射到 500 或 600，效果不可预测。
@@ -465,15 +480,15 @@ h3: var(--text2)        /* 中等 */
 
 #### 总结
 
-| 改什么 | 改之前 | 改之后 |
-|---|---|---|
-| 正文字号 | 14px | 15px |
-| 字号层级 | 无 token | xs/sm/base/lg/xl/2xl |
-| 字重 | 600~800 挤在一起 | 400/500/600/700/800 分层 |
-| 标题颜色 | 与正文同色 | h1/h2 更深 |
-| 段落间距 | 0.58em | 1em |
-| 行高 | 1.5~1.66 不一 | 正文 1.6，标题 1.3 |
-| 滑块默认值 | 14px | 15px |
+| 改什么     | 改之前           | 改之后                   |
+| ---------- | ---------------- | ------------------------ |
+| 正文字号   | 14px             | 15px                     |
+| 字号层级   | 无 token         | xs/sm/base/lg/xl/2xl     |
+| 字重       | 600~800 挤在一起 | 400/500/600/700/800 分层 |
+| 标题颜色   | 与正文同色       | h1/h2 更深               |
+| 段落间距   | 0.58em           | 1em                      |
+| 行高       | 1.5~1.66 不一    | 正文 1.6，标题 1.3       |
+| 滑块默认值 | 14px             | 15px                     |
 
 改动集中在 `tokens.css` 的 `:root`、`chat.css` 的 `.markdown-body`、`settings.js` 的默认值。
 
@@ -505,12 +520,12 @@ Composer 原布局不变，只改左组控件形态。
 
 **原则**：每个空状态三层信息——图标 + 标题 + 引导文字。只加文案，不增加交互。
 
-| 位置 | 现状 | 改为 |
-|---|---|---|
-| `#no-session` | "请选择或新建一个对话" | 图标 + "欢迎回来" + "选择一个会话或新建一个开始对话" |
-| `#empty-state` | 图标 + "发送消息开始对话" | 保留结构，换 lucide 图标 |
-| `#usage-empty` | "暂无统计数据" | 图标 + "暂无数据" + "发送消息后即可查看 Token 统计" |
-| `#knowledge-empty` | "暂无知识库" | 图标 + "暂无知识库" + "在数据目录中配置知识库即可使用" |
+| 位置               | 现状                      | 改为                                                   |
+| ------------------ | ------------------------- | ------------------------------------------------------ |
+| `#no-session`      | "请选择或新建一个对话"    | 图标 + "欢迎回来" + "选择一个会话或新建一个开始对话"   |
+| `#empty-state`     | 图标 + "发送消息开始对话" | 保留结构，换 lucide 图标                               |
+| `#usage-empty`     | "暂无统计数据"            | 图标 + "暂无数据" + "发送消息后即可查看 Token 统计"    |
+| `#knowledge-empty` | "暂无知识库"              | 图标 + "暂无知识库" + "在数据目录中配置知识库即可使用" |
 
 格式统一：`<大图标> + <标题> + <引导文字>`。引导文字用 `--muted` 色，字号 13px。
 
@@ -527,8 +542,13 @@ Composer 原布局不变，只改左组控件形态。
   scrollbar-color: var(--border) transparent;
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 3px;
@@ -539,6 +559,7 @@ Composer 原布局不变，只改左组控件形态。
 ```
 
 `#messages` 保留 hover 渐显效果：
+
 ```css
 #messages {
   scrollbar-color: transparent transparent;
@@ -561,10 +582,16 @@ Composer 原布局不变，只改左组控件形态。
 
 ```css
 /* 改前 */
-#composer { width: min(810px, calc(100vw - 300px)); }
+#composer {
+  width: min(810px, calc(100vw - 300px));
+}
 
 /* 改后 */
-#composer { width: 100%; max-width: 810px; margin: 0 auto; }
+#composer {
+  width: 100%;
+  max-width: 810px;
+  margin: 0 auto;
+}
 ```
 
 #### 10.2 左栏 `#sidebar`
@@ -591,6 +618,7 @@ Composer 原布局不变，只改左组控件形态。
 ```
 
 状态持久化：
+
 - `localStorage` key `sidebarCollapsed`（boolean）
 - 展开时宽度由 CSS `clamp()` 自动决定，无需存储
 
@@ -615,13 +643,14 @@ Composer 原布局不变，只改左组控件形态。
 
 状态模型（三个独立变量，互不冲突）：
 
-| 变量 | 存储 | 说明 |
-|---|---|---|
-| `docRailCollapsed` | `localStorage` | 是否收起（boolean） |
-| `docRailWidth` | `localStorage` | 展开时的宽度，拖拽更新 |
-| 默认宽度 | CSS `clamp(280px, 30vw, 420px)` | 无 localStorage 记录时使用 |
+| 变量               | 存储                            | 说明                       |
+| ------------------ | ------------------------------- | -------------------------- |
+| `docRailCollapsed` | `localStorage`                  | 是否收起（boolean）        |
+| `docRailWidth`     | `localStorage`                  | 展开时的宽度，拖拽更新     |
+| 默认宽度           | CSS `clamp(280px, 30vw, 420px)` | 无 localStorage 记录时使用 |
 
 初始化逻辑：
+
 ```
 collapsed = localStorage.getItem("docRailCollapsed") === "true"
 width = localStorage.getItem("docRailWidth") || CSS clamp 计算值
@@ -649,13 +678,13 @@ else         → action-rail 宽度 = width
 
 **组件**：`#usage-modal`、`#knowledge-modal`、`#compact-modal`、`#tool-permission-dialog`
 
-| 项目 | 说明 |
-|---|---|
-| `role="dialog"` | HTML 属性标记 |
-| `aria-modal="true"` | 告知屏幕阅读器背景不可交互 |
-| Esc 关闭 | keydown 监听，Esc 触发关闭 |
-| 打开后聚焦 | 聚焦弹窗内第一个可聚焦元素或关闭按钮 |
-| 关闭后恢复焦点 | 记住打开前聚焦的元素，关闭后 focus 回去 |
+| 项目                | 说明                                    |
+| ------------------- | --------------------------------------- |
+| `role="dialog"`     | HTML 属性标记                           |
+| `aria-modal="true"` | 告知屏幕阅读器背景不可交互              |
+| Esc 关闭            | keydown 监听，Esc 触发关闭              |
+| 打开后聚焦          | 聚焦弹窗内第一个可聚焦元素或关闭按钮    |
+| 关闭后恢复焦点      | 记住打开前聚焦的元素，关闭后 focus 回去 |
 
 建议实现：写一个通用的 `openModal(id)` / `closeModal()` 辅助函数，统一处理焦点管理、Esc 监听、aria 属性切换。
 
@@ -663,21 +692,21 @@ else         → action-rail 宽度 = width
 
 **组件**：`#settings-dropdown`、`.settings-submenu`
 
-| 项目 | 说明 |
-|---|---|
-| `aria-expanded` | 触发按钮上标记展开状态 |
-| 点击外部关闭 | 全局 click 监听，点击浮层外则关闭 |
-| Esc 关闭 | 同上 |
+| 项目            | 说明                              |
+| --------------- | --------------------------------- |
+| `aria-expanded` | 触发按钮上标记展开状态            |
+| 点击外部关闭    | 全局 click 监听，点击浮层外则关闭 |
+| Esc 关闭        | 同上                              |
 
 #### C. Listbox/Combobox（选择器）
 
 **组件**：`#file-picker-popover`、`#command-picker-popover`
 
-| 项目 | 说明 |
-|---|---|
-| `role="listbox"` | 选项列表语义 |
-| 键盘导航 | ↑↓ 移动选项，Enter 确认，Esc 关闭 |
-| `aria-activedescendant` | 当前高亮选项 |
+| 项目                    | 说明                              |
+| ----------------------- | --------------------------------- |
+| `role="listbox"`        | 选项列表语义                      |
+| 键盘导航                | ↑↓ 移动选项，Enter 确认，Esc 关闭 |
+| `aria-activedescendant` | 当前高亮选项                      |
 
 ### 图标按钮
 
@@ -695,70 +724,70 @@ else         → action-rail 宽度 = width
 
 ### 主题
 
-| 检查项 | 米黄 (light) | 明亮 (daylight) | 墨灰 (monochrome) |
-|---|---|---|---|
-| 侧栏与主区域区分度 | ✅ | ✅ | ✅ |
-| accent 色活跃度 | ✅ | ✅ | ✅ |
-| Markdown 内容可读 | ✅ | ✅ | ✅ |
-| 选中态/禁用态/错误态 | ✅ | ✅ | ✅ |
+| 检查项               | 米黄 (light) | 明亮 (daylight) | 墨灰 (monochrome) |
+| -------------------- | ------------ | --------------- | ----------------- |
+| 侧栏与主区域区分度   | ✅           | ✅              | ✅                |
+| accent 色活跃度      | ✅           | ✅              | ✅                |
+| Markdown 内容可读    | ✅           | ✅              | ✅                |
+| 选中态/禁用态/错误态 | ✅           | ✅              | ✅                |
 
 ### 字号
 
-| 检查项 | 10px | 15px (默认) | 20px |
-|---|---|---|---|
-| Markdown 正文 | ✅ | ✅ | ✅ |
-| UI 全局字号不变 | ✅ | ✅ | ✅ |
-| 滑块与 CSS 同步 | ✅ | ✅ | ✅ |
+| 检查项          | 10px | 15px (默认) | 20px |
+| --------------- | ---- | ----------- | ---- |
+| Markdown 正文   | ✅   | ✅          | ✅   |
+| UI 全局字号不变 | ✅   | ✅          | ✅   |
+| 滑块与 CSS 同步 | ✅   | ✅          | ✅   |
 
 ### 侧栏
 
-| 检查项 | 通过 |
-|---|---|
-| 左栏展开（默认宽度自适应） | ✅ |
-| 左栏收起为窄条（图标可见） | ✅ |
-| 右栏展开（默认宽度自适应） | ✅ |
-| 右栏收起为窄条（展开按钮可见） | ✅ |
-| 右栏拖拽 resize（280-1000px） | ✅ |
-| 两边同时收起（聊天区全宽） | ✅ |
-| 刷新后状态保持 | ✅ |
+| 检查项                         | 通过 |
+| ------------------------------ | ---- |
+| 左栏展开（默认宽度自适应）     | ✅   |
+| 左栏收起为窄条（图标可见）     | ✅   |
+| 右栏展开（默认宽度自适应）     | ✅   |
+| 右栏收起为窄条（展开按钮可见） | ✅   |
+| 右栏拖拽 resize（280-1000px）  | ✅   |
+| 两边同时收起（聊天区全宽）     | ✅   |
+| 刷新后状态保持                 | ✅   |
 
 ### 会话
 
-| 检查项 | 通过 |
-|---|---|
-| 空会话（无消息，显示空状态） | ✅ |
-| 长会话（大量消息，滚动正常） | ✅ |
-| 流式消息（新消息淡入上移，历史消息不动） | ✅ |
-| 会话切换（容器淡入，消息不动） | ✅ |
-| 消息重启按钮 hover 显示 | ✅ |
+| 检查项                                   | 通过 |
+| ---------------------------------------- | ---- |
+| 空会话（无消息，显示空状态）             | ✅   |
+| 长会话（大量消息，滚动正常）             | ✅   |
+| 流式消息（新消息淡入上移，历史消息不动） | ✅   |
+| 会话切换（容器淡入，消息不动）           | ✅   |
+| 消息重启按钮 hover 显示                  | ✅   |
 
 ### 弹窗
 
-| 检查项 | usage | knowledge | compact | tool-permission | settings | file-picker |
-|---|---|---|---|---|---|---|
-| 类型 | Modal | Modal | Modal | Modal | Popover | Listbox |
-| 淡入动画 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 关闭动画 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Esc 关闭 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 焦点管理 | ✅ | ✅ | ✅ | ✅ | — | — |
-| 不遮挡底层交互 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `prefers-reduced-motion` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 检查项                   | usage | knowledge | compact | tool-permission | settings | file-picker |
+| ------------------------ | ----- | --------- | ------- | --------------- | -------- | ----------- |
+| 类型                     | Modal | Modal     | Modal   | Modal           | Popover  | Listbox     |
+| 淡入动画                 | ✅    | ✅        | ✅      | ✅              | ✅       | ✅          |
+| 关闭动画                 | ✅    | ✅        | ✅      | ✅              | ✅       | ✅          |
+| Esc 关闭                 | ✅    | ✅        | ✅      | ✅              | ✅       | ✅          |
+| 焦点管理                 | ✅    | ✅        | ✅      | ✅              | —        | —           |
+| 不遮挡底层交互           | ✅    | ✅        | ✅      | ✅              | ✅       | ✅          |
+| `prefers-reduced-motion` | ✅    | ✅        | ✅      | ✅              | ✅       | ✅          |
 
 ### 窗口宽度
 
-| 检查项 | 通过 |
-|---|---|
-| 800px（右栏自动收起） | ✅ |
-| 1024px（三栏正常） | ✅ |
-| 1280px（三栏舒适） | ✅ |
-| 1440px（三栏宽裕） | ✅ |
+| 检查项                | 通过 |
+| --------------------- | ---- |
+| 800px（右栏自动收起） | ✅   |
+| 1024px（三栏正常）    | ✅   |
+| 1280px（三栏舒适）    | ✅   |
+| 1440px（三栏宽裕）    | ✅   |
 
 ### 显示缩放
 
-| 检查项 | 通过 |
-|---|---|
-| Windows 100% 缩放 | ✅ |
-| Windows 125% 缩放 | ✅ |
+| 检查项            | 通过 |
+| ----------------- | ---- |
+| Windows 100% 缩放 | ✅   |
+| Windows 125% 缩放 | ✅   |
 
 ---
 

@@ -42,8 +42,26 @@ describe("分时段价格", () => {
     cachedRead: 0.1,
     cachedWrite: 0.5,
     schedules: [
-      { name: "peak-am", weekdays: [1, 2, 3, 4, 5], start: "09:00", end: "12:00", input: 2, output: 4, cachedRead: 0.2, cachedWrite: 1 },
-      { name: "peak-pm", weekdays: [1, 2, 3, 4, 5], start: "14:00", end: "18:00", input: 2, output: 4, cachedRead: 0.2, cachedWrite: 1 },
+      {
+        name: "peak-am",
+        weekdays: [1, 2, 3, 4, 5],
+        start: "09:00",
+        end: "12:00",
+        input: 2,
+        output: 4,
+        cachedRead: 0.2,
+        cachedWrite: 1,
+      },
+      {
+        name: "peak-pm",
+        weekdays: [1, 2, 3, 4, 5],
+        start: "14:00",
+        end: "18:00",
+        input: 2,
+        output: 4,
+        cachedRead: 0.2,
+        cachedWrite: 1,
+      },
     ],
   };
 

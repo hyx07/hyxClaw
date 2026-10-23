@@ -141,7 +141,8 @@ export function createChatView({ state, documents, pickers, permissions, actions
     const previewPanel = document.getElementById("doc-preview-panel");
     const previewToolbar = document.getElementById("doc-preview-toolbar");
     const previewContent = document.getElementById("doc-preview-content");
-    if (!shell || !chatPanel || !chatContent || !documentStage || !previewPanel || !previewToolbar || !previewContent) return;
+    if (!shell || !chatPanel || !chatContent || !documentStage || !previewPanel || !previewToolbar || !previewContent)
+      return;
 
     const modeChanged = shell.dataset.workspaceMode !== mode;
     if (mode === "document") {
@@ -209,14 +210,15 @@ export function createChatView({ state, documents, pickers, permissions, actions
     bindToolbarMenu(state.thinkingEffortSelectEl, () => {
       state.currentThinkingEffort = state.thinkingEffortSelectEl.value || state.defaultThinkingEffort;
     });
-    if (state.inputEl) state.inputEl.addEventListener("keydown", (event) => {
-      if (document.getElementById("file-picker-popover")?.classList.contains("open")) return;
-      if (document.getElementById("command-picker-popover")?.classList.contains("open")) return;
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        actions.sendMessage();
-      }
-    });
+    if (state.inputEl)
+      state.inputEl.addEventListener("keydown", (event) => {
+        if (document.getElementById("file-picker-popover")?.classList.contains("open")) return;
+        if (document.getElementById("command-picker-popover")?.classList.contains("open")) return;
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          actions.sendMessage();
+        }
+      });
     if (state.inputEl) {
       state.inputEl.addEventListener("input", () => {
         autoResizeInput();
@@ -335,17 +337,19 @@ export function createChatView({ state, documents, pickers, permissions, actions
 
     const selected = selectEl.selectedOptions[0];
     valueEl.textContent = selected?.textContent || "";
-    menu.replaceChildren(...Array.from(selectEl.options, (option) => {
-      const item = document.createElement("button");
-      item.type = "button";
-      item.className = "toolbar-select-option";
-      item.dataset.value = option.value;
-      item.setAttribute("role", "option");
-      item.setAttribute("aria-selected", String(option.selected));
-      item.classList.toggle("selected", option.selected);
-      item.textContent = option.textContent;
-      return item;
-    }));
+    menu.replaceChildren(
+      ...Array.from(selectEl.options, (option) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "toolbar-select-option";
+        item.dataset.value = option.value;
+        item.setAttribute("role", "option");
+        item.setAttribute("aria-selected", String(option.selected));
+        item.classList.toggle("selected", option.selected);
+        item.textContent = option.textContent;
+        return item;
+      }),
+    );
   }
 
   function renderModelToolbarMenu(selectEl) {
@@ -440,20 +444,22 @@ export function createChatView({ state, documents, pickers, permissions, actions
   function openProviderFlyout(control, row, provider, models) {
     cancelCloseProviderFlyout(control);
     const flyout = getProviderFlyout(control);
-    flyout.replaceChildren(...models.map((model) => {
-      const item = document.createElement("button");
-      item.type = "button";
-      item.className = "toolbar-select-option";
-      item.dataset.value = `${provider}::${model.id}`;
-      item.dataset.provider = provider;
-      item.setAttribute("role", "option");
-      item.textContent = model.label || model.name || model.id;
-      if (provider === state.currentProvider && model.id === state.currentModel) {
-        item.classList.add("selected");
-        item.setAttribute("aria-selected", "true");
-      }
-      return item;
-    }));
+    flyout.replaceChildren(
+      ...models.map((model) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "toolbar-select-option";
+        item.dataset.value = `${provider}::${model.id}`;
+        item.dataset.provider = provider;
+        item.setAttribute("role", "option");
+        item.textContent = model.label || model.name || model.id;
+        if (provider === state.currentProvider && model.id === state.currentModel) {
+          item.classList.add("selected");
+          item.setAttribute("aria-selected", "true");
+        }
+        return item;
+      }),
+    );
 
     const menu = control.querySelector(".toolbar-select-menu");
     const menuRect = menu.getBoundingClientRect();

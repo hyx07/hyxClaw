@@ -88,6 +88,8 @@ describe("mapMessage", () => {
       content: [{ type: "image_url", image_url: { url: "data:image/png;base64,AAA", path: "clipboard:image.png" } }],
     });
     mapMessage(m);
-    expect(m.content).toEqual([{ type: "image_url", image_url: { url: "data:image/png;base64,AAA", path: "clipboard:image.png" } }]);
+    expect(m.content).toEqual([
+      { type: "image_url", image_url: { url: "data:image/png;base64,AAA", path: "clipboard:image.png" } },
+    ]);
   });
 });

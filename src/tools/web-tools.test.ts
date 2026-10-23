@@ -114,4 +114,3 @@ describe("web tools", () => {
     expect(client.extract).not.toHaveBeenCalled();
   });
 });
-

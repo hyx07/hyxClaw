@@ -32,11 +32,11 @@ session A  ── run A-2 ── chatStart / ...
 
 每个聊天流事件都包含：
 
-| 字段 | 用途 |
-|---|---|
-| `sessionId` | 事件属于哪个会话 |
-| `runId` | 事件属于该会话的哪一次生成 |
-| `sequence` | 该运行内单调递增的事件序号 |
+| 字段        | 用途                       |
+| ----------- | -------------------------- |
+| `sessionId` | 事件属于哪个会话           |
+| `runId`     | 事件属于该会话的哪一次生成 |
+| `sequence`  | 该运行内单调递增的事件序号 |
 
 适用事件：`chatStart`、`chatChunk`、`chatReasoning`、`toolCall`、`toolResult`、`toolPermissionRequest`、`chatEnd`、`chatCancelled`。
 
@@ -47,7 +47,9 @@ session A  ── run A-2 ── chatStart / ...
 客户端发送：
 
 ```typescript
-{ type: "joinSession", sessionId, requestId }
+{
+  type: ("joinSession", sessionId, requestId);
+}
 ```
 
 服务端在 `sessionLoaded` 中原样回传 `requestId`。`loadSession()` 是异步操作，所以这个 ID 是必须的：快速 A -> B -> A 切换时，旧的 A 加载响应不能当作最新的 A 加载响应处理。
@@ -64,17 +66,17 @@ session A  ── run A-2 ── chatStart / ...
 
 前端只有一个当前显示的 DOM，但每个会话必须拥有独立的运行时状态。`sessionCache` 是按 `sessionId` 索引的缓存：DOM 节点用于快速恢复，状态字段用于保证恢复后仍能继续消费事件。
 
-| 字段 | 用途 |
-|---|---|
-| `childNodes` | 当前会话脱离页面后的消息 DOM 节点 |
-| `isStreaming` | 该会话是否仍在生成 |
-| `currentRunId` / `lastStreamSequence` | 当前接受的运行及最后处理的事件 |
-| `streamingBubble` / `currentTextSegment` | 当前 assistant 气泡和文本段的 DOM 引用 |
-| `streamingReasoningBlock` / `pendingToolBlocks` | 推理块和未完成工具调用的引用 |
-| `typingPlaceholder` | 打字状态节点 |
-| `visibleProcessStep` / `pendingProcessStep` | 过程步骤显示状态 |
-| `pendingEvents` | 会话在后台期间收到、尚未回放的事件队列 |
-| `currentMessages` / `currentSessionMessageCount` | 最近的服务端消息快照 |
+| 字段                                             | 用途                                   |
+| ------------------------------------------------ | -------------------------------------- |
+| `childNodes`                                     | 当前会话脱离页面后的消息 DOM 节点      |
+| `isStreaming`                                    | 该会话是否仍在生成                     |
+| `currentRunId` / `lastStreamSequence`            | 当前接受的运行及最后处理的事件         |
+| `streamingBubble` / `currentTextSegment`         | 当前 assistant 气泡和文本段的 DOM 引用 |
+| `streamingReasoningBlock` / `pendingToolBlocks`  | 推理块和未完成工具调用的引用           |
+| `typingPlaceholder`                              | 打字状态节点                           |
+| `visibleProcessStep` / `pendingProcessStep`      | 过程步骤显示状态                       |
+| `pendingEvents`                                  | 会话在后台期间收到、尚未回放的事件队列 |
+| `currentMessages` / `currentSessionMessageCount` | 最近的服务端消息快照                   |
 
 `currentTextSegment` 和过程步骤状态必须随会话保存与恢复。它们曾是全局状态，会导致 A 的文本块在切到 B 后被继续追加，表现为两个会话都停在半截。
 

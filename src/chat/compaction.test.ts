@@ -110,7 +110,9 @@ describe("compactSession", () => {
 
   it("throws if session has fewer than 2 messages", async () => {
     const session = await createSession("Too Short", testDir);
-    await expect(compactSession(session.id, mockConfig, testLogger(testDir))).rejects.toThrow("Session has fewer than 2 messages");
+    await expect(compactSession(session.id, mockConfig, testLogger(testDir))).rejects.toThrow(
+      "Session has fewer than 2 messages",
+    );
     expect(mockComplete).not.toHaveBeenCalled();
   });
 

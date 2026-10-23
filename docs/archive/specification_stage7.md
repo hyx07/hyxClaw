@@ -49,7 +49,7 @@
 - 如果用户手动在 `config.json` 中加入：
   - `server.port`
   - `server.host`
-  则优先使用用户配置
+    则优先使用用户配置
 
 ### 2.3 `fs` 配置规则
 
@@ -311,7 +311,7 @@ provider 对应的模型候选列表放入 `config.json`，不再前端硬编码
 - thinking 通过：
   - `enable_thinking`
   - `thinking_budget`
- 传入
+    传入
 
 **Token usage 约定**：
 
@@ -335,7 +335,7 @@ provider 对应的模型候选列表放入 `config.json`，不再前端硬编码
 - 最终回复阶段在阶段 7 中不再使用 provider `stream()`
 - thinking 通过：
   - `thinking: { type: "enabled" | "disabled" }`
- 传入
+    传入
 
 ---
 

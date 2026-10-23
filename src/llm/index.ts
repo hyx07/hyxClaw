@@ -15,10 +15,15 @@ export type LLMProviderName = "zai" | "dashscope" | "deepseek" | "commandcode";
 
 export function createProvider(provider: LLMProviderName): LLMProvider {
   switch (provider) {
-    case "zai": return new ZaiProvider();
-    case "dashscope": return new DashScopeProvider();
-    case "deepseek": return new DeepSeekProvider();
-    case "commandcode": return new CommandCodeProvider();
-    default: throw new Error(`Unknown LLM provider: ${provider as string}`);
+    case "zai":
+      return new ZaiProvider();
+    case "dashscope":
+      return new DashScopeProvider();
+    case "deepseek":
+      return new DeepSeekProvider();
+    case "commandcode":
+      return new CommandCodeProvider();
+    default:
+      throw new Error(`Unknown LLM provider: ${provider as string}`);
   }
 }

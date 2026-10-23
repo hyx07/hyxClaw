@@ -57,9 +57,7 @@ function serializeMessageContent(content: Message["content"]): string {
 
 function serializeMessage(message: Message): string {
   const content = serializeMessageContent(message.content);
-  const toolCalls = message.tool_calls?.length
-    ? `\n工具调用: ${JSON.stringify(message.tool_calls)}`
-    : "";
+  const toolCalls = message.tool_calls?.length ? `\n工具调用: ${JSON.stringify(message.tool_calls)}` : "";
   const toolCallId = message.tool_call_id ? `\n工具调用结果 ID: ${message.tool_call_id}` : "";
   return `[${message.role}]\n${content}${toolCalls}${toolCallId}`;
 }
@@ -82,10 +80,7 @@ function countRounds(messages: Message[]): number {
   return rounds;
 }
 
-function splitMessagesByRounds(
-  messages: Message[],
-  keepRounds: number,
-): { toSummarize: Message[]; toKeep: Message[] } {
+function splitMessagesByRounds(messages: Message[], keepRounds: number): { toSummarize: Message[]; toKeep: Message[] } {
   if (keepRounds <= 0) return { toSummarize: messages, toKeep: [] };
 
   const userIndices: number[] = [];
@@ -127,7 +122,7 @@ export async function compactSession(
   if (keep > 0 && totalRounds <= keep + 1) {
     throw new Error(
       `Compaction not needed: session has ${totalRounds} round(s), ` +
-      `which is not more than keepRecentRounds (${keep}) + 1`,
+        `which is not more than keepRecentRounds (${keep}) + 1`,
     );
   }
 
@@ -161,26 +156,30 @@ export async function compactSession(
     model,
   });
 
-  const response = await provider.complete(apiKey, [
+  const response = await provider.complete(
+    apiKey,
+    [
+      {
+        id: "system",
+        role: "system",
+        content: prompt,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: "user",
+        role: "user",
+        content: `<conversation>\n${conversationText}\n</conversation>`,
+        timestamp: new Date().toISOString(),
+      },
+    ],
     {
-      id: "system",
-      role: "system",
-      content: prompt,
-      timestamp: new Date().toISOString(),
+      model,
+      baseUrl,
+      maxTokens: 4096,
+      thinkingEffort: thinking.level,
+      thinkingParams: thinking.params,
     },
-    {
-      id: "user",
-      role: "user",
-      content: `<conversation>\n${conversationText}\n</conversation>`,
-      timestamp: new Date().toISOString(),
-    },
-  ], {
-    model,
-    baseUrl,
-    maxTokens: 4096,
-    thinkingEffort: thinking.level,
-    thinkingParams: thinking.params,
-  });
+  );
 
   const summary = response.content?.trim();
   if (!summary) {
@@ -224,7 +223,11 @@ export async function compactSession(
         provider: providerName,
         timestamp: new Date().toISOString(),
         sessionId,
-        cost: calcCost(response.usage, config.providers[providerName]?.models.find((m) => m.id === model)?.cost, new Date()),
+        cost: calcCost(
+          response.usage,
+          config.providers[providerName]?.models.find((m) => m.id === model)?.cost,
+          new Date(),
+        ),
       }
     : undefined;
   return { archivedAs, usage };

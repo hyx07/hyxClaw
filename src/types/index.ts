@@ -47,7 +47,15 @@ export interface Session {
 }
 
 // Config types - re-export from config module
-export type { Config, ServerConfig, FSConfig, CompactionConfig, ProviderCredential, ThinkingEffort, ModelOption } from "../config/index.js";
+export type {
+  Config,
+  ServerConfig,
+  FSConfig,
+  CompactionConfig,
+  ProviderCredential,
+  ThinkingEffort,
+  ModelOption,
+} from "../config/index.js";
 
 // Tool types — imported from tools module
 

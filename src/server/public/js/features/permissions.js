@@ -54,15 +54,21 @@ export function createPermissionFeature({ send }) {
     const rows = [];
     if (details.path) rows.push({ label: "路径", value: details.path });
     if (details.newPath) rows.push({ label: "新路径", value: details.newPath });
-    if (details.preview) rows.push({ label: "内容", value: details.preview + (details.preview.length >= 100 ? "…" : "") });
-    if (details.oldPreview !== undefined) rows.push({ label: "替换前", value: details.oldPreview + (details.oldPreview.length >= 80 ? "…" : "") });
-    if (details.newPreview !== undefined) rows.push({ label: "替换后", value: details.newPreview + (details.newPreview.length >= 80 ? "…" : "") });
+    if (details.preview)
+      rows.push({ label: "内容", value: details.preview + (details.preview.length >= 100 ? "…" : "") });
+    if (details.oldPreview !== undefined)
+      rows.push({ label: "替换前", value: details.oldPreview + (details.oldPreview.length >= 80 ? "…" : "") });
+    if (details.newPreview !== undefined)
+      rows.push({ label: "替换后", value: details.newPreview + (details.newPreview.length >= 80 ? "…" : "") });
     if (details.query) rows.push({ label: "搜索词", value: details.query });
     if (details.urls) rows.push({ label: "URL", value: details.urls });
 
-    bodyEl.innerHTML = rows.map((row) =>
-      `<div class="perm-row"><span class="perm-label">${row.label}</span><span class="perm-value">${escapeHtml(row.value)}</span></div>`,
-    ).join("");
+    bodyEl.innerHTML = rows
+      .map(
+        (row) =>
+          `<div class="perm-row"><span class="perm-label">${row.label}</span><span class="perm-value">${escapeHtml(row.value)}</span></div>`,
+      )
+      .join("");
     dialog.classList.add("open");
   }
 

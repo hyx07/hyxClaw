@@ -11,7 +11,10 @@ export type KnowledgeBaseSummary = {
 function splitMarkdownTableRow(line: string): string[] {
   const trimmed = line.trim();
   return trimmed.startsWith("|") && trimmed.endsWith("|")
-    ? trimmed.slice(1, -1).split("|").map((cell) => cell.trim())
+    ? trimmed
+        .slice(1, -1)
+        .split("|")
+        .map((cell) => cell.trim())
     : [];
 }
 

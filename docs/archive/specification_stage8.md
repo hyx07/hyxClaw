@@ -1,6 +1,7 @@
 # 阶段 8 实施计划：用户体验优化
 
 ## 目标
+
 三件事：发送中状态、错误统一进聊天流、Compact 自定义确认框。
 
 ---
@@ -8,6 +9,7 @@
 ## 任务一：发送中状态 + 打字动画
 
 ### 现状
+
 - `isStreaming` 已有，`chatStart` 时 `setSendDisabled(true)`，`chatEnd`/`error` 时恢复
 - 但 `sendMessage()` 发出消息到服务端回 `chatStart` 之间有空窗期，输入框未禁用
 - 没有任何视觉动效表示 AI 正在生成
@@ -27,6 +29,7 @@ CSS 动画：方案 A，三个圆点依次上下跳动（`@keyframes bounce`，s
 `isStreaming` 为 true 时按钮文字改为 "..." 或加 disabled 样式，回复完成后恢复。
 
 ### 涉及文件
+
 - `src/server/public/index.html`：CSS 加动画，JS 改 `sendMessage`、`handleServerMessage` 的 `chatStart`/`chatChunk`
 
 ---
@@ -34,6 +37,7 @@ CSS 动画：方案 A，三个圆点依次上下跳动（`@keyframes bounce`，s
 ## 任务二：错误统一进聊天流
 
 ### 现状
+
 - `showError()` 已存在，插入聊天流，但样式是小红字不显眼
 - `compactCurrentSession()` 失败用 `alert()`
 - WebSocket 断开只改状态点颜色，无文字提示
@@ -52,6 +56,7 @@ CSS 动画：方案 A，三个圆点依次上下跳动（`@keyframes bounce`，s
 避免重复：用一个 `disconnectNotified` flag，断开时置 true，重连后清除。
 
 ### 涉及文件
+
 - `src/server/public/index.html`：CSS 改 `showError` 样式，JS 改 `compactCurrentSession`、`setStatus`
 
 ---
@@ -59,11 +64,13 @@ CSS 动画：方案 A，三个圆点依次上下跳动（`@keyframes bounce`，s
 ## 任务三：Compact 自定义确认框
 
 ### 现状
+
 - `compactCurrentSession()` 用浏览器原生 `confirm()`，风格不统一
 
 ### 改动
 
 **HTML**：新增 `#compact-modal` + `#compact-panel`，结构与 `#usage-modal` / `#knowledge-modal` 完全一致：
+
 ```
 #compact-modal > #compact-panel
   #compact-panel-header > strong("压缩会话")
@@ -74,12 +81,14 @@ CSS 动画：方案 A，三个圆点依次上下跳动（`@keyframes bounce`，s
 **CSS**：复用 `#usage-modal` / `#usage-panel` 的样式规则，selector 扩展加上 `#compact-modal` / `#compact-panel`。
 
 **JS**：
+
 - `compactCurrentSession()` 改为打开 modal（`classList.add("open")`），不再调用 `confirm()`
 - `#compact-cancel-btn` 点击关闭 modal
 - `#compact-confirm-btn` 点击执行实际压缩逻辑（原 `compactCurrentSession` 的 fetch 部分提取为 `doCompact()`）
 - 点击 modal 背景关闭（与其他 modal 一致）
 
 ### 涉及文件
+
 - `src/server/public/index.html`：HTML 加 modal，CSS 扩展选择器，JS 拆分逻辑
 
 ---
@@ -87,10 +96,13 @@ CSS 动画：方案 A，三个圆点依次上下跳动（`@keyframes bounce`，s
 ## 任务四：按钮 hover 去蓝
 
 ### 现状
+
 toolbar 按钮（Token Stats、Compact 等）和 rail 按钮 hover 时变蓝色文字 + 蓝色背景，与 Solarized 主题不搭。
 
 ### 改动
+
 将 `#compact-btn:hover:not(:disabled), .toolbar-select:hover, .toolbar-select:focus` 的 hover 样式改为：
+
 - `border-color: var(--border-strong)`（沙色 `#b9ad8f`）
 - `background: var(--bg2)`
 - `color: var(--text2)`（不变色）
@@ -98,6 +110,7 @@ toolbar 按钮（Token Stats、Compact 等）和 rail 按钮 hover 时变蓝色�
 同样处理 `.rail-btn:hover`。
 
 ### 涉及文件
+
 - `src/server/public/index.html`：CSS 改两处 hover 规则
 
 ---

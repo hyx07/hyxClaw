@@ -23,7 +23,7 @@
 ```typescript
 // src/config/init-strategies.ts
 
-export type InitStrategy = 'once' | 'always' | 'merge';
+export type InitStrategy = "once" | "always" | "merge";
 
 export interface StrategyEntry {
   strategy: InitStrategy;
@@ -31,44 +31,47 @@ export interface StrategyEntry {
   trackInstalled?: boolean;
 }
 
-export const DEFAULT_STRATEGY: InitStrategy = 'once';
+export const DEFAULT_STRATEGY: InitStrategy = "once";
 
 // key 为相对于 templates/ 的精确路径
 // 未匹配到的文件走 defaultStrategy
 export const FILE_STRATEGIES: Record<string, StrategyEntry> = {
-  '.gitignore':                { strategy: 'once' },
-  '.gitattributes':            { strategy: 'once' },
-  'config.json':               { strategy: 'once' },
-  'files/commands.md':         { strategy: 'once' },
-  'files/project_operation_manual.md': { strategy: 'always' },
-  'files/prompts/agent_system_prompt.txt': { strategy: 'once' },
-  'files/prompts/compaction_prompt.txt':   { strategy: 'once' },
-  'knowledge_base/index.md':               { strategy: 'once' },
-  'knowledge_base/instructions.md':        { strategy: 'once' },
-  'knowledge_base/示例/index.md':            { strategy: 'once', trackInstalled: true },
-  'knowledge_base/示例/寄生机器的悖论.md':    { strategy: 'once', trackInstalled: true },
+  ".gitignore": { strategy: "once" },
+  ".gitattributes": { strategy: "once" },
+  "config.json": { strategy: "once" },
+  "files/commands.md": { strategy: "once" },
+  "files/project_operation_manual.md": { strategy: "always" },
+  "files/prompts/agent_system_prompt.txt": { strategy: "once" },
+  "files/prompts/compaction_prompt.txt": { strategy: "once" },
+  "knowledge_base/index.md": { strategy: "once" },
+  "knowledge_base/instructions.md": { strategy: "once" },
+  "knowledge_base/示例/index.md": { strategy: "once", trackInstalled: true },
+  "knowledge_base/示例/寄生机器的悖论.md": { strategy: "once", trackInstalled: true },
 };
 ```
 
-| 策略 | 行为 | 适用场景 |
-|---|---|---|
-| `once` | 仅在目标文件不存在时复制 | 知识库文件、用户会自定义的 prompt |
-| `always` | 模板与目标内容不一致时覆盖，一致则跳过 | 必须和模板保持同步的系统文件 |
-| `merge` | 深度合并 JSON：保留用户值，仅追加模板中的新 key | 其他 JSON 配置文件（暂未使用） |
+| 策略     | 行为                                            | 适用场景                          |
+| -------- | ----------------------------------------------- | --------------------------------- |
+| `once`   | 仅在目标文件不存在时复制                        | 知识库文件、用户会自定义的 prompt |
+| `always` | 模板与目标内容不一致时覆盖，一致则跳过          | 必须和模板保持同步的系统文件      |
+| `merge`  | 深度合并 JSON：保留用户值，仅追加模板中的新 key | 其他 JSON 配置文件（暂未使用）    |
 
 **`merge` 策略细节**（用于 JSON 配置）：
+
 - 仅存在于模板中的顶层 key，以默认值追加到用户配置。
 - 仅存在于用户配置中的顶层 key 会被保留（绝不删除）。
 - 双方都有的 key：用户值优先。嵌套对象递归合并。
 - 数组（如 `models`）**不**合并 — 用户数组完全覆盖模板数组。
 
 **`trackInstalled` 选项**：
+
 - 仅对 `once` 策略生效。
 - 首次复制后，文件路径写入 `$HYXCLAW_DATA_DIR/.installed_templates.json`。
 - 后续 init 时，若文件在已安装记录中，即使目标路径不存在也不恢复。
 - 适用场景：示例文件——新用户能看到，老用户删除后不会复活。
 
 **路径匹配规则**：
+
 - 模板文件相对于 `templates/` 的路径必须与 `FILE_STRATEGIES` 中的 key 精确匹配。
 - 未匹配到的文件走 `DEFAULT_STRATEGY`（当前为 `once`）。
 

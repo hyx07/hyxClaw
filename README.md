@@ -16,11 +16,13 @@ pnpm install
 ```
 
 在项目根目录创建 .env，并指定用户数据目录
+
 ```
 HYXCLAW_DATA_DIR=D:\MyData
 ```
 
 复制模板、创建所需目录，并生成配置文件
+
 ```
 pnpm dev init
 ```
@@ -50,12 +52,10 @@ pnpm start
         {
           "id": "GLM-5.2",
           "label": "GLM-5.2",
-          "thinking": [
-            { "id": "enabled", "params": { "thinking": { "type": "enabled" } } }
-          ],
-          "thinkingOff": { "thinking": { "type": "disabled" } }
-        }
-      ]
+          "thinking": [{ "id": "enabled", "params": { "thinking": { "type": "enabled" } } }],
+          "thinkingOff": { "thinking": { "type": "disabled" } },
+        },
+      ],
     },
     "dashscope": {
       "apiKey": "填入你的api key",
@@ -69,20 +69,20 @@ pnpm start
             { "id": "low", "params": { "enable_thinking": true, "thinking_budget": 512 } },
             { "id": "medium", "params": { "enable_thinking": true, "thinking_budget": 1024 } },
             { "id": "high", "params": { "enable_thinking": true, "thinking_budget": 4096 } },
-            { "id": "max", "params": { "enable_thinking": true, "thinking_budget": 8192 } }
+            { "id": "max", "params": { "enable_thinking": true, "thinking_budget": 8192 } },
           ],
-          "thinkingOff": { "enable_thinking": false }
+          "thinkingOff": { "enable_thinking": false },
         },
         {
           "id": "deepseek-v4-flash",
           "label": "v4-flash",
           "thinking": [
             { "id": "high", "params": { "enable_thinking": true, "reasoning_effort": "high" } },
-            { "id": "max", "params": { "enable_thinking": true, "reasoning_effort": "max" } }
+            { "id": "max", "params": { "enable_thinking": true, "reasoning_effort": "max" } },
           ],
-          "thinkingOff": { "enable_thinking": false }
-        }
-      ]
+          "thinkingOff": { "enable_thinking": false },
+        },
+      ],
     },
     "deepseek": {
       "apiKey": "填入你的api key",
@@ -93,12 +93,12 @@ pnpm start
           "label": "v4-flash",
           "thinking": [
             { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
-            { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }
+            { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } },
           ],
-          "thinkingOff": { "thinking": { "type": "disabled" } }
-        }
-      ]
-    }
+          "thinkingOff": { "thinking": { "type": "disabled" } },
+        },
+      ],
+    },
   },
   "defaultProvider": "deepseek",
   "defaultModel": "deepseek-v4-flash",
@@ -110,7 +110,7 @@ pnpm start
   "server": { "port": 3000, "host": "127.0.0.1" },
   "fs": {
     "allowedDirs": ["inputs", "knowledge_base", "files"],
-    "allowedFiles": []
+    "allowedFiles": [],
   },
   "tools": {
     "tavily": {
@@ -126,14 +126,14 @@ pnpm start
       "maxSearchContentChars": 2000,
       "fetchDepth": "basic",
       "fetchFormat": "markdown",
-      "maxFetchedChars": 50000
-    }
+      "maxFetchedChars": 50000,
+    },
   },
   "compaction": {
     "provider": "deepseek",
     "model": "deepseek-v4-flash",
-    "thinkingEffort": "none"
-  }
+    "thinkingEffort": "none",
+  },
 }
 ```
 
@@ -157,6 +157,7 @@ pnpm start
 - 本地存储：会话、配置、提示词和统计数据均保存在本地数据目录
 
 ## 操作说明
+
 项目已内置操作说明，可以询问AI具体操作。
 
 ### 面板介绍
@@ -242,6 +243,7 @@ pnpm start
 #### Token 计数、会话用量与费用统计
 
 点击工具栏的 📊 按钮可打开完整用量与费用统计面板：
+
 - **每日**：7 天或 30 天的堆叠柱状图，按模型和 Provider 分色展示每日 Token 用量；可切换到费用视图查看每日费用
 - **总量**：按模型 + Provider 汇总总缓存输入、总未缓存输入（两者相加为总输入）、总输出、总费用，以及费用/百万token
 
@@ -306,24 +308,24 @@ hyxclaw status                  # 检查配置、数据目录与启动条件
 
 ## HTTP API
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET | `/health` | 健康检查 |
-| GET | `/api/config` | 可用提供商、模型和默认设置 |
-| GET | `/api/app-state` | 已持久化的界面状态 |
-| GET / POST | `/api/sessions` | 列出或创建会话 |
-| GET / PATCH / DELETE | `/api/sessions/:id` | 读取、重命名或删除会话 |
-| POST | `/api/sessions/:id/compact` | 压缩会话上下文 |
-| POST | `/api/sessions/:id/truncate` | 从指定消息处截断会话 |
-| GET | `/api/usage/stats` | Token 汇总统计 |
-| GET | `/api/usage/daily?days=7` | 最近 1 至 90 天的每日统计 |
-| POST | `/api/usage/flush` | 将临时用量归档到统计文件 |
-| GET | `/api/knowledge` | 知识库概览 |
-| GET / PUT | `/api/documents/content?path=` | 读取或保存文档 |
-| GET | `/api/documents/tree?path=` | 浏览文档目录 |
-| GET | `/api/files?q=` | 搜索允许目录中的文件 |
-| GET | `/api/commands?q=` | 查询 Slash 命令 |
-| GET | `/api/image?path=` | 获取图片文件 |
+| 方法                 | 路径                           | 说明                       |
+| -------------------- | ------------------------------ | -------------------------- |
+| GET                  | `/health`                      | 健康检查                   |
+| GET                  | `/api/config`                  | 可用提供商、模型和默认设置 |
+| GET                  | `/api/app-state`               | 已持久化的界面状态         |
+| GET / POST           | `/api/sessions`                | 列出或创建会话             |
+| GET / PATCH / DELETE | `/api/sessions/:id`            | 读取、重命名或删除会话     |
+| POST                 | `/api/sessions/:id/compact`    | 压缩会话上下文             |
+| POST                 | `/api/sessions/:id/truncate`   | 从指定消息处截断会话       |
+| GET                  | `/api/usage/stats`             | Token 汇总统计             |
+| GET                  | `/api/usage/daily?days=7`      | 最近 1 至 90 天的每日统计  |
+| POST                 | `/api/usage/flush`             | 将临时用量归档到统计文件   |
+| GET                  | `/api/knowledge`               | 知识库概览                 |
+| GET / PUT            | `/api/documents/content?path=` | 读取或保存文档             |
+| GET                  | `/api/documents/tree?path=`    | 浏览文档目录               |
+| GET                  | `/api/files?q=`                | 搜索允许目录中的文件       |
+| GET                  | `/api/commands?q=`             | 查询 Slash 命令            |
+| GET                  | `/api/image?path=`             | 获取图片文件               |
 
 WebSocket 地址为 `ws://127.0.0.1:3000/ws`，用于会话切换、聊天流、工具权限请求和心跳。
 

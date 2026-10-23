@@ -36,12 +36,16 @@ export function createPickerFeature({ state, autoResizeInput, updateSendAvailabi
     }
     const imageLabel = (image) => image.path || "clipboard:image.png";
     state.pendingImagesEl.style.display = "flex";
-    state.pendingImagesEl.innerHTML = state.pendingImages.map((image, index) => `
+    state.pendingImagesEl.innerHTML = state.pendingImages
+      .map(
+        (image, index) => `
       <div class="pending-image-item" title="${escHtml(imageLabel(image))}">
         <img class="pending-image-thumb" src="${image.url}" alt="${escHtml(imageLabel(image))}" data-index="${index}">
         <button class="pending-image-remove" type="button" data-index="${index}" title="删除" aria-label="删除图片">×</button>
       </div>
-    `).join("");
+    `,
+      )
+      .join("");
     state.pendingImagesEl.querySelectorAll(".pending-image-thumb").forEach((thumb) => {
       thumb.addEventListener("click", () => {
         const image = state.pendingImages[Number(thumb.dataset.index)];
@@ -169,7 +173,10 @@ export function createPickerFeature({ state, autoResizeInput, updateSendAvailabi
     empty.style.display = commands.length ? "none" : "block";
     commands.forEach((command, index) => {
       const item = document.createElement("div");
-      const preview = String(command.prompt || "").split(/\r?\n/)[0]?.trim() || "";
+      const preview =
+        String(command.prompt || "")
+          .split(/\r?\n/)[0]
+          ?.trim() || "";
       item.className = "command-picker-item";
       item.dataset.index = String(index);
       item.innerHTML = `<div class="command-picker-name">/${escHtml(command.name)}</div><div class="command-picker-preview">${escHtml(preview)}</div>`;
@@ -249,7 +256,8 @@ export function createPickerFeature({ state, autoResizeInput, updateSendAvailabi
     if (document.getElementById("file-picker-popover")?.classList.contains("open")) {
       if (event.key === "ArrowDown") fileFocusIndex = Math.min(fileFocusIndex + 1, filePickerFiles.length - 1);
       else if (event.key === "ArrowUp") fileFocusIndex = Math.max(fileFocusIndex - 1, 0);
-      else if (event.key === "Enter" && filePickerFiles[fileFocusIndex]) return prevent(event, () => confirmFileSelection(filePickerFiles[fileFocusIndex].path));
+      else if (event.key === "Enter" && filePickerFiles[fileFocusIndex])
+        return prevent(event, () => confirmFileSelection(filePickerFiles[fileFocusIndex].path));
       else if (event.key === "Escape") return prevent(event, closeFilePicker);
       else return;
       return prevent(event, updateFileState);
@@ -257,7 +265,8 @@ export function createPickerFeature({ state, autoResizeInput, updateSendAvailabi
     if (document.getElementById("command-picker-popover")?.classList.contains("open")) {
       if (event.key === "ArrowDown") commandFocusIndex = Math.min(commandFocusIndex + 1, commands.length - 1);
       else if (event.key === "ArrowUp") commandFocusIndex = Math.max(commandFocusIndex - 1, 0);
-      else if (event.key === "Enter" && commands[commandFocusIndex]) return prevent(event, () => confirmCommandSelection(commands[commandFocusIndex].prompt));
+      else if (event.key === "Enter" && commands[commandFocusIndex])
+        return prevent(event, () => confirmCommandSelection(commands[commandFocusIndex].prompt));
       else if (event.key === "Escape") return prevent(event, closeCommandPicker);
       else return;
       return prevent(event, updateCommandState);

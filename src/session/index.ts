@@ -136,7 +136,7 @@ async function getAutoSessionTitle(userDataDir?: string, baseTitle: string = DEF
 }
 
 export async function createSession(title?: string, userDataDir?: string): Promise<Session> {
-  const finalTitle = normalizeSessionTitle(title) || await getAutoSessionTitle(userDataDir);
+  const finalTitle = normalizeSessionTitle(title) || (await getAutoSessionTitle(userDataDir));
   const now = new Date().toISOString();
   const session: Session = {
     id: generateId(),
@@ -178,11 +178,7 @@ export async function addMessage(sessionId: string, message: Message, userDataDi
   return session;
 }
 
-export async function truncateSession(
-  sessionId: string,
-  messageId: string,
-  userDataDir?: string,
-): Promise<Session> {
+export async function truncateSession(sessionId: string, messageId: string, userDataDir?: string): Promise<Session> {
   const session = await loadSession(sessionId, userDataDir);
   const index = session.messages.findIndex((msg) => msg.id === messageId);
   if (index === -1) {

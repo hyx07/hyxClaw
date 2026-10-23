@@ -384,15 +384,19 @@ DashScope 非流式支持工具调用：
 ## 5. DeepSeek
 
 实现文件：
+
 - `src/llm/providers/deepseek.ts`
 
 默认 endpoint：
+
 - `https://api.deepseek.com`
 
 请求路径：
+
 - `POST {baseUrl}/chat/completions`
 
 ### 5.1 非流式调用
+
 请求体主要结构：
 
 ```json
@@ -411,6 +415,7 @@ DashScope 非流式支持工具调用：
 ```
 
 说明：
+
 - `stream` 固定为 `false`
 - thinking 通过 `thinking.type` 控制
 - thinking 强度通过 `reasoning_effort` 控制
@@ -420,6 +425,7 @@ DashScope 非流式支持工具调用：
 ### 5.2 Thinking 控制方式
 
 DeepSeek 的 thinking 控制方式：
+
 - 开启：
   ```json
   { "thinking": { "type": "enabled" } }
@@ -430,6 +436,7 @@ DeepSeek 的 thinking 控制方式：
   ```
 
 当前实测特征：
+
 - 非流式响应会直接返回 `choice.message.reasoning_content`
 - 关闭 thinking 时通常没有 `reasoning_content`
 - 开启 thinking 时，`completion_tokens` 包含 thinking token
@@ -439,6 +446,7 @@ DeepSeek 的 thinking 控制方式：
 DeepSeek 当前不适合按 DashScope 那种数值 `thinking_budget` 接入。
 
 已确认的底层参数是：
+
 - `thinking.type`
 - `reasoning_effort`
 
@@ -451,6 +459,7 @@ DeepSeek 当前不适合按 DashScope 那种数值 `thinking_budget` 接入。
 - `high` -> `thinking: { type: "enabled" }, reasoning_effort: "max"`
 
 补充说明：
+
 - 已实测 `reasoning_effort: "high"` 可用
 - 已实测 `reasoning_effort: "max"` 可用
 - 已实测额外传 `thinking_budget: 100` 会返回 `200`
@@ -485,6 +494,7 @@ DeepSeek 实测 usage 结构：
 - `cachedTokens = prompt_cache_hit_tokens`
 
 注意：
+
 - DeepSeek 的 `completion_tokens` 包含 thinking token
 - 因此项目内应扣除 `reasoning_tokens`，得到真正展示给用户的输出 token
 - `cachedTokens` 更适合读 `prompt_cache_hit_tokens`
@@ -498,6 +508,7 @@ DeepSeek 为 OpenAI-compatible 风格接口，工具调用阶段可按非流式 
   - `choice.message.tool_calls`
 
 当前项目中的工具调用阶段主要依赖：
+
 - 非流式 `complete()`
 
 ---
@@ -545,15 +556,15 @@ DeepSeek 为 OpenAI-compatible 风格接口，工具调用阶段可按非流式 
 
 档位实测（`z-ai/glm-5.3-flash`，同一 prompt「用两种方法心算 17×23」，单次采样，reasoning_tokens 口径）：
 
-| 参数写法 | reasoning_tokens | 说明 |
-| --- | --- | --- |
-| 无参数 | 1054（带 reasoning_content） | 默认自适应思考，甚至比显式低档更深 |
-| `reasoning_effort: "low"` | 0（无 reasoning_content） | 接近关闭思考；该模型不支持 `off`，`low` 即实测最浅档 |
-| `"medium"` | 22 | 浅思考 |
-| `"high"` | 140 | 中思考 |
-| `"xhigh"` | 92 | 与 high 同量级（单次采样有波动） |
-| `"max"` | 161 | 中强思考 |
-| `{ thinking.enabled } + effort=max` | 2032 | enabled 组合把 max 档思考预算放大数倍 |
+| 参数写法                            | reasoning_tokens             | 说明                                                 |
+| ----------------------------------- | ---------------------------- | ---------------------------------------------------- |
+| 无参数                              | 1054（带 reasoning_content） | 默认自适应思考，甚至比显式低档更深                   |
+| `reasoning_effort: "low"`           | 0（无 reasoning_content）    | 接近关闭思考；该模型不支持 `off`，`low` 即实测最浅档 |
+| `"medium"`                          | 22                           | 浅思考                                               |
+| `"high"`                            | 140                          | 中思考                                               |
+| `"xhigh"`                           | 92                           | 与 high 同量级（单次采样有波动）                     |
+| `"max"`                             | 161                          | 中强思考                                             |
+| `{ thinking.enabled } + effort=max` | 2032                         | enabled 组合把 max 档思考预算放大数倍                |
 
 注意：
 
@@ -582,7 +593,12 @@ DeepSeek 为 OpenAI-compatible 风格接口，工具调用阶段可按非流式 
   "prompt_tokens": 28,
   "completion_tokens": 49,
   "total_tokens": 77,
-  "prompt_tokens_details": { "cached_tokens": 0, "cache_write_tokens": 0, "created_cache_tokens": 0, "cache_read_input_tokens": 0 },
+  "prompt_tokens_details": {
+    "cached_tokens": 0,
+    "cache_write_tokens": 0,
+    "created_cache_tokens": 0,
+    "cache_read_input_tokens": 0
+  },
   "completion_tokens_details": { "reasoning_tokens": 47 }
 }
 ```
@@ -662,7 +678,7 @@ DeepSeek 为 OpenAI-compatible 风格接口，工具调用阶段可按非流式 
   - `low`
   - `medium`
   - `high`
-  映射到底层参数
+    映射到底层参数
 - usage 中：
   - 文本输出 token 字段
   - thinking token 字段
@@ -678,6 +694,7 @@ DeepSeek 为 OpenAI-compatible 风格接口，工具调用阶段可按非流式 
 - `scripts/probe-deepseek.mjs`
 
 DeepSeek 补充说明：
+
 - 在 thinking mode 下，如果历史消息里保留了发生过 tool call 的 `assistant` 消息，却没有一起回传对应的 `reasoning_content`，API 可能返回 `400`
 - 项目对 DeepSeek 模型的兼容策略：模型名以 `deepseek` 开头且开启 thinking 时，保留历史 `reasoning_content` 与 tool_calls / tool 消息一并发送
 - 其他模型（及非 thinking 模式）：`sanitizeHistoryForProvider` 统一剥离历史 reasoning 避免上下文膨胀

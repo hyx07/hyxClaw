@@ -51,8 +51,12 @@ async function runGit(dataDir: string, args: string[], allowedExitCodes = [0]): 
       child.kill();
     }, GIT_TIMEOUT_MS);
 
-    child.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString(); });
-    child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
     child.on("error", (error) => {
       clearTimeout(timer);
       reject(new GitSyncError(`无法执行 Git：${error.message}`, "git_error"));
@@ -127,7 +131,11 @@ export async function pullGitSync(dataDir = getPaths().base): Promise<GitSyncRes
       throw new GitSyncError("工作区存在未提交的修改，无法拉取。请先推送或手动处理。", "working_tree_dirty");
     }
     const result = await runGit(dataDir, ["pull", "--ff-only"]);
-    return { status: await getStatusForDirectory(dataDir), output: result.output || "已是最新状态。", committed: false };
+    return {
+      status: await getStatusForDirectory(dataDir),
+      output: result.output || "已是最新状态。",
+      committed: false,
+    };
   });
 }
 
@@ -150,7 +158,11 @@ export async function pushGitSync(dataDir = getPaths().base): Promise<GitSyncRes
       };
     } catch (error) {
       if (error instanceof GitSyncError) {
-        throw new GitSyncError("已创建本地提交，但推送失败。请手动处理后重试。", "git_error", formatOutput(commit.output, error.output));
+        throw new GitSyncError(
+          "已创建本地提交，但推送失败。请手动处理后重试。",
+          "git_error",
+          formatOutput(commit.output, error.output),
+        );
       }
       throw error;
     }

@@ -158,7 +158,9 @@ describe("edit tool", () => {
 
   it("blocks absolute path", async () => {
     const result = await getTool("edit").execute({
-      path: path.join(os.tmpdir(), "evil.txt"), old_string: "a", new_string: "b",
+      path: path.join(os.tmpdir(), "evil.txt"),
+      old_string: "a",
+      new_string: "b",
     });
     expect(result.isError).toBe(true);
   });
@@ -231,7 +233,9 @@ describe("delete tool", () => {
 
 describe("read tool (images)", () => {
   async function createPng(): Promise<Buffer> {
-    return sharp({ create: { width: 1, height: 1, channels: 3, background: "#ffffff" } }).png().toBuffer();
+    return sharp({ create: { width: 1, height: 1, channels: 3, background: "#ffffff" } })
+      .png()
+      .toBuffer();
   }
 
   it("returns image parts as a data URL for vision models", async () => {

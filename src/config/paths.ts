@@ -23,9 +23,9 @@ export function getUserDataDir(): string {
 
   throw new Error(
     "HYXCLAW_DATA_DIR environment variable is not set!\n" +
-    "Please create a .env file in the project root with:\n" +
-    "HYXCLAW_DATA_DIR=/path/to/your/data/directory\n\n" +
-    "See .env.example for reference."
+      "Please create a .env file in the project root with:\n" +
+      "HYXCLAW_DATA_DIR=/path/to/your/data/directory\n\n" +
+      "See .env.example for reference.",
   );
 }
 

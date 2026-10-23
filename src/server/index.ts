@@ -24,7 +24,7 @@ export type ServerState = {
 };
 
 export async function startServer(overrides?: { port?: number; host?: string; config?: Config }): Promise<ServerState> {
-  const config = overrides?.config ?? await loadConfig();
+  const config = overrides?.config ?? (await loadConfig());
   const logger = getLogger(getPaths().logs);
   const host = overrides?.host ?? config.server.host;
   const port = overrides?.port ?? config.server.port;

@@ -1,12 +1,29 @@
 const BLOCK_TAGS = new Set([
-  "P", "DIV", "SECTION", "ARTICLE", "HEADER", "FOOTER",
-  "UL", "OL", "LI", "BLOCKQUOTE",
-  "H1", "H2", "H3", "H4", "H5", "H6",
-  "PRE", "TABLE", "TR",
+  "P",
+  "DIV",
+  "SECTION",
+  "ARTICLE",
+  "HEADER",
+  "FOOTER",
+  "UL",
+  "OL",
+  "LI",
+  "BLOCKQUOTE",
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "H6",
+  "PRE",
+  "TABLE",
+  "TR",
 ]);
 
 export function getDocSelectionSummary(text) {
-  const normalized = String(text || "").replace(/\s+/g, " ").trim();
+  const normalized = String(text || "")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!normalized) return "";
   return normalized.length > 48 ? `${normalized.slice(0, 48)}...` : normalized;
 }
@@ -31,9 +48,10 @@ function getMappedSourceLine(root, targetNode, targetOffset, edge) {
 
   const children = [...targetNode.childNodes];
   if (!children.length) return null;
-  let index = edge === "end"
-    ? Math.min(Math.max(targetOffset - 1, 0), children.length - 1)
-    : Math.min(Math.max(targetOffset, 0), children.length - 1);
+  let index =
+    edge === "end"
+      ? Math.min(Math.max(targetOffset - 1, 0), children.length - 1)
+      : Math.min(Math.max(targetOffset, 0), children.length - 1);
   const step = edge === "end" ? -1 : 1;
   while (index >= 0 && index < children.length) {
     const line = getLineFromNodeOrDescendant(root, children[index], edge);

@@ -216,8 +216,5 @@ function makeWebFetchTool(config: TavilyToolConfig, client: WebClient): ToolDefi
 export function createWebTools(config: TavilyToolConfig, client?: WebClient): ToolDefinition[] {
   if (!config.enabled || !config.apiKey.trim()) return [];
   const webClient = client ?? makeClient(config);
-  return [
-    makeWebSearchTool(config, webClient),
-    makeWebFetchTool(config, webClient),
-  ];
+  return [makeWebSearchTool(config, webClient), makeWebFetchTool(config, webClient)];
 }

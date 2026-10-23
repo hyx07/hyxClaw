@@ -98,14 +98,16 @@ export function createSessionFeature({ state, socket, renderer, pickers, permiss
 
   // 会话记录的 provider/model 可能已从 config 中删除（如模型下线），校验后回退到默认值
   function resolveSessionRuntime(session) {
-    const provider = state.availableProviders.includes(session?.lastProvider)
-      && Array.isArray(state.providerConfigs?.[session.lastProvider]?.models)
-      ? session.lastProvider
-      : state.defaultProvider;
+    const provider =
+      state.availableProviders.includes(session?.lastProvider) &&
+      Array.isArray(state.providerConfigs?.[session.lastProvider]?.models)
+        ? session.lastProvider
+        : state.defaultProvider;
     const models = state.providerConfigs?.[provider]?.models;
-    const model = Array.isArray(models) && models.some((item) => item.id === session?.lastModel)
-      ? session.lastModel
-      : state.defaultModel;
+    const model =
+      Array.isArray(models) && models.some((item) => item.id === session?.lastModel)
+        ? session.lastModel
+        : state.defaultModel;
     return { provider, model };
   }
 
@@ -225,9 +227,13 @@ export function createSessionFeature({ state, socket, renderer, pickers, permiss
       // Trigger session-enter animation on the newly created messages container
       if (state.messagesEl) {
         state.messagesEl.classList.add("session-enter");
-        state.messagesEl.addEventListener("animationend", () => {
-          state.messagesEl?.classList.remove("session-enter");
-        }, { once: true });
+        state.messagesEl.addEventListener(
+          "animationend",
+          () => {
+            state.messagesEl?.classList.remove("session-enter");
+          },
+          { once: true },
+        );
       }
       if (state.inputEl && inputSnapshot) {
         state.inputEl.value = inputSnapshot;
@@ -308,11 +314,15 @@ export function createSessionFeature({ state, socket, renderer, pickers, permiss
       list.innerHTML = '<div class="session-list-empty">暂无对话</div>';
       return;
     }
-    list.innerHTML = state.sessions.map((session) => `
+    list.innerHTML = state.sessions
+      .map(
+        (session) => `
       <div class="session-item ${session.id === state.currentSessionId ? "active" : ""}" data-id="${session.id}">
         <div class="session-item-content"><div class="session-title" title="双击重命名">${escHtml(session.title)}</div><div class="session-meta">${session.messages?.filter((message) => message.role === "user").length || 0} 条消息</div></div>
         <button class="session-delete-btn" data-id="${session.id}" title="删除对话" aria-label="删除对话"><i data-lucide="trash-2"></i></button>
-      </div>`).join("");
+      </div>`,
+      )
+      .join("");
     window.lucide?.createIcons();
     list.querySelectorAll(".session-item").forEach((element) => {
       element.addEventListener("click", (event) => {

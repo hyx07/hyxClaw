@@ -3,14 +3,7 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import {
-  HyxClawError,
-  ConfigError,
-  LLMError,
-  FileSystemError,
-  isError,
-  isHyxClawError,
-} from "./index.js";
+import { HyxClawError, ConfigError, LLMError, FileSystemError, isError, isHyxClawError } from "./index.js";
 import { ToolError } from "../tools/fs-policy.js";
 import { ErrorHandler, withErrorHandling, withSyncErrorHandling } from "./handler.js";
 
@@ -93,7 +86,7 @@ describe("ErrorHandler", () => {
       expect.stringContaining("Test error"),
       expect.objectContaining({
         code: "TEST_CODE",
-      })
+      }),
     );
   });
 });

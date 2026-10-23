@@ -161,32 +161,43 @@ describe("config", () => {
   });
 
   it("loadConfig merges user config with code defaults", async () => {
-    await writeFile(path.join(testDir, "config.json"), JSON.stringify({
-      providers: {
-        zai: {
-          apiKey: "zai-key",
-          models: [{ id: "GLM-4.5-Air", label: "GLM-4.5-Air" }, { id: "GLM-4.7", label: "GLM-4.7" }],
+    await writeFile(
+      path.join(testDir, "config.json"),
+      JSON.stringify(
+        {
+          providers: {
+            zai: {
+              apiKey: "zai-key",
+              models: [
+                { id: "GLM-4.5-Air", label: "GLM-4.5-Air" },
+                { id: "GLM-4.7", label: "GLM-4.7" },
+              ],
+            },
+          },
+          defaultProvider: "zai",
+          defaultModel: "GLM-4.7",
+          defaultThinkingEffort: "medium",
+          server: {
+            port: 4000,
+          },
+          fs: {
+            allowedDirs: ["inputs", "files"],
+            allowedFiles: ["memory.md", "notes.md"],
+          },
+          tools: {
+            tavily: {
+              enabled: true,
+              apiKey: "tvly-key",
+              maxResults: 7,
+              maxSearchContentChars: 3000,
+            },
+          },
         },
-      },
-      defaultProvider: "zai",
-      defaultModel: "GLM-4.7",
-      defaultThinkingEffort: "medium",
-      server: {
-        port: 4000,
-      },
-      fs: {
-        allowedDirs: ["inputs", "files"],
-        allowedFiles: ["memory.md", "notes.md"],
-      },
-      tools: {
-        tavily: {
-          enabled: true,
-          apiKey: "tvly-key",
-          maxResults: 7,
-          maxSearchContentChars: 3000,
-        },
-      },
-    }, null, 2), "utf-8");
+        null,
+        2,
+      ),
+      "utf-8",
+    );
 
     const config = await loadConfig(testDir);
     expect(config.providers.zai.apiKey).toBe("zai-key");
@@ -206,62 +217,94 @@ describe("config", () => {
   });
 
   it("loadConfig rejects legacy format", async () => {
-    await writeFile(path.join(testDir, "config.json"), JSON.stringify({
-      agent: { provider: "zai", model: "glm-5", apiKey: "legacy" },
-    }, null, 2), "utf-8");
+    await writeFile(
+      path.join(testDir, "config.json"),
+      JSON.stringify(
+        {
+          agent: { provider: "zai", model: "glm-5", apiKey: "legacy" },
+        },
+        null,
+        2,
+      ),
+      "utf-8",
+    );
 
     await expect(loadConfig(testDir)).rejects.toThrow("Legacy config format detected");
   });
 
   it("loadConfig rejects when defaultModel does not belong to defaultProvider", async () => {
-    await writeFile(path.join(testDir, "config.json"), JSON.stringify({
-      providers: {
-        zai: {
-          apiKey: "zai-key",
-          models: [{ id: "GLM-4.5-Air", label: "GLM-4.5-Air" }],
+    await writeFile(
+      path.join(testDir, "config.json"),
+      JSON.stringify(
+        {
+          providers: {
+            zai: {
+              apiKey: "zai-key",
+              models: [{ id: "GLM-4.5-Air", label: "GLM-4.5-Air" }],
+            },
+          },
+          defaultProvider: "zai",
+          defaultModel: "qwen3.6-plus",
         },
-      },
-      defaultProvider: "zai",
-      defaultModel: "qwen3.6-plus",
-    }, null, 2), "utf-8");
+        null,
+        2,
+      ),
+      "utf-8",
+    );
 
     await expect(loadConfig(testDir)).rejects.toThrow("Config validation failed");
   });
 
   it("rejects configuring the system-provided none thinking option", async () => {
-    await writeFile(path.join(testDir, "config.json"), JSON.stringify({
-      providers: {
-        zai: {
-          apiKey: "zai-key",
-          models: [{ id: "GLM-4.7", label: "GLM-4.7", thinking: [{ id: "off", params: {} }] }],
+    await writeFile(
+      path.join(testDir, "config.json"),
+      JSON.stringify(
+        {
+          providers: {
+            zai: {
+              apiKey: "zai-key",
+              models: [{ id: "GLM-4.7", label: "GLM-4.7", thinking: [{ id: "off", params: {} }] }],
+            },
+          },
+          defaultProvider: "zai",
+          defaultModel: "GLM-4.7",
         },
-      },
-      defaultProvider: "zai",
-      defaultModel: "GLM-4.7",
-    }, null, 2), "utf-8");
+        null,
+        2,
+      ),
+      "utf-8",
+    );
 
     await expect(loadConfig(testDir)).rejects.toThrow("'none' is added by the system");
   });
 
   it("getAvailableProviders only returns configured apiKey providers", async () => {
-    await writeFile(path.join(testDir, "config.json"), JSON.stringify({
-      providers: {
-        zai: {
-          apiKey: "zai-key",
-          models: [{ id: "GLM-4.7", label: "GLM-4.7" }],
+    await writeFile(
+      path.join(testDir, "config.json"),
+      JSON.stringify(
+        {
+          providers: {
+            zai: {
+              apiKey: "zai-key",
+              models: [{ id: "GLM-4.7", label: "GLM-4.7" }],
+            },
+            dashscope: {
+              apiKey: "",
+              models: [{ id: "qwen3.6-plus", label: "qwen3.6-plus" }],
+            },
+            deepseek: {
+              apiKey: "",
+              models: [{ id: "deepseek-v4-flash", label: "v4-flash" }],
+            },
+          },
+          defaultProvider: "zai",
+          defaultModel: "GLM-4.7",
         },
-        dashscope: {
-          apiKey: "",
-          models: [{ id: "qwen3.6-plus", label: "qwen3.6-plus" }],
-        },
-        deepseek: {
-          apiKey: "",
-          models: [{ id: "deepseek-v4-flash", label: "v4-flash" }],
-        },
-      },
-      defaultProvider: "zai",
-      defaultModel: "GLM-4.7",
-    }, null, 2), "utf-8");
+        null,
+        2,
+      ),
+      "utf-8",
+    );
 
     const config = await loadConfig(testDir);
     expect(getAvailableProviders(config)).toEqual(["zai"]);

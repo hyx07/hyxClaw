@@ -44,7 +44,12 @@ function showResult(kind, title, output, needsManualHelp) {
 function setBusy(busy, action) {
   updateOperationAvailability();
   const label = document.querySelector(`#git-sync-${action}-btn .git-sync-operation-name`);
-  if (label) label.textContent = busy ? `正在${action === "pull" ? "拉取" : "推送"}...` : action === "pull" ? "拉取更新" : "提交并推送";
+  if (label)
+    label.textContent = busy
+      ? `正在${action === "pull" ? "拉取" : "推送"}...`
+      : action === "pull"
+        ? "拉取更新"
+        : "提交并推送";
 }
 
 async function loadStatus() {
@@ -79,11 +84,21 @@ async function runOperation(action) {
   try {
     const { response, data } = await requestJson(`/api/git/${action}`, jsonRequest("POST"));
     if (!response.ok) {
-      showResult("error", action === "pull" ? "无法拉取" : "推送失败", [data.error, data.output].filter(Boolean).join("\n\n"), true);
+      showResult(
+        "error",
+        action === "pull" ? "无法拉取" : "推送失败",
+        [data.error, data.output].filter(Boolean).join("\n\n"),
+        true,
+      );
       return;
     }
     setStatus(data.status);
-    showResult("success", action === "pull" ? "拉取完成" : data.committed ? "推送完成" : "无需推送", data.output, false);
+    showResult(
+      "success",
+      action === "pull" ? "拉取完成" : data.committed ? "推送完成" : "无需推送",
+      data.output,
+      false,
+    );
   } catch (error) {
     showResult("error", "同步失败", error.message || "网络请求失败。", true);
   } finally {

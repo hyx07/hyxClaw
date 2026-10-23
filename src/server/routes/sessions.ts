@@ -1,5 +1,12 @@
 import { compactSession } from "../../chat/compaction.js";
-import { createSession, deleteSession, listSessions, loadSession, renameSession, truncateSession } from "../../session/index.js";
+import {
+  createSession,
+  deleteSession,
+  listSessions,
+  loadSession,
+  renameSession,
+  truncateSession,
+} from "../../session/index.js";
 import type { RouteHandler } from "../http-types.js";
 import { readJsonBody, sendJson, toSessionMessage } from "../http-types.js";
 import { appendUsageRecord } from "../services/usage-store.js";
@@ -60,7 +67,11 @@ export const handleSessionRoutes: RouteHandler = async ({ req, res, url, config,
     } catch (error) {
       const message = (error as Error).message;
       const isBadRequest = message.includes("fewer than") || message.includes("Compaction not needed");
-      sendJson(res, { error: isBadRequest || message.startsWith("Compaction failed") ? message : `Compaction failed: ${message}` }, isBadRequest ? 400 : 500);
+      sendJson(
+        res,
+        { error: isBadRequest || message.startsWith("Compaction failed") ? message : `Compaction failed: ${message}` },
+        isBadRequest ? 400 : 500,
+      );
     }
     return true;
   }

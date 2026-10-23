@@ -270,6 +270,7 @@ Fetch / Extract 核心参数：
 
 ```md
 Search results:
+
 1. Node.js Releases
    URL: https://nodejs.org/en/about/previous-releases
    Content: ...
@@ -281,6 +282,7 @@ Search results:
 
 ```md
 Fetch results:
+
 1. Example Article
    URL: https://example.com/article
    Content:

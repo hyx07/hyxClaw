@@ -3,11 +3,13 @@
 ## 1. Tech Stack
 
 ### 1.1 Core Runtime
+
 - **Node.js** >= 22.16.0
 - **TypeScript** >= 5.9.3
 - **pnpm** >= 10.23.0
 
 ### 1.2 Dependencies
+
 - **commander** 14.x — CLI command parsing
 - **zod** 4.x — Config schema validation
 - **ws** 8.x — WebSocket server
@@ -15,12 +17,14 @@
 - **dotenv** 17.x — Environment variable loading
 
 ### 1.3 Development Tools
+
 - **Vitest** 3.x — Testing framework
 - **oxlint** — Linting
 - **oxfmt** — Code formatting
 - **tsx** — Dev server (hot reload)
 
 ### 1.4 LLM Providers (built-in)
+
 - **智谱 (Zai)** — via `open.bigmodel.cn/api/paas/v4`, OpenAI-compatible API
 - **阿里百炼 (DashScope)** — via `dashscope.aliyuncs.com/compatible-mode/v1`, OpenAI-compatible API
 - **DeepSeek** — via `api.deepseek.com`, OpenAI-compatible API
@@ -29,6 +33,7 @@
 No third-party LLM SDKs — all providers use raw `fetch` over OpenAI-compatible HTTP endpoints.
 
 ### 1.5 Storage
+
 - **JSONL** — Conversation history (`conversations/<id>.jsonl`)
 - **Markdown** — Knowledge base indices (`knowledge_base/*/index.md`)
 - **JSON** — Config (`config.json`), app state (`files/app_state.json`), token usage (`files/usage_temp.json` + `usage_daily.json` + `usage_total.json`)
@@ -127,11 +132,13 @@ $HYXCLAW_DATA_DIR/
 ## 3. Module Responsibilities
 
 ### 3.1 CLI (`src/cli/`)
+
 - `hyxclaw start` — Start web server
 - `hyxclaw init` — Initialize the data directory and templates
 - `hyxclaw status` — Check configuration, data directory and startup readiness
 
 ### 3.2 Server (`src/server/`)
+
 - **HTTP**: plain `node:http` server, no framework (no Express/Hono at runtime).
   `http.ts` dispatches to `routes/system.ts`, `routes/sessions.ts` and `routes/content.ts`.
 - **WebSocket**: `websocket.ts` owns connection lifecycle and message dispatch; `chat-handler.ts` owns chat streaming and tool permission forwarding.
@@ -139,27 +146,27 @@ $HYXCLAW_DATA_DIR/
 - **Domain services**: `services/*` contain filesystem parsing, aggregation and content assembly without HTTP or WebSocket dependencies.
 - **API endpoints**:
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/` | Serve SPA UI |
-| GET | `/health` | Health check |
-| GET | `/api/config` | Available providers, models, defaults |
-| GET | `/api/sessions` | List all sessions |
-| POST | `/api/sessions` | Create session |
-| GET | `/api/sessions/:id` | Load session messages |
-| PATCH | `/api/sessions/:id` | Rename session |
-| DELETE | `/api/sessions/:id` | Delete session |
-| POST | `/api/sessions/:id/compact` | Compact session |
-| POST | `/api/sessions/:id/truncate` | Restart from a user message |
-| GET | `/api/app-state` | Load UI state |
-| GET | `/api/usage/stats` | Aggregated token usage |
-| GET | `/api/usage/daily` | Daily token usage |
-| POST | `/api/usage/flush` | Archive pending usage records |
-| GET | `/api/knowledge` | Knowledge base overview |
-| GET | `/api/commands` | Search configured commands |
-| GET | `/api/files` | Search allowed files |
-| GET/PUT | `/api/documents/content` | Read or update a text document |
-| GET | `/api/documents/tree` | Browse document roots |
+| Method  | Path                         | Purpose                               |
+| ------- | ---------------------------- | ------------------------------------- |
+| GET     | `/`                          | Serve SPA UI                          |
+| GET     | `/health`                    | Health check                          |
+| GET     | `/api/config`                | Available providers, models, defaults |
+| GET     | `/api/sessions`              | List all sessions                     |
+| POST    | `/api/sessions`              | Create session                        |
+| GET     | `/api/sessions/:id`          | Load session messages                 |
+| PATCH   | `/api/sessions/:id`          | Rename session                        |
+| DELETE  | `/api/sessions/:id`          | Delete session                        |
+| POST    | `/api/sessions/:id/compact`  | Compact session                       |
+| POST    | `/api/sessions/:id/truncate` | Restart from a user message           |
+| GET     | `/api/app-state`             | Load UI state                         |
+| GET     | `/api/usage/stats`           | Aggregated token usage                |
+| GET     | `/api/usage/daily`           | Daily token usage                     |
+| POST    | `/api/usage/flush`           | Archive pending usage records         |
+| GET     | `/api/knowledge`             | Knowledge base overview               |
+| GET     | `/api/commands`              | Search configured commands            |
+| GET     | `/api/files`                 | Search allowed files                  |
+| GET/PUT | `/api/documents/content`     | Read or update a text document        |
+| GET     | `/api/documents/tree`        | Browse document roots                 |
 
 - **WebSocket message types**:
 
@@ -188,6 +195,7 @@ Server → Client:
 | `error` | `message`, `sessionId?` |
 
 ### 3.3 Chat (`src/chat/`)
+
 - **`chatStream()`** — Async generator that drives the agentic loop, yields reasoning chunks and tool events in real-time, then sends the final text as a single `chatChunk`
 - **Agentic loop** (`runAgenticLoop`): non-streaming LLM `complete()` calls, iterates tool-call→tool-result until `finish_reason !== "tool_calls"` or `maxToolCalls` reached
 - **Final output**: the entire response text is sent in one `chatChunk`, then rendered as Markdown on `chatEnd`
@@ -196,6 +204,7 @@ Server → Client:
 - **Compaction**: `compactSession()` — sends full history to LLM, saves summary as new session, archives original JSONL
 
 ### 3.4 LLM (`src/llm/`)
+
 - **Provider interface** (`LLMProvider`): `complete(apiKey, messages, options)` → `CompletionResponse`
 - **Provider implementations**: `ZaiProvider`, `DashScopeProvider`
 - Both use raw `fetch` to OpenAI-compatible `/v1/chat/completions` endpoints
@@ -203,18 +212,21 @@ Server → Client:
 - `CompletionResponse`: `content`, `finish_reason`, `tool_calls?`, `reasoning_content?`, `usage` (normalized)
 
 ### 3.5 Tools (`src/tools/`)
+
 - **Registry**: module-level `tools[]` array, `registerTool()`, `getTools()`, `initTools()` clears then re-registers
 - **Built-in tools**: `list`, `read`, `write`, `edit`, `grep`, `move`, `delete` — file operations under `$HYXCLAW_DATA_DIR/`. `read` handles both text and images: a text file returns its content (optional `offset`/`limit` line slicing; capped at 2000 lines / 50 KiB by default, soft-truncated with a notice on overflow), while an allowlisted PNG/JPEG/GIF/WebP file is returned as a multimodal tool result. The image branch is gated on the active model's vision support (`context.supportsImages`); non-vision models get a text error instead of the bytes.
 - **Path sandboxing** (`fs-policy.ts`): `resolveAllowedDirs()` resolves relative paths against data dir, `assertPathAllowed()` enforces whitelist
 - **`executeTool()`**: dispatches tool calls by name, returns `ToolResult { content, isError? }`
 
 ### 3.6 Session (`src/session/`)
+
 - JSONL format: one JSON object per line. First line is metadata message (`id: "meta"`, `role: "system"`)
 - Each conversation message line: `{ id, role, content, timestamp }`
 - `addMessage()`: load → push → save (single-threaded, safe for concurrent writes across different sessions)
 - Runtime metadata (`lastProvider`, `lastModel`) persisted in the meta line
 
 ### 3.8 Knowledge Base
+
 - `server/services/knowledge.ts` parses the overview used by the web UI; AI file operations still use the tool layer
 - `knowledge_base/index.md`: global index (markdown table: name, description, link)
 - `knowledge_base/<name>/index.md`: per-base index (description + file list)
@@ -222,6 +234,7 @@ Server → Client:
 - `GET /api/knowledge` parses `index.md` table and lists directories for the UI overview
 
 ### 3.9 Config (`src/config/`)
+
 - **Schema** (Zod): `providers` map, `defaultProvider`, `defaultModel`, `defaultThinkingEffort`, `maxTokens`, `contextMaxTokens`, `contextMaxMessages`, `maxToolCalls`, `server` (port/host), `fs` (allowedDirs/allowedFiles), `compaction` (provider/model/thinkingEffort). Each model may declare native `thinking` values.
 - **Supported providers**: `zai` (智谱), `dashscope` (阿里百炼), `deepseek`, `commandcode`
 - **Thinking levels**: the UI always adds `none`; each model's `thinking` list supplies provider-native values (for example, DeepSeek `high` / `max`). `none` is sent explicitly as that provider's disable parameter.
@@ -300,6 +313,7 @@ Browser                                                  Server
 ## 5. Data Formats
 
 ### 5.1 Conversation (JSONL)
+
 ```jsonl
 {"id":"meta","role":"system","content":"","timestamp":"2026-04-24T...","metadata":{"title":"My Chat","sessionId":"abc123","createdAt":"...","updatedAt":"...","lastProvider":"zai","lastModel":"GLM-4.7"}}
 {"id":"msg1","role":"user","content":"你好","timestamp":"2026-04-24T..."}
@@ -307,6 +321,7 @@ Browser                                                  Server
 ```
 
 ### 5.2 Configuration (`config.json`)
+
 ```json
 {
   "providers": {
@@ -314,16 +329,14 @@ Browser                                                  Server
       "apiKey": "your-api-key",
       "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
       "models": [
-        {"id": "GLM-4.7", "label": "GLM-4.7", "thinking": ["enabled"]},
-        {"id": "GLM-4.5-Air", "label": "GLM-4.5-Air"}
+        { "id": "GLM-4.7", "label": "GLM-4.7", "thinking": ["enabled"] },
+        { "id": "GLM-4.5-Air", "label": "GLM-4.5-Air" }
       ]
     },
     "dashscope": {
       "apiKey": "",
       "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-      "models": [
-        {"id": "qwen3.6-27b", "label": "qwen3.6-27b"}
-      ]
+      "models": [{ "id": "qwen3.6-27b", "label": "qwen3.6-27b" }]
     }
   },
   "defaultProvider": "zai",
@@ -353,12 +366,14 @@ Browser                                                  Server
 The browser UI uses native ES modules without a frontend framework or bundler. `index.html` contains only the stable page skeleton and loads `styles/*` plus `js/main.js`.
 
 ### 6.1 State Management
+
 - `state.js` creates one plain state object for connection, session, chat and stable DOM references.
 - `main.js` creates the state and explicitly passes it to features; modules do not add business state to `window`.
 - `features/sessions.js` owns `sessionCache`, preserving DOM and streaming state when switching sessions.
 - Settings, usage, permissions, pickers and document browsing keep short-lived state inside their feature modules.
 
 ### 6.2 Rendering
+
 - `dom.js` creates the chat workspace and binds controls for the current session.
 - `render/messages.js` renders historical messages and restart controls.
 - `render/streaming.js` updates reasoning, tool calls, chunks, cursors and typing placeholders.
@@ -366,6 +381,7 @@ The browser UI uses native ES modules without a frontend framework or bundler. `
 - `features/documents.js`, `pickers.js`, `permissions.js`, `usage.js`, `knowledge.js` and `settings.js` own their respective UI behavior.
 
 ### 6.3 Communication
+
 - `websocket.js` owns one connection, JSON serialization and a 3-second reconnect timer. It has no feature imports.
 - `api.js` centralizes JSON HTTP requests used by session, chat and picker features.
 - `features/chat.js` routes server messages and controls the current streaming response; reconnect joins the current session again.
@@ -375,15 +391,18 @@ The browser UI uses native ES modules without a frontend framework or bundler. `
 ## 7. Security
 
 ### 7.1 File System Sandbox
+
 - All file tool paths resolved relative to `$HYXCLAW_DATA_DIR/`
 - `assertPathAllowed()` checks resolved path is within `fs.allowedDirs` or matches `fs.allowedFiles`
 - Default: `inputs/`, `knowledge_base/`, `files/`
 
 ### 7.2 API Keys
+
 - Stored in `config.json`, loaded by server at startup
 - Never logged; `hyxclaw status` only reports whether an API key is set
 
 ### 7.3 Network
+
 - Server binds `127.0.0.1` by default (localhost only)
 
 ---

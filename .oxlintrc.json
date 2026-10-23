@@ -6,11 +6,7 @@
     "style": "off",
     "restriction": "off"
   },
-  "ignorePatterns": [
-    "dist",
-    "node_modules",
-    "coverage"
-  ],
+  "ignorePatterns": ["dist", "node_modules", "coverage"],
   "rules": {
     "unicorn/no-empty-file": "off"
   }

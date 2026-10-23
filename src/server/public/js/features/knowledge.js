@@ -54,7 +54,8 @@ export async function openKnowledgeModal() {
 function showEmptyLoading(el) {
   if (!el) return;
   el.style.display = "block";
-  el.innerHTML = '<div class="empty-state-icon"><i data-lucide="loader-circle"></i></div><p class="empty-state-title">加载中...</p>';
+  el.innerHTML =
+    '<div class="empty-state-icon"><i data-lucide="loader-circle"></i></div><p class="empty-state-title">加载中...</p>';
   window.lucide?.createIcons();
 }
 

@@ -57,5 +57,7 @@ export async function listCommands(query: string): Promise<CommandDefinition[]> 
   }
   const commands = parseCommandsMarkdown(content);
   const normalizedQuery = query.trim().toLowerCase();
-  return normalizedQuery ? commands.filter((command) => command.name.toLowerCase().startsWith(normalizedQuery)) : commands;
+  return normalizedQuery
+    ? commands.filter((command) => command.name.toLowerCase().startsWith(normalizedQuery))
+    : commands;
 }

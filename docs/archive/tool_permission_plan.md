@@ -10,14 +10,14 @@
 
 ## 操作分类
 
-| 工具 | 类型 | 受控 |
-|------|------|------|
-| `list` | 读 | 否 |
-| `read` | 读 | 否 |
-| `search` | 读 | 否 |
-| `write` | 写 | 是 |
-| `edit` | 写 | 是 |
-| `delete` | 删除 | 是 |
+| 工具     | 类型 | 受控 |
+| -------- | ---- | ---- |
+| `list`   | 读   | 否   |
+| `read`   | 读   | 否   |
+| `search` | 读   | 否   |
+| `write`  | 写   | 是   |
+| `edit`   | 写   | 是   |
+| `delete` | 删除 | 是   |
 
 ---
 
@@ -41,6 +41,7 @@ LLM 决定调用 write/edit/delete
 文件：`src/server/public/index.html`
 
 在设置区域加一个"写/删除权限"开关（toggle），状态存 `localStorage`，key 为 `toolWritePermOpen`：
+
 - `true` = 开放（不弹确认）
 - `false` = 需确认（默认）
 
@@ -53,9 +54,17 @@ UI 位置：放在现有设置行（模型选择、thinking 等）旁边，或�
 新增两种消息类型：
 
 **服务端 → 客户端**：
+
 ```ts
-{ type: "toolPermissionRequest"; sessionId: string; requestId: string; toolName: string; summary: string }
+{
+  type: "toolPermissionRequest";
+  sessionId: string;
+  requestId: string;
+  toolName: string;
+  summary: string;
+}
 ```
+
 - `requestId`：唯一 ID，用于匹配响应
 - `toolName`：`"write"` / `"edit"` / `"delete"`
 - `summary`：操作摘要，由服务端按工具构造：
@@ -64,8 +73,13 @@ UI 位置：放在现有设置行（模型选择、thinking 等）旁边，或�
   - `delete`：`{ path }` — 文件路径
 
 **客户端 → 服务端**：
+
 ```ts
-{ type: "toolPermissionResponse"; requestId: string; allowed: boolean }
+{
+  type: "toolPermissionResponse";
+  requestId: string;
+  allowed: boolean;
+}
 ```
 
 ### 3. 服务端：权限拦截
@@ -83,6 +97,7 @@ onToolCall(name, input):
 ```
 
 实现方式：
+
 - `pendingPermissions: Map<string, (allowed: boolean) => void>` 存等待中的 Promise resolve
 - 收到 `toolPermissionResponse` 时，从 Map 取出对应 resolve 并调用
 - 不设超时，一直等待直到用户响应
@@ -118,6 +133,7 @@ if (!allowed) {
 文件：`src/chat/index.ts`
 
 `ChatOptions` 加：
+
 ```ts
 checkPermission?: (toolName: string, input: Record<string, unknown>) => Promise<boolean>;
 ```
@@ -129,6 +145,7 @@ checkPermission?: (toolName: string, input: Record<string, unknown>) => Promise<
 文件：`src/server/public/index.html`
 
 **HTML**（放在 `#composer` 外，body 级别，居中显示）：
+
 ```html
 <div id="tool-permission-overlay">
   <div id="tool-permission-dialog">
@@ -143,11 +160,13 @@ checkPermission?: (toolName: string, input: Record<string, unknown>) => Promise<
 ```
 
 **CSS**：
+
 - overlay：`position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200`
 - dialog：居中卡片，`min-width: 280px`，圆角，阴影
 - 允许按钮：强调色（深米色 `#c8b99a`）；拒绝按钮：普通灰色
 
 **JS**：
+
 - 收到 `toolPermissionRequest` 时，按 `toolName` 渲染不同内容：
   - `write`：显示"写入文件"标题 + 路径 + 内容预览（前100字符，超出显示省略号）
   - `edit`：显示"编辑文件"标题 + 路径 + 替换前/替换后各一行（各前80字符）
@@ -156,6 +175,7 @@ checkPermission?: (toolName: string, input: Record<string, unknown>) => Promise<
 - 不支持键盘 Escape 关闭（防止误操作）
 
 **权限开关 UI**：
+
 - 在工具栏或设置区加一个 `<label>` + `<input type="checkbox">` toggle
 - label 文字：`写/删除权限`（开启时模型可直接写删，关闭时需确认）
 - 状态变化时更新 `localStorage` 并通过 WebSocket 同步给服务端（或服务端每次从消息里读）
@@ -166,25 +186,25 @@ checkPermission?: (toolName: string, input: Record<string, unknown>) => Promise<
 
 ## 关键文件
 
-| 文件 | 改动 |
-|------|------|
-| `src/types/index.ts` | 无需改动 |
-| `src/tools/types.ts` | 无需改动 |
-| `src/chat/index.ts` | `ChatOptions` 加 `checkPermission`；`runAgenticLoop` 加 permission gate |
-| `src/server/index.ts` | 新增两种 WS 消息类型；`processChatMessage` 注入 `checkPermission`；`pendingPermissions` Map |
-| `src/server/public/index.html` | 确认 popover HTML/CSS/JS；权限开关 UI；`chatMessage` 带 `writePermOpen` |
+| 文件                           | 改动                                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------------------- |
+| `src/types/index.ts`           | 无需改动                                                                                    |
+| `src/tools/types.ts`           | 无需改动                                                                                    |
+| `src/chat/index.ts`            | `ChatOptions` 加 `checkPermission`；`runAgenticLoop` 加 permission gate                     |
+| `src/server/index.ts`          | 新增两种 WS 消息类型；`processChatMessage` 注入 `checkPermission`；`pendingPermissions` Map |
+| `src/server/public/index.html` | 确认 popover HTML/CSS/JS；权限开关 UI；`chatMessage` 带 `writePermOpen`                     |
 
 ---
 
 ## 边界情况
 
-| 情况 | 处理 |
-|------|------|
-| 用户长时间未响应 | 一直等待，直到用户点允许或拒绝 |
-| 用户拒绝 | loop 立即终止，前端工具调用显示为失败，回到等待用户输入状态 |
-| 权限开关开启时 | `checkPermission` 直接返回 `true`，不发 WS 消息 |
-| 多个工具调用同时触发 | 串行等待（agentic loop 本身是串行的，不会并发） |
-| 会话切换时有未响应的 permission | 保持等待，用户切回后仍可响应 |
+| 情况                            | 处理                                                        |
+| ------------------------------- | ----------------------------------------------------------- |
+| 用户长时间未响应                | 一直等待，直到用户点允许或拒绝                              |
+| 用户拒绝                        | loop 立即终止，前端工具调用显示为失败，回到等待用户输入状态 |
+| 权限开关开启时                  | `checkPermission` 直接返回 `true`，不发 WS 消息             |
+| 多个工具调用同时触发            | 串行等待（agentic loop 本身是串行的，不会并发）             |
+| 会话切换时有未响应的 permission | 保持等待，用户切回后仍可响应                                |
 
 ---
 

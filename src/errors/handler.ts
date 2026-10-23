@@ -66,10 +66,7 @@ export class ErrorHandler {
 // Try-catch wrapper utility
 export type AsyncFunction = (...args: unknown[]) => Promise<unknown>;
 
-export function withErrorHandling<T extends AsyncFunction>(
-  fn: T,
-  options: ErrorHandlerOptions = {}
-): T {
+export function withErrorHandling<T extends AsyncFunction>(fn: T, options: ErrorHandlerOptions = {}): T {
   return (async (...args: unknown[]) => {
     try {
       return await fn(...args);
@@ -84,10 +81,7 @@ export function withErrorHandling<T extends AsyncFunction>(
 // Sync version
 export type SyncFunction = (...args: unknown[]) => unknown;
 
-export function withSyncErrorHandling<T extends SyncFunction>(
-  fn: T,
-  options: ErrorHandlerOptions = {}
-): T {
+export function withSyncErrorHandling<T extends SyncFunction>(fn: T, options: ErrorHandlerOptions = {}): T {
   return ((...args: unknown[]) => {
     try {
       return fn(...args);

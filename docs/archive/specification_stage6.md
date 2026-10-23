@@ -17,10 +17,10 @@
 ```typescript
 {
   bases: Array<{
-    name: string;        // 目录名
+    name: string; // 目录名
     description: string; // 从 knowledge_base/index.md 表格中解析，找不到则为空字符串
-    files: string[];     // 目录下所有文件，排除 index.md，仅文件名
-  }>
+    files: string[]; // 目录下所有文件，排除 index.md，仅文件名
+  }>;
 }
 ```
 
@@ -34,6 +34,7 @@
 4. 合并目录扫描结果和 index.md 解析结果，返回
 
 **错误处理：**
+
 - `knowledge_base/` 目录不存在：返回 `{ bases: [] }`
 - 单个知识库目录读取失败：跳过该知识库，不影响其他
 
@@ -67,13 +68,16 @@
 ```
 
 **折叠规则：**
+
 - 文件数 ≤ 5：直接展示全部文件名，无折叠
 - 文件数 > 5：默认只显示前5个，底部显示"展开查看全部 N 个文件"按钮，点击后展开全部，再次点击收起
 
 **空状态：**
+
 - 没有任何知识库时：显示"暂无知识库"
 
 **加载时机：**
+
 - 每次点击按钮时重新请求 `GET /api/knowledge`（不缓存）
 
 ---
@@ -143,6 +147,7 @@
 ```
 
 初始化代码（`src/config/index.ts`）需同步：
+
 1. 新增 `knowledge_base/instructions.md` 的初始化逻辑
 2. 更新 `agent_system_prompt.txt` 的默认内容
 

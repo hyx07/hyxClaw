@@ -469,12 +469,12 @@ Input: 12.5k Output: 1.9k Total: 14.4k
 
 ## 5.3 建议涉及文件
 
-| 文件 | 改动类型 |
-| --- | --- |
+| 文件                           | 改动类型                                                                         |
+| ------------------------------ | -------------------------------------------------------------------------------- |
 | `src/server/public/index.html` | 主要实现文件：Markdown 渲染、消息布局、Thinking / 工具块、输入区、右侧 rail 样式 |
-| `package.json` | 如采用 npm 依赖，新增 Markdown / sanitizer 相关依赖 |
-| `src/server/index.test.ts` | 如新增静态资源或行为需要覆盖时更新 |
-| `scripts/stage5_ui_mock.html` | 当前阶段 5 设计 mock，可作为实现参考 |
+| `package.json`                 | 如采用 npm 依赖，新增 Markdown / sanitizer 相关依赖                              |
+| `src/server/index.test.ts`     | 如新增静态资源或行为需要覆盖时更新                                               |
+| `scripts/stage5_ui_mock.html`  | 当前阶段 5 设计 mock，可作为实现参考                                             |
 
 ---
 

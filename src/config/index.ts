@@ -7,11 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { logger } from "../logger/index.js";
 import { ConfigError } from "../errors/index.js";
-import {
-  getPaths,
-  ensureDirectories,
-  pathExists,
-} from "./paths.js";
+import { getPaths, ensureDirectories, pathExists } from "./paths.js";
 import { resolveStrategy } from "./init-strategies.js";
 import {
   ConfigSchema,
@@ -28,14 +24,11 @@ import {
 } from "./schema.js";
 
 // templates/ is at the project root, two levels up from dist/config/
-const TEMPLATES_DIR = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../templates",
-);
+const TEMPLATES_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../templates");
 
 async function migrateLegacySystemPrompt(paths: ReturnType<typeof getPaths>): Promise<void> {
   const legacyPath = path.join(paths.files, "prompts", "agentSystemPrompt.txt");
-  if (await pathExists(paths.agentSystemPromptFile) || !(await pathExists(legacyPath))) return;
+  if ((await pathExists(paths.agentSystemPromptFile)) || !(await pathExists(legacyPath))) return;
 
   await fs.rename(legacyPath, paths.agentSystemPromptFile);
   logger.info("Migrated legacy system prompt filename.");
@@ -103,10 +96,7 @@ async function copyTemplates(paths: ReturnType<typeof getPaths>): Promise<void> 
         case "always": {
           await fs.mkdir(path.dirname(destPath), { recursive: true });
           if (destExists) {
-            const [templateBuf, destBuf] = await Promise.all([
-              fs.readFile(srcPath),
-              fs.readFile(destPath),
-            ]);
+            const [templateBuf, destBuf] = await Promise.all([fs.readFile(srcPath), fs.readFile(destPath)]);
             if (templateBuf.equals(destBuf)) {
               logger.info(`[always] Up to date, skip: ${relPath}`);
               break;
@@ -170,10 +160,9 @@ async function copyTemplates(paths: ReturnType<typeof getPaths>): Promise<void> 
 
 function assertNoLegacyFields(userConfig: Record<string, unknown>) {
   if ("agent" in userConfig) {
-    throw new ConfigError(
-      "Legacy config format detected. Please update config.json to the current structure.",
-      { code: "config_legacy_format" },
-    );
+    throw new ConfigError("Legacy config format detected. Please update config.json to the current structure.", {
+      code: "config_legacy_format",
+    });
   }
 }
 
@@ -219,7 +208,8 @@ function mergeWithDefaults(userConfig: Partial<Config>): Config {
         includeRawContent: userConfig.tools?.tavily?.includeRawContent ?? DEFAULT_TOOLS_CONFIG.tavily.includeRawContent,
         includeUsage: userConfig.tools?.tavily?.includeUsage ?? DEFAULT_TOOLS_CONFIG.tavily.includeUsage,
         timeoutMs: userConfig.tools?.tavily?.timeoutMs ?? DEFAULT_TOOLS_CONFIG.tavily.timeoutMs,
-        maxSearchContentChars: userConfig.tools?.tavily?.maxSearchContentChars ?? DEFAULT_TOOLS_CONFIG.tavily.maxSearchContentChars,
+        maxSearchContentChars:
+          userConfig.tools?.tavily?.maxSearchContentChars ?? DEFAULT_TOOLS_CONFIG.tavily.maxSearchContentChars,
         fetchDepth: userConfig.tools?.tavily?.fetchDepth ?? DEFAULT_TOOLS_CONFIG.tavily.fetchDepth,
         fetchFormat: userConfig.tools?.tavily?.fetchFormat ?? DEFAULT_TOOLS_CONFIG.tavily.fetchFormat,
         maxFetchedChars: userConfig.tools?.tavily?.maxFetchedChars ?? DEFAULT_TOOLS_CONFIG.tavily.maxFetchedChars,
@@ -228,7 +218,8 @@ function mergeWithDefaults(userConfig: Partial<Config>): Config {
     compaction: {
       provider: userConfig.compaction?.provider ?? DEFAULT_CONFIG.compaction.provider,
       model: userConfig.compaction?.model ?? DEFAULT_CONFIG.compaction.model,
-      thinkingEffort: normalizeEffort(userConfig.compaction?.thinkingEffort) ?? DEFAULT_CONFIG.compaction.thinkingEffort,
+      thinkingEffort:
+        normalizeEffort(userConfig.compaction?.thinkingEffort) ?? DEFAULT_CONFIG.compaction.thinkingEffort,
       keepRecentRounds: userConfig.compaction?.keepRecentRounds ?? DEFAULT_CONFIG.compaction.keepRecentRounds,
     },
   };
@@ -258,9 +249,7 @@ function validateConfig(userConfig: Partial<Config>): Config {
   const mergedConfig = mergeWithDefaults(userConfig);
   const result = ConfigSchema.safeParse(mergedConfig);
   if (!result.success) {
-    const errors = result.error.issues
-      .map((issue) => `${(issue.path || []).join(".")}: ${issue.message}`)
-      .join(", ");
+    const errors = result.error.issues.map((issue) => `${(issue.path || []).join(".")}: ${issue.message}`).join(", ");
     throw new ConfigError(`Config validation failed: ${errors}`, {
       code: "config_validation_error",
       errors: result.error.flatten(),
@@ -299,11 +288,18 @@ function normalizeLegacyEffort(config: Record<string, unknown>): void {
   if (compaction?.thinkingEffort === "none") compaction.thinkingEffort = "off";
 }
 
-export function resolveModelThinking(config: Config, provider: ProviderName, model: string, level?: string): { level: string; params: ThinkingParams } {
+export function resolveModelThinking(
+  config: Config,
+  provider: ProviderName,
+  model: string,
+  level?: string,
+): { level: string; params: ThinkingParams } {
   const modelConfig = config.providers[provider]?.models.find((item) => item.id === model);
   if (!level || level === "off") return { level: "off", params: modelConfig?.thinkingOff ?? {} };
   const option = modelConfig?.thinking?.find((item) => item.id === level);
-  return option ? { level: option.id, params: option.params } : { level: "off", params: modelConfig?.thinkingOff ?? {} };
+  return option
+    ? { level: option.id, params: option.params }
+    : { level: "off", params: modelConfig?.thinkingOff ?? {} };
 }
 
 export async function loadConfig(userDataDir?: string): Promise<Config> {

@@ -63,12 +63,16 @@ describe("session", () => {
     const originalUpdatedAt = session.updatedAt;
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    const updated = await addMessage(session.id, {
-      id: "m1",
-      role: "user",
-      content: "Hello",
-      timestamp: new Date().toISOString(),
-    }, testDir);
+    const updated = await addMessage(
+      session.id,
+      {
+        id: "m1",
+        role: "user",
+        content: "Hello",
+        timestamp: new Date().toISOString(),
+      },
+      testDir,
+    );
 
     expect(updated.messages).toHaveLength(1);
     expect(updated.updatedAt).not.toBe(originalUpdatedAt);

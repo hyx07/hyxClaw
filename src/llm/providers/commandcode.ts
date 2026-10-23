@@ -11,7 +11,14 @@ import type { Message } from "../../types/index.js";
 import { LLMError } from "../../errors/index.js";
 import { logger } from "../../logger/index.js";
 import type { LLMToolCall } from "../../tools/types.js";
-import type { LLMProvider, CompletionResponse, CompletionOptions, StreamChunk, StreamFinish, NormalizedUsage } from "../types.js";
+import type {
+  LLMProvider,
+  CompletionResponse,
+  CompletionOptions,
+  StreamChunk,
+  StreamFinish,
+  NormalizedUsage,
+} from "../types.js";
 import { DEFAULT_TIMEOUT, mapMessage, fetchWithRetry } from "./shared.js";
 
 export const COMMANDCODE_ENDPOINT = "https://api.commandcode.ai/provider/v1";
@@ -91,11 +98,17 @@ export class CommandCodeProvider implements LLMProvider {
       ...(responseFormat ? { response_format: responseFormat } : {}),
     };
 
-    const res = await fetchWithRetry(this.label, `${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }, timeout, options.signal);
+    const res = await fetchWithRetry(
+      this.label,
+      `${baseUrl}/chat/completions`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      timeout,
+      options.signal,
+    );
 
     const data = (await res.json()) as CommandCodeResponse;
     const choice = data.choices[0];
@@ -109,7 +122,11 @@ export class CommandCodeProvider implements LLMProvider {
     };
   }
 
-  async *stream(apiKey: string, messages: Message[], options: CompletionOptions = {}): AsyncGenerator<StreamChunk, StreamFinish, unknown> {
+  async *stream(
+    apiKey: string,
+    messages: Message[],
+    options: CompletionOptions = {},
+  ): AsyncGenerator<StreamChunk, StreamFinish, unknown> {
     const {
       model = COMMANDCODE_DEFAULT_MODEL,
       baseUrl = COMMANDCODE_ENDPOINT,
@@ -129,11 +146,17 @@ export class CommandCodeProvider implements LLMProvider {
       ...thinkingParams,
     };
 
-    const res = await fetchWithRetry(this.label, `${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }, timeout, options.signal);
+    const res = await fetchWithRetry(
+      this.label,
+      `${baseUrl}/chat/completions`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      timeout,
+      options.signal,
+    );
 
     if (!res.body) throw new LLMError("响应 body 为空", { code: "llm_empty_response" });
 
@@ -169,7 +192,13 @@ export class CommandCodeProvider implements LLMProvider {
                 if (tc.function?.name) existing.name = tc.function.name;
                 if (tc.function?.arguments) existing.arguments += tc.function.arguments;
                 toolCallsMap.set(tc.index, existing);
-                yield { type: "toolCallDelta", index: tc.index, id: tc.id, name: tc.function?.name, arguments: tc.function?.arguments };
+                yield {
+                  type: "toolCallDelta",
+                  index: tc.index,
+                  id: tc.id,
+                  name: tc.function?.name,
+                  arguments: tc.function?.arguments,
+                };
               }
             }
             if (parsed.usage) yield { type: "usage", usage: mapUsage(parsed.usage) };

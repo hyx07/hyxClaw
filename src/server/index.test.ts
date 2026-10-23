@@ -24,7 +24,12 @@ const mockConfig: Config = {
       baseUrl: "https://open.bigmodel.cn/api/paas/v4",
       models: [
         { id: "GLM-4.5-Air", label: "GLM-4.5-Air" },
-        { id: "GLM-4.7", label: "GLM-4.7", thinking: [{ id: "enabled", params: { thinking: { type: "enabled" } } }], thinkingOff: { thinking: { type: "disabled" } } },
+        {
+          id: "GLM-4.7",
+          label: "GLM-4.7",
+          thinking: [{ id: "enabled", params: { thinking: { type: "enabled" } } }],
+          thinkingOff: { thinking: { type: "disabled" } },
+        },
       ],
     },
     dashscope: {
@@ -38,9 +43,7 @@ const mockConfig: Config = {
     deepseek: {
       apiKey: "",
       baseUrl: "https://api.deepseek.com",
-      models: [
-        { id: "deepseek-v4-flash", label: "v4-flash" },
-      ],
+      models: [{ id: "deepseek-v4-flash", label: "v4-flash" }],
     },
     commandcode: {
       apiKey: "",
@@ -114,7 +117,7 @@ function connectWs(port: number): Promise<{ ws: WebSocket; recv: () => Promise<u
 describe("document preview source lines", () => {
   it("preserves physical lines across consecutive blank lines", async () => {
     const modulePath = "./public/js/markdown.js";
-    const { renderMarkdown } = await import(modulePath) as { renderMarkdown: (text: string) => string };
+    const { renderMarkdown } = (await import(modulePath)) as { renderMarkdown: (text: string) => string };
 
     const html = renderMarkdown("标题\n\n\n\n正文");
 
@@ -124,7 +127,7 @@ describe("document preview source lines", () => {
 
   it("marks source lines for structured markdown and fenced code", async () => {
     const modulePath = "./public/js/markdown.js";
-    const { renderMarkdown } = await import(modulePath) as { renderMarkdown: (text: string) => string };
+    const { renderMarkdown } = (await import(modulePath)) as { renderMarkdown: (text: string) => string };
     const source = [
       "# heading",
       "",
@@ -162,7 +165,7 @@ describe("document preview source lines", () => {
 
   it("resolves a selection endpoint from source-line metadata", async () => {
     const modulePath = "./public/js/features/document-selection.js";
-    const { getSourceLineNumberFromOffset } = await import(modulePath) as {
+    const { getSourceLineNumberFromOffset } = (await import(modulePath)) as {
       getSourceLineNumberFromOffset: (root: unknown, node: unknown, offset: number) => number;
     };
     const runtime = globalThis as typeof globalThis & { Node?: { ELEMENT_NODE: number; TEXT_NODE: number } };
@@ -172,7 +175,7 @@ describe("document preview source lines", () => {
     const span: Record<string, unknown> = {
       nodeType: 1,
       parentElement: root,
-      getAttribute: (name: string) => name === "data-source-line" ? "5" : null,
+      getAttribute: (name: string) => (name === "data-source-line" ? "5" : null),
       childNodes: [],
     };
     const textNode = { nodeType: 3, parentElement: span };
@@ -221,7 +224,11 @@ describe("server", () => {
     );
 
     await mkdir(path.join(testDir, "knowledge_base", "example"), { recursive: true });
-    await writeFile(path.join(testDir, "knowledge_base", "index.md"), "# 知识库索引\n\n| name | description |\n| --- | --- |\n| example | 示例描述 |\n", "utf-8");
+    await writeFile(
+      path.join(testDir, "knowledge_base", "index.md"),
+      "# 知识库索引\n\n| name | description |\n| --- | --- |\n| example | 示例描述 |\n",
+      "utf-8",
+    );
     await writeFile(path.join(testDir, "knowledge_base", "example", "index.md"), "# example\n", "utf-8");
     await writeFile(path.join(testDir, "knowledge_base", "example", "a.md"), "# A\n", "utf-8");
     await writeFile(path.join(testDir, "knowledge_base", "example", "b.md"), "# B\n", "utf-8");
@@ -257,13 +264,16 @@ describe("server", () => {
 
   it("returns safe config with provider model lists", async () => {
     const res = await fetch(`http://127.0.0.1:${port}/api/config`);
-    const data = await res.json() as {
+    const data = (await res.json()) as {
       availableProviders: string[];
       defaultProvider: string;
       defaultModel: string;
       defaultThinkingEffort: string;
       gitSyncEnabled: boolean;
-      providers: Record<string, { models: Array<{ id: string; label: string; modal?: string; thinking?: Array<{ id: string }> }> }>;
+      providers: Record<
+        string,
+        { models: Array<{ id: string; label: string; modal?: string; thinking?: Array<{ id: string }> }> }
+      >;
     };
 
     expect(data.availableProviders).toEqual(["zai"]);
@@ -279,23 +289,24 @@ describe("server", () => {
   it("returns app state endpoint", async () => {
     const res = await fetch(`http://127.0.0.1:${port}/api/app-state`);
     expect(res.status).toBe(200);
-    const data = await res.json() as { lastActiveSessionId?: string; recentModels?: Array<{ provider: string; model: string }> };
+    const data = (await res.json()) as {
+      lastActiveSessionId?: string;
+      recentModels?: Array<{ provider: string; model: string }>;
+    };
     expect(typeof data).toBe("object");
     expect(data.recentModels).toEqual([]);
   });
 
   it("returns knowledge overview", async () => {
     const res = await fetch(`http://127.0.0.1:${port}/api/knowledge`);
-    const data = await res.json() as { bases: Array<{ name: string; description: string; files: string[] }> };
-    expect(data.bases).toEqual([
-      { name: "example", description: "示例描述", files: ["a.md", "b.md"] },
-    ]);
+    const data = (await res.json()) as { bases: Array<{ name: string; description: string; files: string[] }> };
+    expect(data.bases).toEqual([{ name: "example", description: "示例描述", files: ["a.md", "b.md"] }]);
   });
 
   it("returns command definitions and supports prefix filtering", async () => {
     const res = await fetch(`http://127.0.0.1:${port}/api/commands?q=sum`);
     expect(res.status).toBe(200);
-    const data = await res.json() as { commands: Array<{ name: string; prompt: string }> };
+    const data = (await res.json()) as { commands: Array<{ name: string; prompt: string }> };
     expect(data.commands).toEqual([
       {
         name: "summarize",
@@ -307,14 +318,14 @@ describe("server", () => {
   it("lists text files and supported images for @ mentions", async () => {
     const res = await fetch(`http://127.0.0.1:${port}/api/files?q=sample`);
     expect(res.status).toBe(200);
-    const data = await res.json() as { files: Array<{ path: string; source: string }> };
+    const data = (await res.json()) as { files: Array<{ path: string; source: string }> };
     expect(data.files).toEqual([{ path: "inputs/sample.png", source: "inputs" }]);
   });
 
   it("lists document tree entries for allowed roots", async () => {
     const res = await fetch(`http://127.0.0.1:${port}/api/documents/tree?path=knowledge_base/example`);
     expect(res.status).toBe(200);
-    const data = await res.json() as { path: string; entries: Array<{ name: string; kind: string }> };
+    const data = (await res.json()) as { path: string; entries: Array<{ name: string; kind: string }> };
     expect(data.path).toBe("knowledge_base/example");
     expect(data.entries).toEqual([
       { name: "a.md", path: "knowledge_base/example/a.md", kind: "file" },
@@ -326,7 +337,7 @@ describe("server", () => {
   it("loads document content for text files", async () => {
     const res = await fetch(`http://127.0.0.1:${port}/api/documents/content?path=inputs/notes.md`);
     expect(res.status).toBe(200);
-    const data = await res.json() as { path: string; content: string; supported: boolean };
+    const data = (await res.json()) as { path: string; content: string; supported: boolean };
     expect(data.path).toBe("inputs/notes.md");
     expect(data.supported).toBe(true);
     expect(data.content).toContain("# Notes");
@@ -340,7 +351,7 @@ describe("server", () => {
 
     const res = await fetch(`http://127.0.0.1:${port}/api/documents/content?path=inputs/doomed.md`);
     expect(res.status).toBe(404);
-    const data = await res.json() as { error: string };
+    const data = (await res.json()) as { error: string };
     expect(data.error).toBe("文件不存在或已被删除");
     expect(data.error).not.toContain("ENOENT");
   });
@@ -348,7 +359,7 @@ describe("server", () => {
   it("loads document content for image files", async () => {
     const res = await fetch(`http://127.0.0.1:${port}/api/documents/content?path=inputs/sample.png`);
     expect(res.status).toBe(200);
-    const data = await res.json() as { path: string; supported: boolean; kind: string; content: string };
+    const data = (await res.json()) as { path: string; supported: boolean; kind: string; content: string };
     expect(data.path).toBe("inputs/sample.png");
     expect(data.supported).toBe(true);
     expect(data.kind).toBe("image");
@@ -384,22 +395,19 @@ describe("server", () => {
   });
 
   it("omits line-number hint when there is no selected preview text", () => {
-    const result = buildAugmentedUserContent(
-      "请总结这个文件",
-      undefined,
-      "knowledge_base/example/a.md",
-      undefined,
-    );
+    const result = buildAugmentedUserContent("请总结这个文件", undefined, "knowledge_base/example/a.md", undefined);
 
     expect(result.persistedUserContent).toBe(result.llmUserContent);
-    expect(result.llmUserContent).toBe([
-      "<系统提示>",
-      "当前用户正在浏览文件：knowledge_base/example/a.md",
-      "",
-      "用户正在浏览的文件不一定与当前对话直接相关，请结合上下文判断是否需要参考。",
-      "</系统提示>",
-      "用户消息：请总结这个文件",
-    ].join("\n"));
+    expect(result.llmUserContent).toBe(
+      [
+        "<系统提示>",
+        "当前用户正在浏览文件：knowledge_base/example/a.md",
+        "",
+        "用户正在浏览的文件不一定与当前对话直接相关，请结合上下文判断是否需要参考。",
+        "</系统提示>",
+        "用户消息：请总结这个文件",
+      ].join("\n"),
+    );
   });
 
   it("creates a session", async () => {
@@ -408,35 +416,37 @@ describe("server", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "Test Session" }),
     });
-    const data = await res.json() as { session: { id: string; title: string } };
+    const data = (await res.json()) as { session: { id: string; title: string } };
     expect(data.session.title).toBe("Test Session");
     expect(data.session.id).toBeDefined();
   });
 
   it("parses commands markdown with multiline prompt blocks and skips invalid sections", () => {
-    const commands = parseCommandsMarkdown([
-      "# commands",
-      "",
-      "## summarize",
-      "```prompt",
-      "Line 1",
-      "Line 2",
-      "```",
-      "",
-      "## ignored_missing_block",
-      "No prompt here",
-      "",
-      "## ignored_other_block",
-      "```js",
-      "console.log('no');",
-      "```",
-      "",
-      "## translate",
-      "```prompt",
-      "Translate this text.",
-      "```",
-      "",
-    ].join("\n"));
+    const commands = parseCommandsMarkdown(
+      [
+        "# commands",
+        "",
+        "## summarize",
+        "```prompt",
+        "Line 1",
+        "Line 2",
+        "```",
+        "",
+        "## ignored_missing_block",
+        "No prompt here",
+        "",
+        "## ignored_other_block",
+        "```js",
+        "console.log('no');",
+        "```",
+        "",
+        "## translate",
+        "```prompt",
+        "Translate this text.",
+        "```",
+        "",
+      ].join("\n"),
+    );
 
     expect(commands).toEqual([
       { name: "summarize", prompt: "Line 1\nLine 2" },
@@ -445,31 +455,29 @@ describe("server", () => {
   });
 
   it("parses adjacent prompt commands without skipping middle items", () => {
-    const commands = parseCommandsMarkdown([
-      "# commands",
-      "",
-      "## delete_file",
-      "```prompt",
-      "删除这个文件",
-      "```",
-      "",
-      "## delete_image",
-      "```prompt",
-      "删除这个图片",
-      "```",
-      "",
-      "## image2text",
-      "```prompt",
-      "识别图中的文字",
-      "```",
-      "",
-    ].join("\n"));
+    const commands = parseCommandsMarkdown(
+      [
+        "# commands",
+        "",
+        "## delete_file",
+        "```prompt",
+        "删除这个文件",
+        "```",
+        "",
+        "## delete_image",
+        "```prompt",
+        "删除这个图片",
+        "```",
+        "",
+        "## image2text",
+        "```prompt",
+        "识别图中的文字",
+        "```",
+        "",
+      ].join("\n"),
+    );
 
-    expect(commands.map((command) => command.name)).toEqual([
-      "delete_file",
-      "delete_image",
-      "image2text",
-    ]);
+    expect(commands.map((command) => command.name)).toEqual(["delete_file", "delete_image", "image2text"]);
   });
 
   it("creates a session with auto title when title is omitted", async () => {
@@ -478,7 +486,7 @@ describe("server", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),
     });
-    const data = await res.json() as { session: { id: string; title: string } };
+    const data = (await res.json()) as { session: { id: string; title: string } };
     expect(data.session.title).toBe("New Chat");
     expect(data.session.id).toBeDefined();
   });
@@ -489,14 +497,14 @@ describe("server", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "Before Rename" }),
     });
-    const createData = await createRes.json() as { session: { id: string } };
+    const createData = (await createRes.json()) as { session: { id: string } };
 
     const renameRes = await fetch(`http://127.0.0.1:${port}/api/sessions/${createData.session.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "After Rename" }),
     });
-    const renameData = await renameRes.json() as { session: { title: string } };
+    const renameData = (await renameRes.json()) as { session: { title: string } };
     expect(renameRes.status).toBe(200);
     expect(renameData.session.title).toBe("After Rename");
   });
@@ -508,10 +516,10 @@ describe("server", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "Compact Test" }),
     });
-    const { session } = await res.json() as { session: { id: string } };
+    const { session } = (await res.json()) as { session: { id: string } };
 
     const compactRes = await fetch(`http://127.0.0.1:${port}/api/sessions/${session.id}/compact`, { method: "POST" });
-    const data = await compactRes.json() as { ok: boolean; archivedAs: string };
+    const data = (await compactRes.json()) as { ok: boolean; archivedAs: string };
     expect(compactRes.status).toBe(200);
     expect(data.ok).toBe(true);
     expect(data.archivedAs).toBe("test_archive.jsonl");
@@ -519,10 +527,10 @@ describe("server", () => {
 
   it("sends connected and pong websocket messages", async () => {
     const { ws, recv } = await connectWs(port);
-    const connected = await recv() as { type: string };
+    const connected = (await recv()) as { type: string };
     expect(connected.type).toBe("connected");
     ws.send(JSON.stringify({ type: "ping" }));
-    const pong = await recv() as { type: string };
+    const pong = (await recv()) as { type: string };
     expect(pong.type).toBe("pong");
     ws.close();
   });
@@ -531,7 +539,7 @@ describe("server", () => {
     const { ws, recv } = await connectWs(port);
     await recv();
     ws.send(JSON.stringify({ type: "chatMessage", content: "Hello" }));
-    const err = await recv() as { type: string; message: string };
+    const err = (await recv()) as { type: string; message: string };
     expect(err.type).toBe("error");
     expect(err.message).toContain("sessionId");
     ws.close();
@@ -543,19 +551,19 @@ describe("server", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "WS Test" }),
     });
-    const { session } = await res.json() as { session: { id: string } };
+    const { session } = (await res.json()) as { session: { id: string } };
 
     const { ws, recv } = await connectWs(port);
     await recv();
     ws.send(JSON.stringify({ type: "joinSession", sessionId: session.id, requestId: "join-test-1" }));
-    const loaded = await recv() as { type: string; requestId?: string; session: { id: string } };
+    const loaded = (await recv()) as { type: string; requestId?: string; session: { id: string } };
     expect(loaded.type).toBe("sessionLoaded");
     expect(loaded.session.id).toBe(session.id);
     expect(loaded.requestId).toBe("join-test-1");
     ws.close();
 
     const appStateRes = await fetch(`http://127.0.0.1:${port}/api/app-state`);
-    const appState = await appStateRes.json() as { lastActiveSessionId?: string };
+    const appState = (await appStateRes.json()) as { lastActiveSessionId?: string };
     expect(appState.lastActiveSessionId).toBe(session.id);
   });
 });

@@ -38,7 +38,7 @@ export async function listDocBrowserEntries(inputPath: string): Promise<{ path: 
       path: `${relativePath}/${entry.name}`.replaceAll("\\", "/"),
       kind: entry.isDirectory() ? ("directory" as const) : ("file" as const),
     }))
-    .sort((a, b) => a.kind === b.kind ? a.name.localeCompare(b.name, "zh-CN") : a.kind === "directory" ? -1 : 1);
+    .sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name, "zh-CN") : a.kind === "directory" ? -1 : 1));
   return { path: relativePath, entries };
 }
 
@@ -53,7 +53,12 @@ export async function readDocBrowserFile(inputPath: string): Promise<{
     const mimeType = IMAGE_MIME_BY_EXT[extname(absolutePath).toLowerCase()];
     if (!mimeType) return { path: relativePath, content: "暂不支持预览", supported: false, kind: "unsupported" };
     const buffer = await readFile(absolutePath);
-    return { path: relativePath, content: `data:${mimeType};base64,${buffer.toString("base64")}`, supported: true, kind: "image" };
+    return {
+      path: relativePath,
+      content: `data:${mimeType};base64,${buffer.toString("base64")}`,
+      supported: true,
+      kind: "image",
+    };
   }
   if (!isTextFile(absolutePath)) {
     return { path: relativePath, content: "暂不支持预览", supported: false, kind: "unsupported" };

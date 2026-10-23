@@ -13,8 +13,9 @@ export const handleSystemRoutes: RouteHandler = async ({ req, res, url, config, 
     sendJson(res, {
       availableProviders: getAvailableProviders(config),
       providers: Object.fromEntries(
-        (Object.entries(config.providers) as Array<[ProviderName, Config["providers"][ProviderName]]>)
-          .map(([name, provider]) => [name, { models: provider.models }]),
+        (Object.entries(config.providers) as Array<[ProviderName, Config["providers"][ProviderName]]>).map(
+          ([name, provider]) => [name, { models: provider.models }],
+        ),
       ),
       defaultProvider: config.defaultProvider,
       defaultModel: config.defaultModel,

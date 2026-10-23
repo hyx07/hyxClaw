@@ -86,21 +86,18 @@ function extractTextContent(content: Message["content"]): string {
 
 function stripImageParts(message: Message): Message | null {
   if (!Array.isArray(message.content)) return message;
-  const textParts = message.content.filter((part): part is Extract<MessageContentPart, { type: "text" }> => part.type === "text");
+  const textParts = message.content.filter(
+    (part): part is Extract<MessageContentPart, { type: "text" }> => part.type === "text",
+  );
   if (!textParts.length) return null;
   return { ...message, content: textParts };
 }
 
-export function sanitizeHistoryForProvider(
-  messages: Message[],
-  supportsImages: boolean = true,
-): Message[] {
+export function sanitizeHistoryForProvider(messages: Message[], supportsImages: boolean = true): Message[] {
   // 所有 provider 都保留历史 reasoning_content（供多轮上下文参考）；
   // 仅图片需要按模型能力剥离。
   if (supportsImages) return messages;
-  return messages
-    .map(stripImageParts)
-    .filter((message): message is Message => Boolean(message));
+  return messages.map(stripImageParts).filter((message): message is Message => Boolean(message));
 }
 
 function formatToday(): string {
@@ -142,7 +139,12 @@ function resolveChatRunSettings(config: Config, options: ChatOptions): ChatRunSe
   };
 }
 
-async function persistSessionRuntimeMeta(sessionId: string, providerName: ProviderName, model: string, thinkingEffort?: string) {
+async function persistSessionRuntimeMeta(
+  sessionId: string,
+  providerName: ProviderName,
+  model: string,
+  thinkingEffort?: string,
+) {
   const session = await loadSession(sessionId);
   session.lastProvider = providerName;
   session.lastModel = model;
@@ -176,7 +178,6 @@ function buildUsageRecord(
     cost: calcCost(usage, costConfig, timestamp),
   };
 }
-
 
 export function truncateMessagesForContext(
   messages: Message[],
@@ -351,7 +352,8 @@ async function* runAgenticLoop(
       // Phase 3: check permissions serially (frontend only shows one dialog at a time)
       if (checkPermission) {
         for (const call of parsedCalls) {
-          if (signal?.aborted) return { extraMessages, finalText: null, accumulatedUsage, contextUsage, cancelled: true };
+          if (signal?.aborted)
+            return { extraMessages, finalText: null, accumulatedUsage, contextUsage, cancelled: true };
           const allowed = await checkPermission(call.name, call.input);
           if (!allowed) {
             extraMessages.push({
@@ -380,7 +382,13 @@ async function* runAgenticLoop(
         const call = parsedCalls[i];
         const result = results[i];
 
-        yield { type: "toolResult", name: call.name, content: result.content, isError: result.isError ?? false, callId: call.id };
+        yield {
+          type: "toolResult",
+          name: call.name,
+          content: result.content,
+          isError: result.isError ?? false,
+          callId: call.id,
+        };
 
         const toolContent: Message["content"] = result.imageParts?.length
           ? [{ type: "text", text: result.content }, ...result.imageParts]
@@ -395,7 +403,13 @@ async function* runAgenticLoop(
         });
       }
     } else {
-      return { extraMessages, finalText: response.content, finalReasoning: reasoningBuffer, accumulatedUsage, contextUsage };
+      return {
+        extraMessages,
+        finalText: response.content,
+        finalReasoning: reasoningBuffer,
+        accumulatedUsage,
+        contextUsage,
+      };
     }
   }
 
@@ -442,7 +456,8 @@ async function* runAgenticLoopStreaming(
     try {
       let streamResult = await streamGen.next();
       while (!streamResult.done) {
-        if (signal?.aborted) return { extraMessages, finalText: contentBuffer || null, accumulatedUsage, contextUsage, cancelled: true };
+        if (signal?.aborted)
+          return { extraMessages, finalText: contentBuffer || null, accumulatedUsage, contextUsage, cancelled: true };
         const chunk = streamResult.value;
         if (chunk.type === "reasoning") {
           reasoningBuffer = (reasoningBuffer || "") + chunk.text;
@@ -462,7 +477,8 @@ async function* runAgenticLoopStreaming(
       }
       finish = streamResult.value;
     } catch (err) {
-      if (signal?.aborted) return { extraMessages, finalText: contentBuffer || null, accumulatedUsage, contextUsage, cancelled: true };
+      if (signal?.aborted)
+        return { extraMessages, finalText: contentBuffer || null, accumulatedUsage, contextUsage, cancelled: true };
       throw err;
     }
 
@@ -499,7 +515,8 @@ async function* runAgenticLoopStreaming(
       // Phase 3: check permissions serially
       if (checkPermission) {
         for (const call of parsedCalls) {
-          if (signal?.aborted) return { extraMessages, finalText: null, accumulatedUsage, contextUsage, cancelled: true };
+          if (signal?.aborted)
+            return { extraMessages, finalText: null, accumulatedUsage, contextUsage, cancelled: true };
           const allowed = await checkPermission(call.name, call.input);
           if (!allowed) {
             extraMessages.push({
@@ -528,7 +545,13 @@ async function* runAgenticLoopStreaming(
         const call = parsedCalls[i];
         const result = results[i];
 
-        yield { type: "toolResult", name: call.name, content: result.content, isError: result.isError ?? false, callId: call.id };
+        yield {
+          type: "toolResult",
+          name: call.name,
+          content: result.content,
+          isError: result.isError ?? false,
+          callId: call.id,
+        };
 
         const toolContent: Message["content"] = result.imageParts?.length
           ? [{ type: "text", text: result.content }, ...result.imageParts]
@@ -543,7 +566,13 @@ async function* runAgenticLoopStreaming(
         });
       }
     } else {
-      return { extraMessages, finalText: contentBuffer || null, finalReasoning: reasoningBuffer, accumulatedUsage, contextUsage };
+      return {
+        extraMessages,
+        finalText: contentBuffer || null,
+        finalReasoning: reasoningBuffer,
+        accumulatedUsage,
+        contextUsage,
+      };
     }
   }
 
@@ -571,7 +600,8 @@ export async function chat(
     content: userContent,
   };
   const run = resolveChatRunSettings(config, options);
-  const supportsImages = config.providers[run.providerName]?.models?.find((item) => item.id === run.model)?.modal === "vl";
+  const supportsImages =
+    config.providers[run.providerName]?.models?.find((item) => item.id === run.model)?.modal === "vl";
   const historyForProvider = sanitizeHistoryForProvider(session.messages, supportsImages);
 
   const systemPromptContent = await loadSystemPrompt(config);
@@ -591,8 +621,8 @@ export async function chat(
     model: run.model,
     baseUrl: run.baseUrl,
     maxTokens,
-      thinkingEffort: run.thinkingEffort,
-      thinkingParams: run.thinkingParams,
+    thinkingEffort: run.thinkingEffort,
+    thinkingParams: run.thinkingParams,
   };
 
   const extraMessages: Message[] = [];
@@ -601,7 +631,19 @@ export async function chat(
   let accumulatedUsage: NormalizedUsage | null = null;
   let contextUsage: NormalizedUsage | null = null;
   let maxToolCallsReached = false;
-  const loopGen = runAgenticLoop(provider, run.apiKey, messagesForContext, tools, sessionId, session.title, config.maxToolCalls, llmOptions, supportsImages, options.checkPermission, options.signal);
+  const loopGen = runAgenticLoop(
+    provider,
+    run.apiKey,
+    messagesForContext,
+    tools,
+    sessionId,
+    session.title,
+    config.maxToolCalls,
+    llmOptions,
+    supportsImages,
+    options.checkPermission,
+    options.signal,
+  );
 
   while (true) {
     const { value, done } = await loopGen.next();
@@ -616,7 +658,12 @@ export async function chat(
         // Persist partial messages, mark the assistant reply as cancelled
         fixUnmatchedToolCalls(extraMessages);
         for (const message of extraMessages) await addMessage(sessionId, message);
-        const cancelledMsg: Message = { id: generateId(), role: "assistant", content: finalText ? `${finalText}\n\n*(已取消)*` : "*(已取消)*", timestamp: new Date().toISOString() };
+        const cancelledMsg: Message = {
+          id: generateId(),
+          role: "assistant",
+          content: finalText ? `${finalText}\n\n*(已取消)*` : "*(已取消)*",
+          timestamp: new Date().toISOString(),
+        };
         await addMessage(sessionId, cancelledMsg);
         await persistSessionRuntimeMeta(sessionId, run.providerName, run.model, run.thinkingEffort);
         return { sessionId, userMessage, assistantMessage: cancelledMsg, usage: undefined, contextUsage: undefined };
@@ -625,14 +672,20 @@ export async function chat(
         await addMessage(sessionId, userMessage);
         for (const message of extraMessages) await addMessage(sessionId, message);
         await persistSessionRuntimeMeta(sessionId, run.providerName, run.model, run.thinkingEffort);
-        const dummyAssistant: Message = { id: generateId(), role: "assistant", content: "", timestamp: new Date().toISOString() };
+        const dummyAssistant: Message = {
+          id: generateId(),
+          role: "assistant",
+          content: "",
+          timestamp: new Date().toISOString(),
+        };
         return { sessionId, userMessage, assistantMessage: dummyAssistant, usage: undefined, contextUsage: undefined };
       }
       break;
     }
 
     if (value.type === "toolCall") options.onToolCall?.(value.name, value.input, value.callId);
-    else if (value.type === "toolResult") options.onToolResult?.(value.name, value.content, value.isError, value.callId);
+    else if (value.type === "toolResult")
+      options.onToolResult?.(value.name, value.content, value.isError, value.callId);
     else if (value.type === "reasoning") options.onReasoningChunk?.(value.text);
   }
 
@@ -649,10 +702,20 @@ export async function chat(
   await addMessage(sessionId, assistantMessage);
   await persistSessionRuntimeMeta(sessionId, run.providerName, run.model, run.thinkingEffort);
 
-  const usage = buildUsageRecord(accumulatedUsage, run.providerName, run.model, sessionId,
-    config.providers[run.providerName]?.models.find((m) => m.id === run.model)?.cost);
-  const contextUsageRecord = buildUsageRecord(contextUsage, run.providerName, run.model, sessionId,
-    config.providers[run.providerName]?.models.find((m) => m.id === run.model)?.cost);
+  const usage = buildUsageRecord(
+    accumulatedUsage,
+    run.providerName,
+    run.model,
+    sessionId,
+    config.providers[run.providerName]?.models.find((m) => m.id === run.model)?.cost,
+  );
+  const contextUsageRecord = buildUsageRecord(
+    contextUsage,
+    run.providerName,
+    run.model,
+    sessionId,
+    config.providers[run.providerName]?.models.find((m) => m.id === run.model)?.cost,
+  );
 
   logger.info("Chat completed", { sessionId });
   return { sessionId, userMessage, assistantMessage, usage, contextUsage: contextUsageRecord };
@@ -663,7 +726,18 @@ export async function* chatStream(
   userContent: string | MessageContentPart[],
   config: Config,
   options: ChatOptions = {},
-): AsyncGenerator<{ chunk: string; done: boolean; reasoning?: boolean; cancelled?: boolean; usage?: UsageRecord; contextUsage?: UsageRecord }, ChatResult, unknown> {
+): AsyncGenerator<
+  {
+    chunk: string;
+    done: boolean;
+    reasoning?: boolean;
+    cancelled?: boolean;
+    usage?: UsageRecord;
+    contextUsage?: UsageRecord;
+  },
+  ChatResult,
+  unknown
+> {
   const maxTokens = options.maxTokens ?? config.maxTokens;
   const persistedUserContent = options.persistedUserContent ?? userContent;
   const session = await loadSession(sessionId);
@@ -678,7 +752,8 @@ export async function* chatStream(
     content: userContent,
   };
   const run = resolveChatRunSettings(config, options);
-  const supportsImages = config.providers[run.providerName]?.models?.find((item) => item.id === run.model)?.modal === "vl";
+  const supportsImages =
+    config.providers[run.providerName]?.models?.find((item) => item.id === run.model)?.modal === "vl";
   const historyForProvider = sanitizeHistoryForProvider(session.messages, supportsImages);
 
   const systemPromptContent = await loadSystemPrompt(config);
@@ -710,7 +785,19 @@ export async function* chatStream(
   let contextUsage: NormalizedUsage | null = null;
   let maxToolCallsReached = false;
   let hasStreamedText = false;
-  const loopGen = runAgenticLoopStreaming(provider, run.apiKey, messagesForContext, tools, sessionId, session.title, config.maxToolCalls, llmOptions, supportsImages, options.checkPermission, options.signal);
+  const loopGen = runAgenticLoopStreaming(
+    provider,
+    run.apiKey,
+    messagesForContext,
+    tools,
+    sessionId,
+    session.title,
+    config.maxToolCalls,
+    llmOptions,
+    supportsImages,
+    options.checkPermission,
+    options.signal,
+  );
 
   while (true) {
     const { value, done } = await loopGen.next();
@@ -725,7 +812,12 @@ export async function* chatStream(
         // Persist BEFORE yielding — the consumer may stop iterating after seeing cancelled
         fixUnmatchedToolCalls(extraMessages);
         for (const message of extraMessages) await addMessage(sessionId, message);
-        const cancelledMsg: Message = { id: generateId(), role: "assistant", content: finalText ? `${finalText}\n\n*(已取消)*` : "*(已取消)*", timestamp: new Date().toISOString() };
+        const cancelledMsg: Message = {
+          id: generateId(),
+          role: "assistant",
+          content: finalText ? `${finalText}\n\n*(已取消)*` : "*(已取消)*",
+          timestamp: new Date().toISOString(),
+        };
         await addMessage(sessionId, cancelledMsg);
         await persistSessionRuntimeMeta(sessionId, run.providerName, run.model, run.thinkingEffort);
         yield { chunk: "", done: true, cancelled: true };
@@ -735,7 +827,12 @@ export async function* chatStream(
         for (const message of extraMessages) await addMessage(sessionId, message);
         await persistSessionRuntimeMeta(sessionId, run.providerName, run.model, run.thinkingEffort);
         yield { chunk: "", done: true };
-        const dummyAssistant: Message = { id: generateId(), role: "assistant", content: "", timestamp: new Date().toISOString() };
+        const dummyAssistant: Message = {
+          id: generateId(),
+          role: "assistant",
+          content: "",
+          timestamp: new Date().toISOString(),
+        };
         return { sessionId, userMessage, assistantMessage: dummyAssistant, usage: undefined, contextUsage: undefined };
       }
       break;
@@ -778,10 +875,20 @@ export async function* chatStream(
   await addMessage(sessionId, assistantMessage);
   await persistSessionRuntimeMeta(sessionId, run.providerName, run.model, run.thinkingEffort);
 
-  const usageRecord = buildUsageRecord(accumulatedUsage, run.providerName, run.model, sessionId,
-    config.providers[run.providerName]?.models.find((m) => m.id === run.model)?.cost);
-  const contextUsageRecord = buildUsageRecord(contextUsage, run.providerName, run.model, sessionId,
-    config.providers[run.providerName]?.models.find((m) => m.id === run.model)?.cost);
+  const usageRecord = buildUsageRecord(
+    accumulatedUsage,
+    run.providerName,
+    run.model,
+    sessionId,
+    config.providers[run.providerName]?.models.find((m) => m.id === run.model)?.cost,
+  );
+  const contextUsageRecord = buildUsageRecord(
+    contextUsage,
+    run.providerName,
+    run.model,
+    sessionId,
+    config.providers[run.providerName]?.models.find((m) => m.id === run.model)?.cost,
+  );
 
   logger.debug("Chat completed", { session: session.title });
   yield { chunk: "", done: true, usage: usageRecord, contextUsage: contextUsageRecord };

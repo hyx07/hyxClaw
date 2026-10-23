@@ -32,9 +32,7 @@ function renderChart(containerId, legendId, data, groupKey, totalKey, formatFn, 
   const keys = Array.from(new Set(data.flatMap((entry) => Object.keys(entry[groupKey] || {})))).sort();
   const colors = assignColors(keys);
   const maxTotal = data.reduce((max, entry) => Math.max(max, entry[totalKey] || 0), 0);
-  const yMax = isCost
-    ? niceScale(maxTotal)
-    : (maxTotal > 0 ? Math.ceil(maxTotal / 1000) * 1000 : 1000);
+  const yMax = isCost ? niceScale(maxTotal) : maxTotal > 0 ? Math.ceil(maxTotal / 1000) * 1000 : 1000;
   const ySteps = 4;
   wrapper.innerHTML = "";
 
@@ -42,7 +40,9 @@ function renderChart(containerId, legendId, data, groupKey, totalKey, formatFn, 
   yAxis.className = "chart-y-axis";
   for (let index = 0; index <= ySteps; index++) {
     const label = document.createElement("span");
-    label.textContent = formatFn(isCost ? (yMax / ySteps) * (ySteps - index) : Math.round((yMax / ySteps) * (ySteps - index)));
+    label.textContent = formatFn(
+      isCost ? (yMax / ySteps) * (ySteps - index) : Math.round((yMax / ySteps) * (ySteps - index)),
+    );
     yAxis.appendChild(label);
   }
   wrapper.appendChild(yAxis);
@@ -65,10 +65,14 @@ function renderChart(containerId, legendId, data, groupKey, totalKey, formatFn, 
     // 只显示有量的模型（hover 当天或全时段合计），值为 0 的不渲染，避免图例出现 0.0 噪声
     const activeKeys = keys.filter((key) => (values?.[key] || 0) > 0);
     const total = activeKeys.reduce((sum, key) => sum + (values?.[key] || 0), 0);
-    legend.innerHTML = activeKeys.map((key) => {
-      const count = values?.[key] || 0;
-      return `<span class="usage-legend-item"><span class="usage-legend-swatch" style="background:${colors[key]}"></span>${escHtml(key)}<span style="margin-left:12px">${formatFn(count)}</span></span>`;
-    }).join("") + `<span class="usage-legend-sep"></span><span class="usage-legend-item usage-legend-total"><span class="usage-legend-swatch usage-legend-total-swatch"></span>合计<span style="margin-left:12px">${formatFn(total)}</span></span>`;
+    legend.innerHTML =
+      activeKeys
+        .map((key) => {
+          const count = values?.[key] || 0;
+          return `<span class="usage-legend-item"><span class="usage-legend-swatch" style="background:${colors[key]}"></span>${escHtml(key)}<span style="margin-left:12px">${formatFn(count)}</span></span>`;
+        })
+        .join("") +
+      `<span class="usage-legend-sep"></span><span class="usage-legend-item usage-legend-total"><span class="usage-legend-swatch usage-legend-total-swatch"></span>合计<span style="margin-left:12px">${formatFn(total)}</span></span>`;
   };
   // 合计是各天模型的并集，行数一定不少于任意一天；把合计渲染后的高度锁成
   // min-height，悬停时图例只会在锁定高度内变短，不再带动面板上下跳。
@@ -118,7 +122,17 @@ function padDateRange(apiData, days) {
     const date = new Date(today);
     date.setUTCDate(date.getUTCDate() - index);
     const key = date.toISOString().slice(0, 10);
-    padded.push(byDate[key] || { date: key, totalTokens: 0, totalCost: 0, byModel: {}, byProvider: {}, byModelCost: {}, byProviderCost: {} });
+    padded.push(
+      byDate[key] || {
+        date: key,
+        totalTokens: 0,
+        totalCost: 0,
+        byModel: {},
+        byProvider: {},
+        byModelCost: {},
+        byProviderCost: {},
+      },
+    );
   }
   return padded;
 }
@@ -146,7 +160,15 @@ function renderUsageDailyCharts() {
   const totalKey = isCost ? "totalCost" : "totalTokens";
   const formatFn = isCost ? formatCost : formatTokens;
   renderChart("usage-chart-model", "usage-legend-model", cachedDailyData, groupKey, totalKey, formatFn, isCost);
-  renderChart("usage-chart-provider", "usage-legend-provider", cachedDailyData, providerGroupKey, totalKey, formatFn, isCost);
+  renderChart(
+    "usage-chart-provider",
+    "usage-legend-provider",
+    cachedDailyData,
+    providerGroupKey,
+    totalKey,
+    formatFn,
+    isCost,
+  );
 }
 
 // 窗口宽度变化会改变图例换行，重新渲染以重算锁定的高度（仅弹窗打开且停留在每日页时）
@@ -163,7 +185,8 @@ if (typeof window !== "undefined") {
 function showEmptyLoading(el) {
   if (!el) return;
   el.style.display = "block";
-  el.innerHTML = '<div class="empty-state-icon"><i data-lucide="loader-circle"></i></div><p class="empty-state-title">加载中...</p>';
+  el.innerHTML =
+    '<div class="empty-state-icon"><i data-lucide="loader-circle"></i></div><p class="empty-state-title">加载中...</p>';
   window.lucide?.createIcons();
 }
 
@@ -195,21 +218,25 @@ async function loadUsageTotal() {
     const cached = (Number(row.cachedReadTokens) || 0) + (Number(row.cachedWriteTokens) || 0);
     return { cached, uncached: (Number(row.inputTokens) || 0) - cached };
   };
-  const totals = rows.reduce((summary, row) => {
-    const { cached, uncached } = splitInput(row);
-    summary.cachedInput += cached;
-    summary.uncachedInput += uncached;
-    summary.billingOutputTokens += Number(row.billingOutputTokens ?? row.outputTokens) || 0;
-    summary.cost += Number(row.cost) || 0;
-    return summary;
-  }, { cachedInput: 0, uncachedInput: 0, billingOutputTokens: 0, cost: 0 });
+  const totals = rows.reduce(
+    (summary, row) => {
+      const { cached, uncached } = splitInput(row);
+      summary.cachedInput += cached;
+      summary.uncachedInput += uncached;
+      summary.billingOutputTokens += Number(row.billingOutputTokens ?? row.outputTokens) || 0;
+      summary.cost += Number(row.cost) || 0;
+      return summary;
+    },
+    { cachedInput: 0, uncachedInput: 0, billingOutputTokens: 0, cost: 0 },
+  );
   // 费用/百万token = 总费用 ÷ (总输入 + 总输出) × 1,000,000，无 token 时记 0
   const costPerMillion = (cost, tokens) => (tokens > 0 ? Number(((cost / tokens) * 1_000_000).toFixed(2)) : 0);
-  body.innerHTML = rows.map((row) => {
-    const { cached, uncached } = splitInput(row);
-    const output = Number(row.billingOutputTokens ?? row.outputTokens) || 0;
-    const cost = Number(row.cost) || 0;
-    return `
+  body.innerHTML = rows
+    .map((row) => {
+      const { cached, uncached } = splitInput(row);
+      const output = Number(row.billingOutputTokens ?? row.outputTokens) || 0;
+      const cost = Number(row.cost) || 0;
+      return `
     <tr>
       <td>${escHtml(row.model || "")}</td>
       <td>${escHtml(row.provider || "")}</td>
@@ -220,7 +247,8 @@ async function loadUsageTotal() {
       <td>${formatCost(costPerMillion(cost, cached + uncached + output))}</td>
     </tr>
   `;
-  }).join("");
+    })
+    .join("");
   foot.innerHTML = `
     <tr>
       <th scope="row" colspan="2">总计</th>
@@ -237,7 +265,9 @@ async function loadUsageTotal() {
 
 export function switchUsageTab(tab) {
   activeUsageTab = tab;
-  document.querySelectorAll(".usage-tab").forEach((element) => element.classList.toggle("active", element.dataset.tab === tab));
+  document
+    .querySelectorAll(".usage-tab")
+    .forEach((element) => element.classList.toggle("active", element.dataset.tab === tab));
   document.getElementById("usage-daily-tab").style.display = tab === "daily" ? "block" : "none";
   document.getElementById("usage-total-tab").style.display = tab === "total" ? "block" : "none";
   if (tab === "daily") void loadUsageDaily(activeUsageDays);
@@ -246,13 +276,17 @@ export function switchUsageTab(tab) {
 
 export function toggleUsageMetric(metric) {
   activeUsageMetric = metric;
-  document.querySelectorAll(".usage-metric-toggle").forEach((el) => el.classList.toggle("active", el.dataset.metric === metric));
+  document
+    .querySelectorAll(".usage-metric-toggle")
+    .forEach((el) => el.classList.toggle("active", el.dataset.metric === metric));
   if (activeUsageTab === "daily") renderUsageDailyCharts();
 }
 
 export async function openUsageModal() {
   document.getElementById("usage-modal").classList.add("open");
-  try { await fetch("/api/usage/flush", { method: "POST" }); } catch {}
+  try {
+    await fetch("/api/usage/flush", { method: "POST" });
+  } catch {}
   switchUsageTab(activeUsageTab);
 }
 

@@ -23,12 +23,12 @@ UsageSummary            ← 发给前端，加 model/provider/cost（去掉 time
 
 ```typescript
 export interface NormalizedUsage {
-  inputTokens: number;           // prompt_tokens 总数
-  cachedReadTokens?: number;     // prompt 缓存命中
-  cachedWriteTokens?: number;    // prompt 缓存写入
-  billingOutputTokens: number;   // completion_tokens（计费用，含 thinking）
-  thinkingTokens?: number;       // reasoning_tokens
-  outputTokens: number;          // completion_tokens - thinkingTokens（纯输出）
+  inputTokens: number; // prompt_tokens 总数
+  cachedReadTokens?: number; // prompt 缓存命中
+  cachedWriteTokens?: number; // prompt 缓存写入
+  billingOutputTokens: number; // completion_tokens（计费用，含 thinking）
+  thinkingTokens?: number; // reasoning_tokens
+  outputTokens: number; // completion_tokens - thinkingTokens（纯输出）
 }
 ```
 
@@ -68,14 +68,14 @@ export interface UsageRecord extends NormalizedUsage {
 
 ### 字段映射
 
-| NormalizedUsage | DeepSeek | Zai | DashScope |
-|---|---|---|---|
-| `inputTokens` | `prompt_tokens` | `prompt_tokens` | `prompt_tokens` |
-| `cachedReadTokens` | `prompt_cache_hit_tokens` | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cached_tokens` |
-| `cachedWriteTokens` | `prompt_tokens_details?.cache_write_tokens`（暂无） | 同 | 同 |
-| `billingOutputTokens` | `completion_tokens` | `completion_tokens` | `completion_tokens` |
-| `thinkingTokens` | `reasoning_tokens` | `reasoning_tokens` | `reasoning_tokens` |
-| `outputTokens` | `completion_tokens - reasoning` | `completion_tokens - reasoning` | `text_tokens` |
+| NormalizedUsage       | DeepSeek                                            | Zai                                   | DashScope                             |
+| --------------------- | --------------------------------------------------- | ------------------------------------- | ------------------------------------- |
+| `inputTokens`         | `prompt_tokens`                                     | `prompt_tokens`                       | `prompt_tokens`                       |
+| `cachedReadTokens`    | `prompt_cache_hit_tokens`                           | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cached_tokens` |
+| `cachedWriteTokens`   | `prompt_tokens_details?.cache_write_tokens`（暂无） | 同                                    | 同                                    |
+| `billingOutputTokens` | `completion_tokens`                                 | `completion_tokens`                   | `completion_tokens`                   |
+| `thinkingTokens`      | `reasoning_tokens`                                  | `reasoning_tokens`                    | `reasoning_tokens`                    |
+| `outputTokens`        | `completion_tokens - reasoning`                     | `completion_tokens - reasoning`       | `text_tokens`                         |
 
 ### 新增供应商步骤
 
@@ -126,24 +126,28 @@ function mapUsage(raw: ZaiRawUsage): NormalizedUsage {
         {
           "id": "deepseek-v4-flash",
           "cost": {
-            "input": 1,           // 每百万 tokens
+            "input": 1, // 每百万 tokens
             "output": 2,
-            "cachedRead": 0.02,   // 缓存命中
-            "cachedWrite": 0,     // 缓存写入（暂不触发）
-            "schedules": [        // 可选：分时段价格，按数组顺序匹配第一个命中
+            "cachedRead": 0.02, // 缓存命中
+            "cachedWrite": 0, // 缓存写入（暂不触发）
+            "schedules": [
+              // 可选：分时段价格，按数组顺序匹配第一个命中
               {
                 "name": "peak-am",
-                "weekdays": [1, 2, 3, 4, 5],  // 1=周一…7=周日，缺省=每天
-                "start": "09:00",            // 含头（9:00 算高峰）
-                "end": "12:00",              // 不含尾（12:00 算空闲）
-                "input": 2, "output": 4, "cachedRead": 0.04, "cachedWrite": 0
-              }
-            ]
-          }
-        }
-      ]
-    }
-  }
+                "weekdays": [1, 2, 3, 4, 5], // 1=周一…7=周日，缺省=每天
+                "start": "09:00", // 含头（9:00 算高峰）
+                "end": "12:00", // 不含尾（12:00 算空闲）
+                "input": 2,
+                "output": 4,
+                "cachedRead": 0.04,
+                "cachedWrite": 0,
+              },
+            ],
+          },
+        },
+      ],
+    },
+  },
 }
 ```
 
@@ -181,11 +185,11 @@ cost = ((未缓存输入) * input
 
 ### 文件布局（`$HYXCLAW_DATA_DIR/files/`）
 
-| 文件 | 内容 | 颗粒度 | 生命周期 |
-|---|---|---|---|
-| `usage_temp.json` | 实时流水，每次 LLM 调用追加一条 `UsageRecord` | 单次调用 | 归档时清空 |
-| `usage_daily.json` | 日桶 `DailyUsage`，保留**最近 30 天** | 日 × 模型 × 供应商 | 归档时删除 30 天前 |
-| `usage_total.json` | 按 模型 × 供应商 的**永久累计** | 模型 × 供应商 | 只增不减 |
+| 文件               | 内容                                          | 颗粒度             | 生命周期           |
+| ------------------ | --------------------------------------------- | ------------------ | ------------------ |
+| `usage_temp.json`  | 实时流水，每次 LLM 调用追加一条 `UsageRecord` | 单次调用           | 归档时清空         |
+| `usage_daily.json` | 日桶 `DailyUsage`，保留**最近 30 天**         | 日 × 模型 × 供应商 | 归档时删除 30 天前 |
+| `usage_total.json` | 按 模型 × 供应商 的**永久累计**               | 模型 × 供应商      | 只增不减           |
 
 > `usage_temp.json` 后缀虽是 `.json`，内部为 JSONL（每行一条），便于高频 append。
 
@@ -253,13 +257,13 @@ interface DailyUsage {
 
 ### 两个 tab 对比
 
-| | 「总量」tab | 「按时间」tab |
-|---|---|---|
-| 接口 | `GET /api/usage/stats` | `GET /api/usage/daily?days=N` |
-| 函数 | `getUsageStats` | `getDailyStats` |
-| 数据源 | `usage_total.json` + 未归档 temp | `usage_daily.json` + 未归档 temp |
-| 展示 | 表格，按 model × provider 分行 | 柱状图，按 model / provider 各一张 |
-| 时间 | 全部历史 | 最近 N 天（前端 7/30，后端上限 90） |
+|        | 「总量」tab                      | 「按时间」tab                       |
+| ------ | -------------------------------- | ----------------------------------- |
+| 接口   | `GET /api/usage/stats`           | `GET /api/usage/daily?days=N`       |
+| 函数   | `getUsageStats`                  | `getDailyStats`                     |
+| 数据源 | `usage_total.json` + 未归档 temp | `usage_daily.json` + 未归档 temp    |
+| 展示   | 表格，按 model × provider 分行   | 柱状图，按 model / provider 各一张  |
+| 时间   | 全部历史                         | 最近 N 天（前端 7/30，后端上限 90） |
 
 ### `niceScale` 算法
 

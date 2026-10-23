@@ -116,7 +116,11 @@ function recordToSummary(record: UsageRecord): UsageSummary {
 async function readTempRecords(): Promise<UsageRecord[]> {
   try {
     const content = await readFile(getPaths().usageTempFile, "utf-8");
-    return content.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => JSON.parse(line) as UsageRecord);
+    return content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as UsageRecord);
   } catch {
     return [];
   }
@@ -189,7 +193,9 @@ export async function flushUsage(): Promise<void> {
   const cutoffStr = beijingCutoff(DAILY_RETENTION_DAYS);
   const daily = Array.from(buckets.values())
     .filter((bucket) => bucket.date >= cutoffStr)
-    .sort((a, b) => a.date.localeCompare(b.date) || a.provider.localeCompare(b.provider) || a.model.localeCompare(b.model));
+    .sort(
+      (a, b) => a.date.localeCompare(b.date) || a.provider.localeCompare(b.provider) || a.model.localeCompare(b.model),
+    );
 
   await writeFile(paths.usageTotal, JSON.stringify(Array.from(totalMap.values()), null, 2), "utf-8");
   await writeFile(paths.usageDaily, JSON.stringify(daily, null, 2), "utf-8");
@@ -204,20 +210,30 @@ export async function getUsageStats(): Promise<AggregatedUsage[]> {
 
 export async function getDailyStats(days: number): Promise<DailyStat[]> {
   const cutoffStr = beijingCutoff(days);
-  const dateMap = new Map<string, {
-    byModel: Map<string, number>;
-    byProvider: Map<string, number>;
-    total: number;
-    byModelCost: Map<string, number>;
-    byProviderCost: Map<string, number>;
-    totalCost: number;
-  }>();
+  const dateMap = new Map<
+    string,
+    {
+      byModel: Map<string, number>;
+      byProvider: Map<string, number>;
+      total: number;
+      byModelCost: Map<string, number>;
+      byProviderCost: Map<string, number>;
+      totalCost: number;
+    }
+  >();
 
   for (const bucket of (await readDailyBuckets()).values()) {
     if (bucket.date < cutoffStr) continue;
     let entry = dateMap.get(bucket.date);
     if (!entry) {
-      entry = { byModel: new Map(), byProvider: new Map(), total: 0, byModelCost: new Map(), byProviderCost: new Map(), totalCost: 0 };
+      entry = {
+        byModel: new Map(),
+        byProvider: new Map(),
+        total: 0,
+        byModelCost: new Map(),
+        byProviderCost: new Map(),
+        totalCost: 0,
+      };
       dateMap.set(bucket.date, entry);
     }
     const tokens = bucket.inputTokens + bucket.billingOutputTokens;
@@ -240,11 +256,7 @@ export async function getDailyStats(days: number): Promise<DailyStat[]> {
       totalCost: round6(entry.totalCost),
       byModel: Object.fromEntries(entry.byModel),
       byProvider: Object.fromEntries(entry.byProvider),
-      byModelCost: Object.fromEntries(
-        Array.from(entry.byModelCost.entries()).map(([k, v]) => [k, round6(v)])
-      ),
-      byProviderCost: Object.fromEntries(
-        Array.from(entry.byProviderCost.entries()).map(([k, v]) => [k, round6(v)])
-      ),
+      byModelCost: Object.fromEntries(Array.from(entry.byModelCost.entries()).map(([k, v]) => [k, round6(v)])),
+      byProviderCost: Object.fromEntries(Array.from(entry.byProviderCost.entries()).map(([k, v]) => [k, round6(v)])),
     }));
 }

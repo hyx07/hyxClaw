@@ -9,7 +9,8 @@ export function createMessageRenderer({ state, streaming, onRestart, scrollToBot
     if (!state.messagesEl) return;
     state.messagesEl.classList.remove("round-anchor-active");
     if (!messages.length) {
-      state.messagesEl.innerHTML = '<div id="empty-state" class="empty-state"><div class="empty-state-icon"><i data-lucide="message-circle"></i></div><p class="empty-state-title">发送消息开始对话</p></div>';
+      state.messagesEl.innerHTML =
+        '<div id="empty-state" class="empty-state"><div class="empty-state-icon"><i data-lucide="message-circle"></i></div><p class="empty-state-title">发送消息开始对话</p></div>';
       window.lucide?.createIcons();
       return;
     }
@@ -221,7 +222,10 @@ function createImageThumb(url, path) {
 export function extractUserText(content) {
   if (typeof content === "string") return extractDisplayUserText(content);
   if (!Array.isArray(content)) return "";
-  return content.filter((part) => part.type === "text").map((part) => extractDisplayUserText(part.text)).join("\n");
+  return content
+    .filter((part) => part.type === "text")
+    .map((part) => extractDisplayUserText(part.text))
+    .join("\n");
 }
 
 function formatMessageContent(content) {
@@ -238,9 +242,11 @@ function formatMessageContent(content) {
 function formatUserMessageContent(content) {
   if (typeof content === "string") return extractDisplayUserText(content);
   if (!Array.isArray(content)) return "";
-  return formatMessageContent(content.map((part) =>
-    part.type === "text" && part.text ? { ...part, text: extractDisplayUserText(part.text) } : part,
-  ));
+  return formatMessageContent(
+    content.map((part) =>
+      part.type === "text" && part.text ? { ...part, text: extractDisplayUserText(part.text) } : part,
+    ),
+  );
 }
 
 function extractDisplayUserText(text) {
@@ -251,8 +257,10 @@ function extractDisplayUserText(text) {
 
 function shouldCollapseUserMessage(content) {
   const text = extractUserText(content);
-  return Array.from(text).length > USER_MESSAGE_COLLAPSE_THRESHOLD
-    || text.split(/\r?\n/).length > USER_MESSAGE_COLLAPSE_LINE_THRESHOLD;
+  return (
+    Array.from(text).length > USER_MESSAGE_COLLAPSE_THRESHOLD ||
+    text.split(/\r?\n/).length > USER_MESSAGE_COLLAPSE_LINE_THRESHOLD
+  );
 }
 
 function appendUserMessageToggle(bubble, contentDiv) {

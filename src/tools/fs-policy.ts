@@ -20,9 +20,7 @@ export class ToolError extends HyxClawError {
  */
 export function resolveAllowedDirs(allowedDirs: string[]): string[] {
   const base = getUserDataDir();
-  return allowedDirs.map((dir) =>
-    path.isAbsolute(dir) ? path.normalize(dir) : path.resolve(base, dir)
-  );
+  return allowedDirs.map((dir) => (path.isAbsolute(dir) ? path.normalize(dir) : path.resolve(base, dir)));
 }
 
 /**
@@ -31,20 +29,14 @@ export function resolveAllowedDirs(allowedDirs: string[]): string[] {
  */
 export function resolveAllowedFiles(allowedFiles: string[] = []): string[] {
   const base = getUserDataDir();
-  return allowedFiles.map((file) =>
-    path.isAbsolute(file) ? path.normalize(file) : path.resolve(base, file)
-  );
+  return allowedFiles.map((file) => (path.isAbsolute(file) ? path.normalize(file) : path.resolve(base, file)));
 }
 
 /**
  * Assert that filePath is under allowedDirs or exactly matches allowedFiles.
  * Throws ToolError if not allowed.
  */
-export function assertPathAllowed(
-  filePath: string,
-  allowedDirs: string[],
-  allowedFiles: string[] = [],
-): void {
+export function assertPathAllowed(filePath: string, allowedDirs: string[], allowedFiles: string[] = []): void {
   const resolved = path.resolve(filePath);
 
   for (const file of allowedFiles) {

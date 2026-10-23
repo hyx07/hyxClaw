@@ -37,16 +37,12 @@ const mockConfig: Config = {
     dashscope: {
       apiKey: "",
       baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
-      models: [
-        { id: "qwen3.6-plus", label: "qwen3.6-plus" },
-      ],
+      models: [{ id: "qwen3.6-plus", label: "qwen3.6-plus" }],
     },
     deepseek: {
       apiKey: "",
       baseUrl: "https://api.deepseek.com",
-      models: [
-        { id: "deepseek-v4-flash", label: "v4-flash" },
-      ],
+      models: [{ id: "deepseek-v4-flash", label: "v4-flash" }],
     },
     commandcode: {
       apiKey: "",
@@ -123,18 +119,23 @@ describe("reasoning refactor", () => {
         content: null,
         finish_reason: "tool_calls",
         reasoning_content: "先调用天气工具",
-        tool_calls: [{
-          id: "tool-1",
-          type: "function",
-          function: {
-            name: "get_weather",
-            arguments: JSON.stringify({ city: "杭州" }),
+        tool_calls: [
+          {
+            id: "tool-1",
+            type: "function",
+            function: {
+              name: "get_weather",
+              arguments: JSON.stringify({ city: "杭州" }),
+            },
           },
-        }],
+        ],
         usage: undefined,
       })
       .mockImplementationOnce(async (_apiKey, messages) => {
-        const assistantWithToolCall = messages.findLast((message: { role: string; tool_calls?: unknown; reasoning_content?: string }) => message.role === "assistant" && message.tool_calls);
+        const assistantWithToolCall = messages.findLast(
+          (message: { role: string; tool_calls?: unknown; reasoning_content?: string }) =>
+            message.role === "assistant" && message.tool_calls,
+        );
         expect(assistantWithToolCall?.reasoning_content).toBe("先调用天气工具");
 
         return {
@@ -150,13 +151,17 @@ describe("reasoning refactor", () => {
     expect(result.assistantMessage.content).toBe("杭州今天晴天 25C。");
 
     const persisted = await loadSession(session.id, testDir);
-    const persistedAssistantWithToolCall = persisted.messages.find((message) => message.role === "assistant" && message.tool_calls);
+    const persistedAssistantWithToolCall = persisted.messages.find(
+      (message) => message.role === "assistant" && message.tool_calls,
+    );
 
     expect(persistedAssistantWithToolCall).toBeDefined();
     expect(persistedAssistantWithToolCall?.reasoning_content).toBe("先调用天气工具");
 
     // Final assistant message should also persist its reasoning
-    const finalAssistant = persisted.messages.find((message) => message.role === "assistant" && !message.tool_calls && message.content === "杭州今天晴天 25C。");
+    const finalAssistant = persisted.messages.find(
+      (message) => message.role === "assistant" && !message.tool_calls && message.content === "杭州今天晴天 25C。",
+    );
     expect(finalAssistant).toBeDefined();
     expect(finalAssistant?.reasoning_content).toBe("根据工具结果组织最终回答");
 
@@ -219,11 +224,13 @@ describe("reasoning refactor", () => {
     completeMock.mockResolvedValueOnce({
       content: null,
       finish_reason: "tool_calls",
-      tool_calls: [{
-        id: "tool-1",
-        type: "function",
-        function: { name: "get_weather", arguments: "{}" },
-      }],
+      tool_calls: [
+        {
+          id: "tool-1",
+          type: "function",
+          function: { name: "get_weather", arguments: "{}" },
+        },
+      ],
       usage: undefined,
     });
 

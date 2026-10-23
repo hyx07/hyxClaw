@@ -12,10 +12,7 @@ import { getPaths, pathExists } from "../config/paths.js";
 
 const program = new Command();
 
-program
-  .name("hyxclaw")
-  .description("Personal AI Assistant")
-  .version("0.1.0");
+program.name("hyxclaw").description("Personal AI Assistant").version("0.1.0");
 
 /**
  * Start command - runs the web server
@@ -41,7 +38,11 @@ program
       }
 
       // Override port/host if specified (options take precedence over env vars)
-      const port = options.port ? parseInt(options.port, 10) : (process.env.PORT ? parseInt(process.env.PORT, 10) : undefined);
+      const port = options.port
+        ? parseInt(options.port, 10)
+        : process.env.PORT
+          ? parseInt(process.env.PORT, 10)
+          : undefined;
       const host = options.host ?? process.env.HOST ?? undefined;
 
       if (port) {

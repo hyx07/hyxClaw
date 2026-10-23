@@ -2,7 +2,13 @@ import { escHtml } from "../format.js";
 import { renderContent } from "../markdown.js";
 import { openKnowledgeModal } from "./knowledge.js";
 import { openUsageModal, setUsageDays, switchUsageTab, toggleUsageMetric } from "./usage.js";
-import { getDocRailWidth, initDocColumnResize, initDocResizeHandle, initDocVerticalResize, initSidebarResizeHandle } from "./document-layout.js";
+import {
+  getDocRailWidth,
+  initDocColumnResize,
+  initDocResizeHandle,
+  initDocVerticalResize,
+  initSidebarResizeHandle,
+} from "./document-layout.js";
 import { getDocSelectionSummary, getSourceLineNumberFromOffset } from "./document-selection.js";
 
 export { initSidebarResizeHandle } from "./document-layout.js";
@@ -91,9 +97,7 @@ function loadRecentOpened() {
   try {
     const stored = JSON.parse(localStorage.getItem(DOC_RECENT_KEY) || "[]");
     if (!Array.isArray(stored)) return [];
-    return stored
-      .filter((path) => typeof path === "string" && path)
-      .slice(0, MAX_RECENT_OPENED);
+    return stored.filter((path) => typeof path === "string" && path).slice(0, MAX_RECENT_OPENED);
   } catch {
     return [];
   }
@@ -148,12 +152,20 @@ function buildDocColumn(title, entries, activePath, options = {}) {
         <span class="doc-column-title">${escHtml(title)}</span>
       </div>
       <div class="doc-column-body">
-        ${entries.length ? entries.map((entry) => `
+        ${
+          entries.length
+            ? entries
+                .map(
+                  (entry) => `
           <button class="doc-entry ${entry.path === activePath ? "active" : ""}" data-doc-path="${escHtml(entry.path)}" data-doc-kind="${entry.kind}" type="button">
             <span>${getDocEntryIcon(entry.kind)}</span>
             <span class="doc-entry-label">${escHtml(entry.name)}</span>
           </button>
-        `).join("") : '<div class="doc-empty">暂无内容</div>'}
+        `,
+                )
+                .join("")
+            : '<div class="doc-empty">暂无内容</div>'
+        }
       </div>
     </div>
   `;
@@ -163,7 +175,9 @@ export function getRightPanelHTML(opts = {}) {
   const railCollapsed = localStorage.getItem("docRailCollapsed") === "true";
   const width = railCollapsed ? 44 : getDocRailWidth();
   const showToggle = opts.showToggle !== false;
-  const toggleHTML = showToggle ? `<button id="doc-rail-toggle" class="icon-button" title="${railCollapsed ? "展开文件浏览器" : "收起文件浏览器"}" aria-label="${railCollapsed ? "展开文件浏览器" : "收起文件浏览器"}" aria-expanded="${!railCollapsed}"><i data-lucide="${railCollapsed ? "panel-right-open" : "panel-right-close"}"></i></button>` : "";
+  const toggleHTML = showToggle
+    ? `<button id="doc-rail-toggle" class="icon-button" title="${railCollapsed ? "展开文件浏览器" : "收起文件浏览器"}" aria-label="${railCollapsed ? "展开文件浏览器" : "收起文件浏览器"}" aria-expanded="${!railCollapsed}"><i data-lucide="${railCollapsed ? "panel-right-open" : "panel-right-close"}"></i></button>`
+    : "";
   return `
     <div id="doc-rail-resize" title="拖拽调整右栏宽度"></div>
     <aside id="action-rail" class="${railCollapsed ? "collapsed" : ""}" style="width:${width}px">
@@ -259,7 +273,7 @@ async function saveCurrentTabEdit() {
     docPreviewContent = textarea.value;
     return true;
   } catch (error) {
-    reportError((error && error.message) ? error.message : "保存文件失败");
+    reportError(error && error.message ? error.message : "保存文件失败");
     return false;
   }
 }
@@ -367,9 +381,10 @@ export function updateSelectedPreviewTextFromSelection() {
     return;
   }
   const range = selection.getRangeAt(0);
-  const common = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
-    ? range.commonAncestorContainer
-    : range.commonAncestorContainer.parentElement;
+  const common =
+    range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+      ? range.commonAncestorContainer
+      : range.commonAncestorContainer.parentElement;
   if (!common || !preview.contains(common)) {
     return;
   }
@@ -453,7 +468,7 @@ async function loadActiveTabContent() {
       updateDocSelectionStatus();
       return false;
     }
-    reportError((error && error.message) ? error.message : "读取文件失败");
+    reportError(error && error.message ? error.message : "读取文件失败");
     return false;
   }
 }
@@ -544,13 +559,17 @@ function renderDocTabs() {
     container.innerHTML = "";
     return;
   }
-  container.innerHTML = openTabs.map((tab) => `
+  container.innerHTML = openTabs
+    .map(
+      (tab) => `
     <button class="doc-tab ${tab.path === activeTabPath ? "active" : ""} ${tab.editMode ? "editing" : ""} ${tab.sticky ? "" : "temporary"}" data-tab-path="${escHtml(tab.path)}" type="button" title="${escHtml(tab.path)}${tab.sticky ? "" : "（临时标签，双击固定）"}" aria-label="标签 ${escHtml(tab.path)}">
       <i data-lucide="${tab.editMode ? "pencil" : "file-text"}" class="doc-tab-icon"></i>
       <span class="doc-tab-label">${escHtml(tab.path.split("/").pop() || tab.path)}</span>
       <span class="doc-tab-close" data-close-tab-path="${escHtml(tab.path)}" role="button" tabindex="-1" title="关闭标签" aria-label="关闭标签 ${escHtml(tab.path)}"><i data-lucide="x" class="doc-tab-close-icon"></i></span>
     </button>
-  `).join("");
+  `,
+    )
+    .join("");
   window.lucide?.createIcons();
 
   container.querySelectorAll(".doc-tab").forEach((button) => {
@@ -593,12 +612,14 @@ function renderDocColumns() {
 
   const rootTabs = document.getElementById("doc-root-tabs");
   if (rootTabs) {
-    rootTabs.innerHTML = DOC_BROWSER_ROOTS.map((root) => `
+    rootTabs.innerHTML = DOC_BROWSER_ROOTS.map(
+      (root) => `
       <button class="doc-root-tab ${root === docRootPath ? "active" : ""}" data-doc-root="${escHtml(root)}" type="button" role="tab" aria-selected="${root === docRootPath ? "true" : "false"}">
         <i data-lucide="folder" class="doc-root-tab-icon"></i>
         <span class="doc-root-tab-label">${escHtml(root)}</span>
       </button>
-    `).join("");
+    `,
+    ).join("");
     window.lucide?.createIcons();
     rootTabs.querySelectorAll(".doc-root-tab").forEach((button) => {
       button.addEventListener("click", async () => {
@@ -726,7 +747,7 @@ export async function refreshDocBrowser() {
     renderDocColumns();
     renderDocTabs();
   } catch (error) {
-    reportError((error && error.message) ? error.message : "刷新文档结构失败");
+    reportError(error && error.message ? error.message : "刷新文档结构失败");
   }
 }
 

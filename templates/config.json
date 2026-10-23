@@ -9,9 +9,19 @@
           "label": "zai-glm-5.3",
           "cost": { "input": 8, "output": 28, "cachedRead": 2 },
           "thinking": [
-            { "id": "low", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "low" } },
-            { "id": "high", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "high" } },
-            { "id": "max", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "max" } }]
+            {
+              "id": "low",
+              "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "low" }
+            },
+            {
+              "id": "high",
+              "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "high" }
+            },
+            {
+              "id": "max",
+              "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "max" }
+            }
+          ]
         },
         {
           "id": "glm-5.3-flash",
@@ -19,9 +29,19 @@
           "modal": "vl",
           "cost": { "input": 0.8, "output": 2.8, "cachedRead": 0.23 },
           "thinking": [
-            { "id": "low", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "low" } },
-            { "id": "high", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "high" } },
-            { "id": "max", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "max" } }]
+            {
+              "id": "low",
+              "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "low" }
+            },
+            {
+              "id": "high",
+              "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "high" }
+            },
+            {
+              "id": "max",
+              "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "max" }
+            }
+          ]
         }
       ]
     },
@@ -33,10 +53,13 @@
           "id": "qwen3.7-flash",
           "label": "qwen3.7-flash",
           "modal": "vl",
-          "cost": { "input": 0.2, "output": 0.8, "cachedRead": 0.04},
+          "cost": { "input": 0.2, "output": 0.8, "cachedRead": 0.04 },
           "thinking": [
             { "id": "low", "params": { "enable_thinking": true, "thinking_budget": 512, "preserve_thinking": true } },
-            { "id": "medium", "params": { "enable_thinking": true, "thinking_budget": 1024, "preserve_thinking": true } },
+            {
+              "id": "medium",
+              "params": { "enable_thinking": true, "thinking_budget": 1024, "preserve_thinking": true }
+            },
             { "id": "high", "params": { "enable_thinking": true, "thinking_budget": 4096, "preserve_thinking": true } },
             { "id": "max", "params": { "enable_thinking": true, "thinking_budget": 8192, "preserve_thinking": true } }
           ],
@@ -46,10 +69,13 @@
           "id": "qwen3.8-flash",
           "label": "qwen3.8-flash",
           "modal": "vl",
-          "cost": { "input": 0.8, "output": 2.7, "cachedRead": 0.1},
+          "cost": { "input": 0.8, "output": 2.7, "cachedRead": 0.1 },
           "thinking": [
             { "id": "low", "params": { "enable_thinking": true, "thinking_budget": 512, "preserve_thinking": true } },
-            { "id": "medium", "params": { "enable_thinking": true, "thinking_budget": 1024, "preserve_thinking": true } },
+            {
+              "id": "medium",
+              "params": { "enable_thinking": true, "thinking_budget": 1024, "preserve_thinking": true }
+            },
             { "id": "high", "params": { "enable_thinking": true, "thinking_budget": 4096, "preserve_thinking": true } },
             { "id": "max", "params": { "enable_thinking": true, "thinking_budget": 8192, "preserve_thinking": true } }
           ],
@@ -110,8 +136,24 @@
             "output": 4,
             "cachedRead": 0.02,
             "schedules": [
-              { "name": "peak-am", "weekdays": [1, 2, 3, 4, 5], "start": "09:00", "end": "12:00", "input": 2.0, "output": 8.0, "cachedRead": 0.04 },
-              { "name": "peak-pm", "weekdays": [1, 2, 3, 4, 5], "start": "14:00", "end": "18:00", "input": 2.0, "output": 8.0, "cachedRead": 0.04 }
+              {
+                "name": "peak-am",
+                "weekdays": [1, 2, 3, 4, 5],
+                "start": "09:00",
+                "end": "12:00",
+                "input": 2.0,
+                "output": 8.0,
+                "cachedRead": 0.04
+              },
+              {
+                "name": "peak-pm",
+                "weekdays": [1, 2, 3, 4, 5],
+                "start": "14:00",
+                "end": "18:00",
+                "input": 2.0,
+                "output": 8.0,
+                "cachedRead": 0.04
+              }
             ]
           },
           "thinking": [
@@ -129,8 +171,24 @@
             "output": 13.5,
             "cachedRead": 0.15,
             "schedules": [
-              { "name": "peak-am", "weekdays": [1, 2, 3, 4, 5], "start": "09:00", "end": "12:00", "input": 9.0, "output": 27.0, "cachedRead": 0.3 },
-              { "name": "peak-pm", "weekdays": [1, 2, 3, 4, 5], "start": "14:00", "end": "18:00", "input": 9.0, "output": 27.0, "cachedRead": 0.3 }
+              {
+                "name": "peak-am",
+                "weekdays": [1, 2, 3, 4, 5],
+                "start": "09:00",
+                "end": "12:00",
+                "input": 9.0,
+                "output": 27.0,
+                "cachedRead": 0.3
+              },
+              {
+                "name": "peak-pm",
+                "weekdays": [1, 2, 3, 4, 5],
+                "start": "14:00",
+                "end": "18:00",
+                "input": 9.0,
+                "output": 27.0,
+                "cachedRead": 0.3
+              }
             ]
           },
           "thinking": [

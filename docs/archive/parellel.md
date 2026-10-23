@@ -8,13 +8,13 @@ A 会话生成中，用户可以切换到 B 会话正常工作，A 会话在后�
 
 ### 现状
 
-| 层面 | 现状 | 问题 |
-|------|------|------|
-| 服务端 | `processChatMessage` 是 fire-and-forget，`broadcastToSession` 按 sessionId 广播 | **天然支持并发**，无需大改 |
-| 前端 | 全局单例 `isStreaming`、`streamingBubble`、`pendingToolBlocks` | 切换会话时直接销毁，不支持后台生成 |
-| 前端 | `handleServerMessage` 对非当前会话的消息直接 `return` 丢弃 | 后台会话的流式数据全部丢失 |
-| 前端 | `sendMessage()` 检查 `isStreaming` 全局锁 | 一个会话生成中，所有会话都无法发送 |
-| 数据层 | 每条消息实时 `addMessage()` 写 JSONL | **天然支持并发写入**，无需改动 |
+| 层面   | 现状                                                                            | 问题                               |
+| ------ | ------------------------------------------------------------------------------- | ---------------------------------- |
+| 服务端 | `processChatMessage` 是 fire-and-forget，`broadcastToSession` 按 sessionId 广播 | **天然支持并发**，无需大改         |
+| 前端   | 全局单例 `isStreaming`、`streamingBubble`、`pendingToolBlocks`                  | 切换会话时直接销毁，不支持后台生成 |
+| 前端   | `handleServerMessage` 对非当前会话的消息直接 `return` 丢弃                      | 后台会话的流式数据全部丢失         |
+| 前端   | `sendMessage()` 检查 `isStreaming` 全局锁                                       | 一个会话生成中，所有会话都无法发送 |
+| 数据层 | 每条消息实时 `addMessage()` 写 JSONL                                            | **天然支持并发写入**，无需改动     |
 
 ### 关键代码位置
 
@@ -122,7 +122,9 @@ function getOffscreenContainer(sessionId) {
 function handleServerMessage(msg) {
   // 确定目标会话的消息容器
   const targetSessionId = msg.sessionId;
-  if (!targetSessionId) { /* 无会话消息正常处理 */ return; }
+  if (!targetSessionId) {
+    /* 无会话消息正常处理 */ return;
+  }
 
   // 如果消息属于当前会话，用主 messagesEl 渲染
   // 如果属于后台会话，用离屏容器渲染
@@ -207,9 +209,7 @@ async function compactCurrentSession() {
 
 ```javascript
 const state = sessionStates.get(session.id);
-const indicator = state?.isStreaming
-  ? '<span class="session-generating" title="生成中">●</span>'
-  : '';
+const indicator = state?.isStreaming ? '<span class="session-generating" title="生成中">●</span>' : "";
 ```
 
 CSS 动画让圆点脉冲。
@@ -264,26 +264,26 @@ case "chatEnd":
 
 ## 不改动的部分
 
-| 模块 | 原因 |
-|------|------|
-| `src/chat/index.ts` | 每次调用 `chatStream` 都是独立的 async generator，天然支持并发 |
+| 模块                   | 原因                                                                                                           |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `src/chat/index.ts`    | 每次调用 `chatStream` 都是独立的 async generator，天然支持并发                                                 |
 | `src/session/index.ts` | JSONL 追加写入，`addMessage` 每次独立 `loadSession` → `push` → `saveSession`，多会话并发安全（Node.js 单线程） |
-| `src/llm/` | 每次创建独立的 provider 实例，无共享状态 |
-| WebSocket 协议 | 现有消息类型已包含 `sessionId`，足够区分 |
-| `broadcastToSession` | 已按 sessionId 路由，正确 |
+| `src/llm/`             | 每次创建独立的 provider 实例，无共享状态                                                                       |
+| WebSocket 协议         | 现有消息类型已包含 `sessionId`，足够区分                                                                       |
+| `broadcastToSession`   | 已按 sessionId 路由，正确                                                                                      |
 
 ---
 
 ## 实现顺序
 
-| 步骤 | 内容 | 预估改动量 | 风险 |
-|------|------|-----------|------|
-| 1 | 服务端防止同会话重复发送 | ~15 行 | 低 |
-| 2 | 前端会话级状态 Map + sendMessage 锁 | ~30 行 | 低 |
-| 3 | 前端消息处理支持离屏渲染 | ~60 行 | 中 |
-| 4 | selectSession 保存/恢复 | ~50 行 | 中 |
-| 5 | 会话列表生成指示器 | ~20 行 | 低 |
-| 6 | chatEnd 后台完成同步 | ~15 行 | 低 |
+| 步骤 | 内容                                | 预估改动量 | 风险 |
+| ---- | ----------------------------------- | ---------- | ---- |
+| 1    | 服务端防止同会话重复发送            | ~15 行     | 低   |
+| 2    | 前端会话级状态 Map + sendMessage 锁 | ~30 行     | 低   |
+| 3    | 前端消息处理支持离屏渲染            | ~60 行     | 中   |
+| 4    | selectSession 保存/恢复             | ~50 行     | 中   |
+| 5    | 会话列表生成指示器                  | ~20 行     | 低   |
+| 6    | chatEnd 后台完成同步                | ~15 行     | 低   |
 
 **总计**: ~190 行改动，全部集中在 [src/server/public/index.html](src/server/public/index.html) 和少量 [src/server/index.ts](src/server/index.ts)。
 

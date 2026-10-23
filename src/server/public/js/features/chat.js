@@ -4,24 +4,20 @@ import { buildUserMessageContent, extractUserText } from "../render/messages.js"
 
 const ROUND_ANCHOR_TOP_OFFSET = 22;
 
-export function createChatFeature({
-  state,
-  socket,
-  renderer,
-  streaming,
-  pickers,
-  permissions,
-  documents,
-  actions,
-}) {
+export function createChatFeature({ state, socket, renderer, streaming, pickers, permissions, documents, actions }) {
   function sendMessage() {
-    if (state.isStreaming) { cancelChat(); return; }
+    if (state.isStreaming) {
+      cancelChat();
+      return;
+    }
     if (!state.inputEl) return;
     const content = state.inputEl.value.trim();
     if ((!content && !state.pendingImages.length) || !state.currentSessionId) return;
     const images = state.pendingImages.map((image) => ({ url: image.url, path: image.path }));
     setSendDisabled(true);
-    state.pendingUserBubble = renderer.appendMessage("user", buildUserMessageContent(content, images), undefined, { scroll: false });
+    state.pendingUserBubble = renderer.appendMessage("user", buildUserMessageContent(content, images), undefined, {
+      scroll: false,
+    });
     if (state.pendingUserBubble) {
       const msgEl = state.pendingUserBubble.closest(".message");
       if (msgEl) {
@@ -86,7 +82,8 @@ export function createChatFeature({
 
   async function restartFromMessage(messageId, text) {
     if (!state.currentSessionId || state.isStreaming || state.isCompacting) return;
-    if (!confirm("确定要从这条消息重新开始吗？\n\n这条消息及之后的所有回复将被删除，原文会保留在输入框中供你修改。")) return;
+    if (!confirm("确定要从这条消息重新开始吗？\n\n这条消息及之后的所有回复将被删除，原文会保留在输入框中供你修改。"))
+      return;
     try {
       const { response, data } = await requestJson(
         `/api/sessions/${state.currentSessionId}/truncate`,
@@ -106,7 +103,8 @@ export function createChatFeature({
   }
 
   function compactCurrentSession() {
-    if (!state.currentSessionId || state.isStreaming || state.isCompacting || state.currentSessionMessageCount < 2) return;
+    if (!state.currentSessionId || state.isStreaming || state.isCompacting || state.currentSessionMessageCount < 2)
+      return;
     const select = document.getElementById("compact-keep-rounds");
     const totalRounds = state.currentMessages.filter((message) => message.role === "user").length;
     for (const option of select.options) {
@@ -123,7 +121,8 @@ export function createChatFeature({
   }
 
   async function doCompact() {
-    if (!state.currentSessionId || state.isStreaming || state.isCompacting || state.currentSessionMessageCount < 2) return;
+    if (!state.currentSessionId || state.isStreaming || state.isCompacting || state.currentSessionMessageCount < 2)
+      return;
     closeCompactModal(true);
     state.currentRoundAnchor = null;
     state.messagesEl?.classList.remove("round-anchor-active");
@@ -176,7 +175,8 @@ export function createChatFeature({
 
   function syncCompactButton() {
     if (!state.compactBtnEl) return;
-    state.compactBtnEl.disabled = !state.currentSessionId || state.currentSessionMessageCount < 2 || state.isStreaming || state.isCompacting;
+    state.compactBtnEl.disabled =
+      !state.currentSessionId || state.currentSessionMessageCount < 2 || state.isStreaming || state.isCompacting;
   }
 
   function showError(message) {
@@ -229,7 +229,16 @@ export function createChatFeature({
   }
 
   function handleServerMessage(message) {
-    const scopedTypes = ["chatStart", "chatChunk", "chatReasoning", "chatEnd", "chatCancelled", "toolCall", "toolResult", "toolPermissionRequest"];
+    const scopedTypes = [
+      "chatStart",
+      "chatChunk",
+      "chatReasoning",
+      "chatEnd",
+      "chatCancelled",
+      "toolCall",
+      "toolResult",
+      "toolPermissionRequest",
+    ];
     if (scopedTypes.includes(message.type) && message.sessionId && message.sessionId !== state.currentSessionId) {
       updateBackgroundSession(message);
       return;
@@ -259,7 +268,12 @@ export function createChatFeature({
         break;
       case "toolCall":
         state.currentTextSegment = null;
-        if (state.streamingBubble) state.pendingToolBlocks[message.callId] = streaming.appendToolCallBlock(state.streamingBubble, message.name, message.input);
+        if (state.streamingBubble)
+          state.pendingToolBlocks[message.callId] = streaming.appendToolCallBlock(
+            state.streamingBubble,
+            message.name,
+            message.input,
+          );
         break;
       case "toolResult":
         handleToolResult(message);
@@ -479,7 +493,8 @@ export function createChatFeature({
       state.lastStreamSequence = message.sequence;
       return true;
     }
-    if (!state.isStreaming || message.runId !== state.currentRunId || message.sequence <= state.lastStreamSequence) return false;
+    if (!state.isStreaming || message.runId !== state.currentRunId || message.sequence <= state.lastStreamSequence)
+      return false;
     state.lastStreamSequence = message.sequence;
     return true;
   }

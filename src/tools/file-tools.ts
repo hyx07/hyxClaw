@@ -71,11 +71,15 @@ function sliceTextContent(raw: string, offset?: number, limit?: number): string 
   let content = lines.slice(start, end).join("\n");
   const notices: string[] = [];
   if (end < totalLines) {
-    notices.push(`文件共 ${totalLines} 行，本次返回第 ${start + 1}–${Math.min(end, totalLines)} 行，可用 offset=${end + 1} 继续读取`);
+    notices.push(
+      `文件共 ${totalLines} 行，本次返回第 ${start + 1}–${Math.min(end, totalLines)} 行，可用 offset=${end + 1} 继续读取`,
+    );
   }
   if (Buffer.byteLength(content, "utf-8") > MAX_READ_BYTES) {
     content = truncateToBytes(content, MAX_READ_BYTES);
-    notices.push(`内容超过 ${MAX_READ_BYTES / 1024} KB 单次上限，已按字节截断，请用更小的 limit 分段读取或用 grep 搜索`);
+    notices.push(
+      `内容超过 ${MAX_READ_BYTES / 1024} KB 单次上限，已按字节截断，请用更小的 limit 分段读取或用 grep 搜索`,
+    );
   }
   if (notices.length > 0) content += `\n\n[read 截断：${notices.join("；")}]`;
   return content;
@@ -198,7 +202,8 @@ function makeReadTool(policy: FilePolicy): ToolDefinition<ReadInput> {
 function makeWriteTool(policy: FilePolicy): ToolDefinition<WriteInput> {
   return {
     name: "write",
-    description: "将内容写入允许目录或允许单个文件中的文件。使用相对于数据目录的路径，例如 'inputs/notes.txt' 或 'memory.md'。",
+    description:
+      "将内容写入允许目录或允许单个文件中的文件。使用相对于数据目录的路径，例如 'inputs/notes.txt' 或 'memory.md'。",
     inputSchema: {
       type: "object",
       properties: {
@@ -225,7 +230,8 @@ function makeWriteTool(policy: FilePolicy): ToolDefinition<WriteInput> {
 function makeEditTool(policy: FilePolicy): ToolDefinition<EditInput> {
   return {
     name: "edit",
-    description: "在允许的文件中，将第一次出现的 old_string 替换为 new_string。使用相对于数据目录的路径，例如 'inputs/notes.txt' 或 'memory.md'。",
+    description:
+      "在允许的文件中，将第一次出现的 old_string 替换为 new_string。使用相对于数据目录的路径，例如 'inputs/notes.txt' 或 'memory.md'。",
     inputSchema: {
       type: "object",
       properties: {
@@ -288,9 +294,7 @@ function makeGrepTool(policy: FilePolicy): ToolDefinition<GrepInput> {
           return { content: "pattern must not be empty", isError: true };
         }
 
-        const roots = input.path
-          ? [resolvePath(input.path)]
-          : [...policy.allowedDirs, ...policy.allowedFiles];
+        const roots = input.path ? [resolvePath(input.path)] : [...policy.allowedDirs, ...policy.allowedFiles];
 
         for (const root of roots) {
           assertPathAllowed(root, policy.allowedDirs, policy.allowedFiles);
@@ -344,10 +348,9 @@ function makeGrepTool(policy: FilePolicy): ToolDefinition<GrepInput> {
           grouped.set(match.file, entries);
         }
 
-        const blocks = Array.from(grouped.entries()).map(([file, entries]) => [
-          file,
-          ...entries.map((entry) => `  ${entry.line}: ${entry.text}`),
-        ].join("\n"));
+        const blocks = Array.from(grouped.entries()).map(([file, entries]) =>
+          [file, ...entries.map((entry) => `  ${entry.line}: ${entry.text}`)].join("\n"),
+        );
 
         return { content: blocks.join("\n") + (truncated ? "\n\nresults truncated" : "") };
       } catch (err) {

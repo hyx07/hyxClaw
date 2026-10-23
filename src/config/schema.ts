@@ -19,9 +19,12 @@ export const TavilyFetchFormatSchema = z.enum(TAVILY_FETCH_FORMATS);
 export const ThinkingParamsSchema = z.record(z.string(), z.unknown());
 
 export const ThinkingOptionSchema = z.object({
-  id: z.string().min(1).refine((value) => value !== "off", {
-    message: "'none' is added by the system and must not be configured on a model",
-  }),
+  id: z
+    .string()
+    .min(1)
+    .refine((value) => value !== "off", {
+      message: "'none' is added by the system and must not be configured on a model",
+    }),
   label: z.string().min(1).optional(),
   params: ThinkingParamsSchema,
 });
@@ -165,9 +168,7 @@ export const DEFAULT_CONFIG = {
     commandcode: {
       apiKey: "",
       baseUrl: "https://api.commandcode.ai/provider/v1",
-      models: [
-        { id: "z-ai/glm-5.3-flash", label: "glm-5.3-flash" },
-      ],
+      models: [{ id: "z-ai/glm-5.3-flash", label: "glm-5.3-flash" }],
     },
   },
   defaultProvider: "zai" as const,
@@ -188,29 +189,31 @@ export const DEFAULT_CONFIG = {
   },
 };
 
-export const ConfigSchema = z.object({
-  providers: z.record(ProviderNameSchema, ProviderCredentialSchema).default(DEFAULT_CONFIG.providers),
-  defaultProvider: ProviderNameSchema.default(DEFAULT_CONFIG.defaultProvider),
-  defaultModel: z.string().min(1).default(DEFAULT_CONFIG.defaultModel),
-  defaultThinkingEffort: ThinkingEffortSchema.default(DEFAULT_CONFIG.defaultThinkingEffort),
-  maxTokens: z.number().int().min(1).default(DEFAULT_CONFIG.maxTokens),
-  contextMaxTokens: z.number().int().min(1000).default(DEFAULT_CONFIG.contextMaxTokens),
-  contextMaxMessages: z.number().int().min(0).default(DEFAULT_CONFIG.contextMaxMessages),
-  maxToolCalls: z.number().int().min(1).default(DEFAULT_CONFIG.maxToolCalls),
-  server: ServerConfigSchema.optional().default(DEFAULT_CONFIG.server),
-  fs: FSConfigSchema.optional().default(DEFAULT_CONFIG.fs),
-  tools: ToolsConfigSchema.optional().default(DEFAULT_CONFIG.tools),
-  compaction: CompactionConfigSchema.default(DEFAULT_CONFIG.compaction),
-}).superRefine((config, ctx) => {
-  const defaultModels = config.providers[config.defaultProvider]?.models ?? [];
-  if (!defaultModels.some((model) => model.id === config.defaultModel)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["defaultModel"],
-      message: `defaultModel must belong to provider '${config.defaultProvider}'`,
-    });
-  }
-});
+export const ConfigSchema = z
+  .object({
+    providers: z.record(ProviderNameSchema, ProviderCredentialSchema).default(DEFAULT_CONFIG.providers),
+    defaultProvider: ProviderNameSchema.default(DEFAULT_CONFIG.defaultProvider),
+    defaultModel: z.string().min(1).default(DEFAULT_CONFIG.defaultModel),
+    defaultThinkingEffort: ThinkingEffortSchema.default(DEFAULT_CONFIG.defaultThinkingEffort),
+    maxTokens: z.number().int().min(1).default(DEFAULT_CONFIG.maxTokens),
+    contextMaxTokens: z.number().int().min(1000).default(DEFAULT_CONFIG.contextMaxTokens),
+    contextMaxMessages: z.number().int().min(0).default(DEFAULT_CONFIG.contextMaxMessages),
+    maxToolCalls: z.number().int().min(1).default(DEFAULT_CONFIG.maxToolCalls),
+    server: ServerConfigSchema.optional().default(DEFAULT_CONFIG.server),
+    fs: FSConfigSchema.optional().default(DEFAULT_CONFIG.fs),
+    tools: ToolsConfigSchema.optional().default(DEFAULT_CONFIG.tools),
+    compaction: CompactionConfigSchema.default(DEFAULT_CONFIG.compaction),
+  })
+  .superRefine((config, ctx) => {
+    const defaultModels = config.providers[config.defaultProvider]?.models ?? [];
+    if (!defaultModels.some((model) => model.id === config.defaultModel)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["defaultModel"],
+        message: `defaultModel must belong to provider '${config.defaultProvider}'`,
+      });
+    }
+  });
 
 export type Config = z.infer<typeof ConfigSchema>;
 export type CostConfig = z.infer<typeof CostConfigSchema>;

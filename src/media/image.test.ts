@@ -3,7 +3,9 @@ import sharp from "sharp";
 import { MAX_IMAGE_BYTES, normalizeImageBuffer, normalizeImageDataUrl } from "./image.js";
 
 async function createPng(width: number, height: number): Promise<Buffer> {
-  return sharp({ create: { width, height, channels: 3, background: "#6b8e23" } }).png().toBuffer();
+  return sharp({ create: { width, height, channels: 3, background: "#6b8e23" } })
+    .png()
+    .toBuffer();
 }
 
 describe("normalizeImageBuffer", () => {
