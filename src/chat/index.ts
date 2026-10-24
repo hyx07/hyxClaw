@@ -18,7 +18,7 @@ import { getPaths } from "../config/paths.js";
 import { recordRecentModel } from "../app-state/index.js";
 import { getTools } from "../tools/registry.js";
 import { executeTool } from "../tools/executor.js";
-import type { ToolDefinition } from "../tools/types.js";
+import type { ToolDefinition, ToolResult } from "../tools/types.js";
 import type { NormalizedUsage, UsageRecord } from "../llm/types.js";
 import { calcCost } from "../llm/cost.js";
 
@@ -369,12 +369,13 @@ async function* runAgenticLoop(
         }
       }
 
-      // Phase 4: execute all tools in parallel
-      const results = await Promise.all(
-        parsedCalls.map((call) =>
-          executeTool(call.name, call.input, tools, { sessionId, sessionTitle, supportsImages }),
-        ),
-      );
+      // Phase 4: 串行执行工具——Edit 等写文件操作是“读→改→写回”，
+      // 并行执行（尤其同一文件多个 Edit）会互相覆盖导致修改丢失
+      const results: ToolResult[] = [];
+      for (const call of parsedCalls) {
+        if (signal?.aborted) return { extraMessages, finalText: null, accumulatedUsage, contextUsage, cancelled: true };
+        results.push(await executeTool(call.name, call.input, tools, { sessionId, sessionTitle, supportsImages }));
+      }
       if (signal?.aborted) return { extraMessages, finalText: null, accumulatedUsage, contextUsage, cancelled: true };
 
       // Phase 5: yield results and build messages
@@ -417,7 +418,7 @@ async function* runAgenticLoop(
   return { extraMessages, finalText: null, accumulatedUsage, contextUsage, maxToolCallsReached: true };
 }
 
-async function* runAgenticLoopStreaming(
+export async function* runAgenticLoopStreaming(
   provider: ReturnType<typeof createProvider>,
   apiKey: string,
   messages: Message[],
@@ -532,12 +533,13 @@ async function* runAgenticLoopStreaming(
         }
       }
 
-      // Phase 4: execute all tools in parallel
-      const results = await Promise.all(
-        parsedCalls.map((call) =>
-          executeTool(call.name, call.input, tools, { sessionId, sessionTitle, supportsImages }),
-        ),
-      );
+      // Phase 4: 串行执行工具——Edit 等写文件操作是“读→改→写回”，
+      // 并行执行（尤其同一文件多个 Edit）会互相覆盖导致修改丢失
+      const results: ToolResult[] = [];
+      for (const call of parsedCalls) {
+        if (signal?.aborted) return { extraMessages, finalText: null, accumulatedUsage, contextUsage, cancelled: true };
+        results.push(await executeTool(call.name, call.input, tools, { sessionId, sessionTitle, supportsImages }));
+      }
       if (signal?.aborted) return { extraMessages, finalText: null, accumulatedUsage, contextUsage, cancelled: true };
 
       // Phase 5: yield results and build messages
