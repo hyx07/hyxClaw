@@ -64,6 +64,7 @@ src/
 │       └── js/           # Native ES modules, features and renderers
 ├── chat/                 # Chat orchestration
 │   ├── index.ts          # chat(), chatStream(), agentic loop, context truncation
+│   ├── speed.ts          # TokenSpeedTracker — streaming token/s throttled snapshots
 │   └── compaction.ts     # Session compaction (LLM-summarized history)
 ├── llm/                  # LLM provider layer
 │   ├── index.ts          # createProvider() factory
@@ -188,7 +189,8 @@ Server → Client:
 | `chatStart` | `sessionId` |
 | `chatChunk` | `sessionId`, `chunk` |
 | `chatReasoning` | `sessionId`, `chunk` |
-| `chatEnd` | `sessionId`, `fullResponse`, `usage?` |
+| `chatSpeed` | `sessionId`, `tokensPerSecond`, `totalTokens`, `elapsedMs`, `ts` |
+| `chatEnd` | `sessionId`, `fullResponse`, `usage?`, `contextUsage?`, `tokenSpeed?` |
 | `toolCall` | `sessionId`, `name`, `input` |
 | `toolResult` | `sessionId`, `name`, `content`, `isError` |
 | `toolPermissionRequest` | `sessionId`, `requestId`, `toolName`, `details` |
@@ -196,8 +198,9 @@ Server → Client:
 
 ### 3.3 Chat (`src/chat/`)
 
-- **`chatStream()`** — Async generator that drives the agentic loop, yields reasoning chunks and tool events in real-time, then sends the final text as a single `chatChunk`
-- **Agentic loop** (`runAgenticLoop`): non-streaming LLM `complete()` calls, iterates tool-call→tool-result until `finish_reason !== "tool_calls"` or `maxToolCalls` reached
+- **`chatStream()`** — Async generator that drives the agentic loop, yields reasoning chunks, token-speed snapshots and tool events in real-time, then sends the final text as a single `chatChunk`
+- **Agentic loop** (`runAgenticLoop` / `runAgenticLoopStreaming`): iterates tool-call→tool-result until `finish_reason !== "tool_calls"` or `maxToolCalls` reached; tools execute **serially** (Edit-style read→write tools would clobber each other in parallel)
+- **Token speed**: `TokenSpeedTracker` (`speed.ts`) accumulates reasoning + content + tool-call chunks, emits throttled `chatSpeed` snapshots (5s sliding window); the final `chatEnd.tokenSpeed` carries real `outputTokens` for an exact average rate
 - **Final output**: the entire response text is sent in one `chatChunk`, then rendered as Markdown on `chatEnd`
 - **Context truncation**: `truncateMessagesForContext()` — token-aware sliding window from newest to oldest
 - **System prompt**: `loadSystemPrompt()` loads `agent_system_prompt.txt` and appends a real-time `今天的日期是YYYY/MM/DD` date line; the date line is always present even if the file is absent

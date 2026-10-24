@@ -2,6 +2,7 @@ import type { WebSocket } from "ws";
 import type { ProviderName } from "../config/index.js";
 import type { NormalizedUsage } from "../llm/types.js";
 import type { Message } from "../types/index.js";
+import type { TokenSpeedSnapshot } from "../chat/speed.js";
 
 export type Client = {
   ws: WebSocket;
@@ -60,6 +61,17 @@ export type ServerMessage =
       fullResponse: string;
       usage?: UsageSummary;
       contextUsage?: UsageSummary;
+      tokenSpeed?: TokenSpeedSnapshot;
+    }
+  | {
+      type: "chatSpeed";
+      sessionId: string;
+      runId: string;
+      sequence: number;
+      tokensPerSecond: number;
+      totalTokens: number;
+      elapsedMs: number;
+      ts: number;
     }
   | { type: "chatCancelled"; sessionId: string; runId: string; sequence: number; fullResponse: string }
   | {

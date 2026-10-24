@@ -218,6 +218,8 @@ export function createSessionFeature({ state, socket, renderer, pickers, permiss
     permissions.hideActive();
     saveSessionState(state.currentSessionId);
     state.currentSessionId = id;
+    // 速度显示跟随会话：先清掉上个会话的速率，若目标会话在生成中，事件重放会恢复
+    actions.hideSpeedDisplay?.();
     const inputSnapshot = state.inputEl?.value ?? "";
     const restored = restoreSessionState(id);
     if (!restored) {

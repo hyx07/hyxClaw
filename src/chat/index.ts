@@ -21,6 +21,8 @@ import { executeTool } from "../tools/executor.js";
 import type { ToolDefinition, ToolResult } from "../tools/types.js";
 import type { NormalizedUsage, UsageRecord } from "../llm/types.js";
 import { calcCost } from "../llm/cost.js";
+import { TokenSpeedTracker } from "./speed.js";
+import type { TokenSpeedSnapshot } from "./speed.js";
 
 export interface ChatOptions {
   stream?: boolean;
@@ -234,7 +236,9 @@ type LoopEvent =
   | { type: "reasoning"; text: string }
   | { type: "textChunk"; text: string }
   | { type: "toolCall"; name: string; input: Record<string, unknown>; callId: string }
-  | { type: "toolResult"; name: string; content: string; isError: boolean; callId: string };
+  | { type: "toolResult"; name: string; content: string; isError: boolean; callId: string }
+  /** 生成速度快照（节流推送，思考/正文/工具参数一视同仁累计） */
+  | { type: "tokenSpeed"; snapshot: TokenSpeedSnapshot };
 
 interface AgenticLoopResult {
   extraMessages: Message[];
@@ -242,6 +246,8 @@ interface AgenticLoopResult {
   finalReasoning?: string | null;
   accumulatedUsage: NormalizedUsage | null;
   contextUsage: NormalizedUsage | null;
+  /** 结束快照：真实 outputTokens 附带在内，供前端计算精确平均速率 */
+  speedFinal?: TokenSpeedSnapshot;
   denied?: boolean;
   cancelled?: boolean;
   maxToolCallsReached?: boolean;
@@ -437,6 +443,8 @@ export async function* runAgenticLoopStreaming(
   let accumulatedUsage: NormalizedUsage | null = null;
   let contextUsage: NormalizedUsage | null = null;
   let reasoningBuffer: string | null = null;
+  // 生成速度：思考/正文/工具参数一视同仁累计，跨工具轮次不重置
+  const speed = new TokenSpeedTracker();
 
   while (toolCallCount < maxToolCalls) {
     reasoningBuffer = null;
@@ -462,18 +470,23 @@ export async function* runAgenticLoopStreaming(
         const chunk = streamResult.value;
         if (chunk.type === "reasoning") {
           reasoningBuffer = (reasoningBuffer || "") + chunk.text;
+          speed.addText(chunk.text);
           yield { type: "reasoning", text: chunk.text };
         } else if (chunk.type === "content") {
           contentBuffer += chunk.text;
+          speed.addText(chunk.text);
           if (!hasToolCalls) {
             yield { type: "textChunk", text: chunk.text };
           }
         } else if (chunk.type === "toolCallDelta") {
           hasToolCalls = true;
+          speed.addText(chunk.arguments);
         } else if (chunk.type === "usage") {
           accumulatedUsage = mergeUsage(accumulatedUsage, chunk.usage);
           contextUsage = chunk.usage ?? contextUsage;
         }
+        const speedSnapshot = speed.maybeSnapshot();
+        if (speedSnapshot) yield { type: "tokenSpeed", snapshot: speedSnapshot };
         streamResult = await streamGen.next();
       }
       finish = streamResult.value;
@@ -568,18 +581,27 @@ export async function* runAgenticLoopStreaming(
         });
       }
     } else {
+      // 正常结束：附带结束快照，用真实 outputTokens 供前端算精确平均
       return {
         extraMessages,
         finalText: contentBuffer || null,
         finalReasoning: reasoningBuffer,
         accumulatedUsage,
         contextUsage,
+        speedFinal: speed.snapshot(Date.now(), accumulatedUsage?.outputTokens) ?? undefined,
       };
     }
   }
 
   logger.warn(`Max tool calls (${maxToolCalls}) reached`);
-  return { extraMessages, finalText: null, accumulatedUsage, contextUsage, maxToolCallsReached: true };
+  return {
+    extraMessages,
+    finalText: null,
+    accumulatedUsage,
+    contextUsage,
+    maxToolCallsReached: true,
+    speedFinal: speed.snapshot(Date.now(), accumulatedUsage?.outputTokens) ?? undefined,
+  };
 }
 
 export async function chat(
@@ -736,6 +758,7 @@ export async function* chatStream(
     cancelled?: boolean;
     usage?: UsageRecord;
     contextUsage?: UsageRecord;
+    tokenSpeed?: TokenSpeedSnapshot;
   },
   ChatResult,
   unknown
@@ -787,6 +810,7 @@ export async function* chatStream(
   let contextUsage: NormalizedUsage | null = null;
   let maxToolCallsReached = false;
   let hasStreamedText = false;
+  let speedFinal: TokenSpeedSnapshot | undefined = undefined;
   const loopGen = runAgenticLoopStreaming(
     provider,
     run.apiKey,
@@ -810,6 +834,7 @@ export async function* chatStream(
       accumulatedUsage = value.accumulatedUsage;
       contextUsage = value.contextUsage;
       maxToolCallsReached = value.maxToolCallsReached ?? false;
+      speedFinal = value.speedFinal;
       if (value.cancelled) {
         // Persist BEFORE yielding — the consumer may stop iterating after seeing cancelled
         fixUnmatchedToolCalls(extraMessages);
@@ -846,6 +871,8 @@ export async function* chatStream(
     } else if (value.type === "textChunk") {
       hasStreamedText = true;
       yield { chunk: value.text, done: false };
+    } else if (value.type === "tokenSpeed") {
+      yield { chunk: "", done: false, tokenSpeed: value.snapshot };
     } else if (value.type === "toolCall") {
       options.onToolCall?.(value.name, value.input, value.callId);
     } else if (value.type === "toolResult") {
@@ -893,7 +920,7 @@ export async function* chatStream(
   );
 
   logger.debug("Chat completed", { session: session.title });
-  yield { chunk: "", done: true, usage: usageRecord, contextUsage: contextUsageRecord };
+  yield { chunk: "", done: true, usage: usageRecord, contextUsage: contextUsageRecord, tokenSpeed: speedFinal };
   return { sessionId, userMessage, assistantMessage, usage: usageRecord, contextUsage: contextUsageRecord };
 }
 

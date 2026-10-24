@@ -5,6 +5,38 @@ import { buildUserMessageContent, extractUserText } from "../render/messages.js"
 const ROUND_ANCHOR_TOP_OFFSET = 22;
 
 export function createChatFeature({ state, socket, renderer, streaming, pickers, permissions, documents, actions }) {
+  // 生成速度显示（composer 工具栏）：跟随当前会话；工具执行期间事件静默，超时淡化
+  let speedStaleTimer = null;
+  let speedHideTimer = null;
+
+  function formatSpeed(n) {
+    return n >= 100 ? `${Math.round(n)}` : n.toFixed(1);
+  }
+
+  function showSpeedDisplay(text, dim = false) {
+    if (!state.speedDisplayEl) return;
+    state.speedDisplayEl.textContent = text;
+    state.speedDisplayEl.classList.toggle("speed-stale", dim);
+  }
+
+  function hideSpeedDisplay() {
+    clearTimeout(speedStaleTimer);
+    clearTimeout(speedHideTimer);
+    speedStaleTimer = null;
+    speedHideTimer = null;
+    if (state.speedDisplayEl) {
+      state.speedDisplayEl.textContent = "";
+      state.speedDisplayEl.classList.remove("speed-stale");
+    }
+  }
+
+  function handleChatSpeed(message) {
+    if (typeof message.tokensPerSecond !== "number" || !Number.isFinite(message.tokensPerSecond)) return;
+    showSpeedDisplay(`${formatSpeed(message.tokensPerSecond)} tok/s`);
+    clearTimeout(speedStaleTimer);
+    speedStaleTimer = setTimeout(() => state.speedDisplayEl?.classList.add("speed-stale"), 2500);
+  }
+
   function sendMessage() {
     if (state.isStreaming) {
       cancelChat();
@@ -233,6 +265,7 @@ export function createChatFeature({ state, socket, renderer, streaming, pickers,
       "chatStart",
       "chatChunk",
       "chatReasoning",
+      "chatSpeed",
       "chatEnd",
       "chatCancelled",
       "toolCall",
@@ -281,6 +314,9 @@ export function createChatFeature({ state, socket, renderer, streaming, pickers,
       case "chatChunk":
         if (state.streamingBubble) streaming.appendChunk(state.streamingBubble, message.chunk);
         break;
+      case "chatSpeed":
+        handleChatSpeed(message);
+        break;
       case "chatEnd":
         handleChatEnd(message);
         break;
@@ -327,6 +363,7 @@ export function createChatFeature({ state, socket, renderer, streaming, pickers,
     state.isStreaming = true;
     setSendDisabled(true);
     syncCompactButton();
+    hideSpeedDisplay();
     state.pendingToolBlocks = {};
     state.streamingReasoningBlock = null;
     state.currentTextSegment = null;
@@ -384,6 +421,7 @@ export function createChatFeature({ state, socket, renderer, streaming, pickers,
 
   function handleChatCancelled(message) {
     state.isStreaming = false;
+    hideSpeedDisplay();
     setSendDisabled(false);
     state.inputEl?.focus();
     streaming.removeTypingDots();
@@ -436,6 +474,16 @@ export function createChatFeature({ state, socket, renderer, streaming, pickers,
     permissions.clearForSession(message.sessionId);
     if (message.contextUsage || message.usage) state.latestUsage = message.contextUsage || message.usage;
     updateTokenDisplay(state.latestUsage);
+    // 用真实 outputTokens 显示精确平均速率，停留几秒后隐藏
+    const speedFinal = message.tokenSpeed;
+    if (speedFinal?.outputTokens > 0 && speedFinal.elapsedMs > 0) {
+      const avg = speedFinal.outputTokens / (speedFinal.elapsedMs / 1000);
+      showSpeedDisplay(`${formatSpeed(avg)} tok/s`);
+      clearTimeout(speedHideTimer);
+      speedHideTimer = setTimeout(hideSpeedDisplay, 4000);
+    } else {
+      hideSpeedDisplay();
+    }
     void actions.refreshSessionSummary(message.sessionId);
     void actions.refreshRecentModels();
     updateCurrentCache();
@@ -540,5 +588,6 @@ export function createChatFeature({ state, socket, renderer, streaming, pickers,
     syncCompactButton,
     updateSendAvailability,
     updateTokenDisplay,
+    hideSpeedDisplay,
   };
 }
