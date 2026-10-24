@@ -46,9 +46,11 @@ export function createChatFeature({ state, socket, renderer, streaming, pickers,
     const content = state.inputEl.value.trim();
     if ((!content && !state.pendingImages.length) || !state.currentSessionId) return;
     const images = state.pendingImages.map((image) => ({ url: image.url, path: image.path }));
+    const previewContext = documents.getPreviewContextPayload();
     setSendDisabled(true);
     state.pendingUserBubble = renderer.appendMessage("user", buildUserMessageContent(content, images), undefined, {
       scroll: false,
+      reference: previewContext,
     });
     if (state.pendingUserBubble) {
       const msgEl = state.pendingUserBubble.closest(".message");
@@ -70,7 +72,7 @@ export function createChatFeature({ state, socket, renderer, streaming, pickers,
       provider: state.currentProvider,
       model: state.currentModel,
       thinkingEffort: state.currentThinkingEffort,
-      ...documents.getPreviewContextPayload(),
+      ...previewContext,
     });
     documents.clearPreviewSelection();
     state.inputEl.value = "";
