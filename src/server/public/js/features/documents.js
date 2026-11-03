@@ -2,34 +2,23 @@ import { escHtml } from "../format.js";
 import { renderContent } from "../markdown.js";
 import { openKnowledgeModal } from "./knowledge.js";
 import { openUsageModal, setUsageDays, switchUsageTab, toggleUsageMetric } from "./usage.js";
-import {
-  getDocRailWidth,
-  initDocColumnResize,
-  initDocResizeHandle,
-  initDocVerticalResize,
-  initSidebarResizeHandle,
-} from "./document-layout.js";
+import { getDocRailWidth, initDocResizeHandle, initSidebarTreeResize } from "./document-layout.js";
 import { getDocSelectionSummary, getSourceLineNumberFromOffset } from "./document-selection.js";
-
-export { initSidebarResizeHandle } from "./document-layout.js";
 
 let reportError = (message) => console.error(message);
 export function configureDocuments(options) {
   reportError = options.showError;
 }
 
-const DOC_BROWSER_ROOTS = ["knowledge_base", "inputs"];
-const DOC_ROOT_TAB_KEY = "docRootPath";
+const DOC_BROWSER_ROOTS = ["inputs", "knowledge_base"];
+const TREE_EXPANDED_KEY = "fileTreeExpanded";
 const DOC_TABS_KEY = "docOpenTabs";
 const DOC_RECENT_KEY = "docRecentOpened";
 const MAX_RECENT_OPENED = 3;
 
-let docRootPath = loadDocRootPath();
-let docSecondEntries = [];
-let docSecondActivePath = null;
-let docThirdEntries = [];
-let docThirdDirPath = null;
-let docThirdActivePath = null;
+// 文件树状态：各目录的子项缓存 + 展开的目录集合（跨会话/刷新保留，存于左侧栏）
+let treeChildren = new Map();
+let expandedPaths = loadExpandedPaths();
 
 // 打开的标签页（跨会话/刷新保留）：{ path, editMode }
 let openTabs = loadOpenTabs();
@@ -50,19 +39,19 @@ let selectedPreviewSummary = "";
 let selectedPreviewStartLine = 0;
 let selectedPreviewEndLine = 0;
 
-function loadDocRootPath() {
+function loadExpandedPaths() {
   try {
-    const stored = localStorage.getItem(DOC_ROOT_TAB_KEY);
-    if (stored && DOC_BROWSER_ROOTS.includes(stored)) return stored;
+    const stored = JSON.parse(localStorage.getItem(TREE_EXPANDED_KEY) || "[]");
+    if (!Array.isArray(stored)) return new Set();
+    return new Set(stored.filter((path) => typeof path === "string" && path));
   } catch {
-    // ignore
+    return new Set();
   }
-  return DOC_BROWSER_ROOTS[0];
 }
 
-function saveDocRootPath() {
+function saveExpandedPaths() {
   try {
-    localStorage.setItem(DOC_ROOT_TAB_KEY, docRootPath);
+    localStorage.setItem(TREE_EXPANDED_KEY, JSON.stringify([...expandedPaths]));
   } catch {
     // ignore
   }
@@ -137,38 +126,97 @@ function getDocSelectionStatusText() {
   return `已选中源文件第 ${selectedPreviewStartLine} 行到第 ${selectedPreviewEndLine} 行`;
 }
 
-function getDocEntryIcon(kind) {
-  return kind === "directory"
-    ? '<i data-lucide="folder" class="doc-entry-icon"></i>'
-    : '<i data-lucide="file" class="doc-entry-icon"></i>';
+/* ---- 左侧栏文件树：单列可展开树，根目录为 inputs / knowledge_base ---- */
+
+function buildTreeRows() {
+  const rows = [];
+  for (const root of DOC_BROWSER_ROOTS) {
+    rows.push({ path: root, kind: "directory", name: root, depth: 0 });
+    if (expandedPaths.has(root)) appendTreeChildren(rows, root, 1);
+  }
+  return rows;
 }
 
-function buildDocColumn(title, entries, activePath, options = {}) {
-  const { showBack = false, backDisabled = true } = options;
-  return `
-    <div class="doc-column">
-      <div class="doc-column-header">
-        ${showBack ? `<button class="doc-back-btn" id="doc-back-btn" ${backDisabled ? "disabled" : ""}>返回</button>` : ""}
-        <span class="doc-column-title">${escHtml(title)}</span>
-      </div>
-      <div class="doc-column-body">
-        ${
-          entries.length
-            ? entries
-                .map(
-                  (entry) => `
-          <button class="doc-entry ${entry.path === activePath ? "active" : ""}" data-doc-path="${escHtml(entry.path)}" data-doc-kind="${entry.kind}" type="button">
-            <span>${getDocEntryIcon(entry.kind)}</span>
-            <span class="doc-entry-label">${escHtml(entry.name)}</span>
-          </button>
-        `,
-                )
-                .join("")
-            : '<div class="doc-empty">暂无内容</div>'
-        }
-      </div>
-    </div>
-  `;
+function appendTreeChildren(rows, dirPath, depth) {
+  const entries = treeChildren.get(dirPath);
+  if (!entries) return;
+  for (const entry of entries) {
+    rows.push({ ...entry, depth });
+    if (entry.kind === "directory" && expandedPaths.has(entry.path)) {
+      appendTreeChildren(rows, entry.path, depth + 1);
+    }
+  }
+}
+
+async function ensureTreeChildren(path) {
+  if (treeChildren.has(path)) return;
+  try {
+    treeChildren.set(path, await fetchDocTree(path));
+  } catch {
+    treeChildren.set(path, []);
+  }
+}
+
+async function toggleTreeNode(path) {
+  if (expandedPaths.has(path)) {
+    expandedPaths.delete(path);
+    saveExpandedPaths();
+    renderFileTree();
+    return;
+  }
+  expandedPaths.add(path);
+  saveExpandedPaths();
+  await ensureTreeChildren(path);
+  renderFileTree();
+}
+
+function renderFileTree() {
+  const container = document.getElementById("file-tree-body");
+  if (!container) return;
+  // 重绘会重建 DOM 并丢失焦点，先记住树内被聚焦的行，渲染后恢复。
+  // 这样 :focus-within 才能区分“在树内操作”（彩色选中）与“点到其他区域”（灰色选中）。
+  const focusedRow =
+    document.activeElement && container.contains(document.activeElement)
+      ? document.activeElement.closest(".tree-row")
+      : null;
+  const focusedPath = focusedRow ? focusedRow.dataset.treePath : null;
+  const rows = buildTreeRows();
+  container.innerHTML = rows.length
+    ? rows
+        .map((row) => {
+          const isDir = row.kind === "directory";
+          const expanded = isDir && expandedPaths.has(row.path);
+          const active = row.kind === "file" && row.path === activeTabPath;
+          return `
+      <button class="tree-row ${active ? "active" : ""}" data-tree-path="${escHtml(row.path)}" data-tree-kind="${row.kind}" type="button" style="--tree-depth:${row.depth}" title="${escHtml(row.path)}">
+        <span class="tree-caret">${
+          isDir
+            ? `<i data-lucide="${expanded ? "chevron-down" : "chevron-right"}" class="tree-caret-icon"></i>`
+            : `<i data-lucide="file" class="tree-file-icon"></i>`
+        }</span>
+        <span class="tree-label">${escHtml(row.name)}</span>
+      </button>`;
+        })
+        .join("")
+    : '<div class="tree-empty">暂无内容</div>';
+  if (focusedPath) {
+    const restored = [...container.querySelectorAll(".tree-row")].find((el) => el.dataset.treePath === focusedPath);
+    restored?.focus({ preventScroll: true });
+  }
+  window.lucide?.createIcons();
+}
+
+function handleTreeClick(event) {
+  const row = event.target.closest(".tree-row");
+  if (!row) return;
+  const path = row.dataset.treePath;
+  const kind = row.dataset.treeKind;
+  if (!path) return;
+  if (kind === "directory") {
+    void toggleTreeNode(path);
+    return;
+  }
+  void openDocPreview(path);
 }
 
 export function getRightPanelHTML(opts = {}) {
@@ -176,32 +224,27 @@ export function getRightPanelHTML(opts = {}) {
   const width = railCollapsed ? 44 : getDocRailWidth();
   const showToggle = opts.showToggle !== false;
   const toggleHTML = showToggle
-    ? `<button id="doc-rail-toggle" class="icon-button" title="${railCollapsed ? "展开文件浏览器" : "收起文件浏览器"}" aria-label="${railCollapsed ? "展开文件浏览器" : "收起文件浏览器"}" aria-expanded="${!railCollapsed}"><i data-lucide="${railCollapsed ? "panel-right-open" : "panel-right-close"}"></i></button>`
+    ? `<button id="doc-rail-toggle" class="icon-button" title="${railCollapsed ? "展开文件预览" : "收起文件预览"}" aria-label="${railCollapsed ? "展开文件预览" : "收起文件预览"}" aria-expanded="${!railCollapsed}"><i data-lucide="${railCollapsed ? "panel-right-open" : "panel-right-close"}"></i></button>`
     : "";
   return `
     <div id="doc-rail-resize" title="拖拽调整右栏宽度"></div>
     <aside id="action-rail" class="${railCollapsed ? "collapsed" : ""}" style="width:${width}px">
       ${toggleHTML}
       <button id="doc-rail-edit-btn" class="icon-button" type="button" title="编辑" aria-label="编辑"><i data-lucide="pencil"></i></button>
-      <div id="doc-browser">
-        <div id="doc-root-tabs"></div>
-        <div id="doc-columns"></div>
-        <div id="doc-vertical-resizer"></div>
-        <section id="doc-preview-panel">
-          <div id="doc-tabs"></div>
-          <div id="doc-preview-toolbar">
-            <div id="doc-selection-status">
-              <div class="doc-selection-lines"></div>
-              <div class="doc-selection-summary"></div>
-            </div>
-            <div class="doc-toolbar-actions">
-              <button id="doc-refresh-btn" class="icon-button" type="button" title="刷新" aria-label="刷新"><i data-lucide="refresh-cw"></i></button>
-              <button id="doc-edit-btn" class="icon-button" type="button" title="编辑" aria-label="编辑"><i data-lucide="pencil"></i></button>
-            </div>
+      <section id="doc-preview-panel">
+        <div id="doc-tabs"></div>
+        <div id="doc-preview-toolbar">
+          <div id="doc-selection-status">
+            <div class="doc-selection-lines"></div>
+            <div class="doc-selection-summary"></div>
           </div>
-          <div id="doc-preview-content" class="${docPreviewSupported ? "" : "unsupported"}"></div>
-        </section>
-      </div>
+          <div class="doc-toolbar-actions">
+            <button id="doc-refresh-btn" class="icon-button" type="button" title="刷新" aria-label="刷新"><i data-lucide="refresh-cw"></i></button>
+            <button id="doc-edit-btn" class="icon-button" type="button" title="编辑" aria-label="编辑"><i data-lucide="pencil"></i></button>
+          </div>
+        </div>
+        <div id="doc-preview-content" class="${docPreviewSupported ? "" : "unsupported"}"></div>
+      </section>
     </aside>
   `;
 }
@@ -455,6 +498,8 @@ async function loadActiveTabContent() {
     recordRecentOpened(activeTabPath);
     updateDocPreviewPanel();
     updateDocSelectionStatus();
+    // 活动标签变化后同步左栏文件树的选中高亮
+    renderFileTree();
     return true;
   } catch (error) {
     if (error && error.notFound) {
@@ -530,6 +575,7 @@ async function closeTab(path, { saveEdit = true } = {}) {
     if (!ok) return;
   }
   openTabs.splice(index, 1);
+  renderFileTree();
   if (path === activeTabPath) {
     if (openTabs.length) {
       const next = openTabs[Math.min(index, openTabs.length - 1)];
@@ -606,133 +652,14 @@ function renderDocTabs() {
   }
 }
 
-function renderDocColumns() {
-  const container = document.getElementById("doc-columns");
-  if (!container) return;
-
-  const rootTabs = document.getElementById("doc-root-tabs");
-  if (rootTabs) {
-    rootTabs.innerHTML = DOC_BROWSER_ROOTS.map(
-      (root) => `
-      <button class="doc-root-tab ${root === docRootPath ? "active" : ""}" data-doc-root="${escHtml(root)}" type="button" role="tab" aria-selected="${root === docRootPath ? "true" : "false"}">
-        <i data-lucide="folder" class="doc-root-tab-icon"></i>
-        <span class="doc-root-tab-label">${escHtml(root)}</span>
-      </button>
-    `,
-    ).join("");
-    window.lucide?.createIcons();
-    rootTabs.querySelectorAll(".doc-root-tab").forEach((button) => {
-      button.addEventListener("click", async () => {
-        const root = button.dataset.docRoot;
-        if (!root || root === docRootPath) return;
-        docRootPath = root;
-        saveDocRootPath();
-        docSecondActivePath = null;
-        docThirdDirPath = null;
-        docThirdEntries = [];
-        docThirdActivePath = null;
-        docSecondEntries = await fetchDocTree(root);
-        renderDocColumns();
-      });
-    });
-  }
-
-  const scrollTops = Array.from(container.querySelectorAll(".doc-column-body")).map((el) => el.scrollTop);
-  container.innerHTML = [
-    buildDocColumn(docRootPath || "", docSecondEntries, docSecondActivePath),
-    '<div class="doc-column-resizer" data-column-resizer="0" title="拖拽调整文件树列宽"></div>',
-    buildDocColumn(docThirdDirPath ? docThirdDirPath.split("/").pop() || "" : "", docThirdEntries, docThirdActivePath, {
-      showBack: true,
-      backDisabled: !docThirdDirPath,
-    }),
-  ].join("");
-  window.lucide?.createIcons();
-  initDocColumnResize();
-  // Restore scroll after all DOM modifications (createIcons, column resize)
-  // so that layout shifts from icon replacement or width changes don't
-  // invalidate the scroll position.
-  container.querySelectorAll(".doc-column-body").forEach((el, index) => {
-    el.scrollTop = scrollTops[index] || 0;
-  });
-
-  container.querySelectorAll(".doc-entry").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const path = button.dataset.docPath;
-      const kind = button.dataset.docKind;
-      if (!path) return;
-
-      const docColumns = container.querySelectorAll(".doc-column");
-      const inFirstColumn = button.closest(".doc-column") === docColumns[0];
-      if (inFirstColumn) {
-        docSecondActivePath = path;
-        if (kind === "directory") {
-          docThirdDirPath = path;
-          docThirdActivePath = null;
-          docThirdEntries = await fetchDocTree(path);
-        } else {
-          docThirdActivePath = path;
-          docThirdDirPath = null;
-          docThirdEntries = [];
-          await openDocPreview(path);
-        }
-        renderDocColumns();
-        return;
-      }
-
-      if (kind === "directory") {
-        docThirdDirPath = path;
-        docThirdActivePath = null;
-        docThirdEntries = await fetchDocTree(path);
-        renderDocColumns();
-        return;
-      }
-
-      docThirdActivePath = path;
-      await openDocPreview(path);
-      renderDocColumns();
-    });
-  });
-
-  document.getElementById("doc-back-btn")?.addEventListener("click", async () => {
-    if (!docThirdDirPath) return;
-    const parts = docThirdDirPath.split("/");
-    parts.pop();
-    const parentPath = parts.join("/");
-    if (!parentPath || parentPath === docRootPath) {
-      // 回到第一层：清空第二列
-      docThirdDirPath = null;
-      docThirdEntries = [];
-      docThirdActivePath = null;
-      docSecondActivePath = null;
-    } else {
-      docThirdDirPath = parentPath;
-      docThirdActivePath = null;
-      docThirdEntries = await fetchDocTree(parentPath);
-    }
-    renderDocColumns();
-  });
-}
-
 export async function refreshDocBrowser() {
   try {
     clearPreviewSelection();
     saveActiveTabScrollPosition();
-    if (docRootPath) {
-      docSecondEntries = await fetchDocTree(docRootPath);
-      if (docSecondActivePath && !docSecondEntries.some((entry) => entry.path === docSecondActivePath)) {
-        docSecondActivePath = null;
-        docThirdDirPath = null;
-        docThirdEntries = [];
-      } else if (docThirdDirPath) {
-        try {
-          docThirdEntries = await fetchDocTree(docThirdDirPath);
-        } catch {
-          docThirdDirPath = null;
-          docThirdEntries = [];
-        }
-      }
-    }
 
+    // 清空缓存后重新拉取所有已展开目录的子项
+    treeChildren.clear();
+    await Promise.all([...expandedPaths].map((path) => ensureTreeChildren(path)));
     if (activeTabPath) {
       const ok = await loadActiveTabContent();
       if (!ok) {
@@ -744,10 +671,10 @@ export async function refreshDocBrowser() {
       updateDocSelectionStatus();
     }
 
-    renderDocColumns();
+    renderFileTree();
     renderDocTabs();
   } catch (error) {
-    reportError(error && error.message ? error.message : "刷新文档结构失败");
+    reportError(error && error.message ? error.message : "刷新文件树失败");
   }
 }
 
@@ -765,7 +692,7 @@ function initDocRailToggle() {
     // Update icon
     const newIcon = isCollapsed ? "panel-right-open" : "panel-right-close";
     btn.innerHTML = `<i data-lucide="${newIcon}"></i>`;
-    btn.title = isCollapsed ? "展开文件浏览器" : "收起文件浏览器";
+    btn.title = isCollapsed ? "展开文件预览" : "收起文件预览";
     btn.setAttribute("aria-label", btn.title);
     btn.setAttribute("aria-expanded", String(!isCollapsed));
 
@@ -779,8 +706,9 @@ function initDocRailToggle() {
   });
 }
 
+let fileTreeEventsBound = false;
+
 export function initRightPanel() {
-  initDocVerticalResize();
   initDocRailToggle();
   document.getElementById("usage-btn")?.addEventListener("click", openUsageModal);
   document.querySelectorAll(".usage-tab").forEach((el) => {
@@ -807,16 +735,20 @@ export function initRightPanel() {
     clearPreviewSelection();
   });
   initDocResizeHandle();
-  renderDocColumns();
+
+  // 左侧栏文件树：事件委托只绑定一次，渲染可重复执行
+  if (!fileTreeEventsBound) {
+    fileTreeEventsBound = true;
+    initSidebarTreeResize();
+    document.getElementById("file-tree-body")?.addEventListener("click", handleTreeClick);
+    document.getElementById("file-tree-refresh-btn")?.addEventListener("click", refreshDocBrowser);
+  }
+  renderFileTree();
   renderDocTabs();
-  // 刷新/重建后重新加载当前根目录的文件树（初始状态 docSecondEntries 为空）
+  // 刷新/重建后确保已展开目录的子项已加载
   void (async () => {
-    try {
-      docSecondEntries = await fetchDocTree(docRootPath);
-    } catch {
-      docSecondEntries = [];
-    }
-    renderDocColumns();
+    await Promise.all([...expandedPaths].map((path) => ensureTreeChildren(path)));
+    renderFileTree();
   })();
   if (activeTabPath) {
     // 页面刷新后恢复活动标签的内容

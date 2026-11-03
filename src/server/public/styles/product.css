@@ -72,8 +72,7 @@ html[data-theme="daylight"] {
   --hover-bg: rgba(17, 24, 39, 0.055);
 }
 
-html[data-theme="daylight"] .session-item.active,
-html[data-theme="daylight"] .doc-entry.active {
+html[data-theme="daylight"] .session-item.active {
   background: #e1e4e8;
 }
 
@@ -347,6 +346,7 @@ input:focus-visible {
 #sidebar.collapsed .sidebar-brand,
 #sidebar.collapsed #new-session-btn,
 #sidebar.collapsed #session-list,
+#sidebar.collapsed #file-tree-panel,
 #sidebar.collapsed #status-text {
   display: none;
 }
@@ -362,6 +362,26 @@ input:focus-visible {
 #sidebar.collapsed #status-bar {
   justify-content: center;
   padding: var(--space-3) 0;
+}
+
+/* 左侧文件树面板：标题行即拖拽手柄 */
+#file-tree-panel {
+  background: var(--bg2);
+}
+#file-tree-header {
+  border-bottom-color: var(--border);
+}
+#file-tree-header:hover,
+#file-tree-header.dragging {
+  border-top-color: var(--accent);
+}
+#file-tree-header.dragging {
+  cursor: grabbing;
+}
+body.sidebar-tree-resizing,
+body.sidebar-tree-resizing * {
+  cursor: grabbing;
+  user-select: none;
 }
 
 /* Menus */
@@ -1083,95 +1103,32 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
   visibility: hidden;
   pointer-events: none;
 }
-/* File browsing and preview share a single continuous rail surface. */
-#doc-browser {
-  padding: 0;
-  gap: 0;
+/* 拖拽分隔条时关掉宽度过渡：每个 mousemove 都重启一次 0.2s 动画会让
+   右栏永远落后光标半拍（左侧栏用 body.sidebar-tree-resizing 做了同样的事）。 */
+body.doc-rail-resizing #action-rail {
+  transition: none;
 }
-#doc-columns,
+body.doc-rail-resizing,
+body.doc-rail-resizing * {
+  cursor: col-resize;
+  user-select: none;
+}
+/* PDF 预览是独立文档（iframe）：光标划进去后父页面的 mousemove 会中断，
+   拖拽会突然“卡住”，因此拖动期间一律让 iframe 让出指针事件。 */
+body.doc-rail-resizing #doc-preview-content iframe {
+  pointer-events: none;
+}
+
+/* The rail hosts only the preview panel now: file browsing moved to the sidebar tree. */
 #doc-preview-panel {
   border: 0;
   border-radius: 0;
   background: transparent;
-}
-#doc-columns {
-  grid-template-columns:
-    minmax(80px, var(--doc-column-1-width, 1fr))
-    8px
-    minmax(80px, 1fr);
-}
-.doc-column {
-  border-right: 0;
-}
-.doc-column-resizer {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-  cursor: col-resize;
-  user-select: none;
-  background: linear-gradient(to right, transparent 3px, var(--border) 3px, var(--border) 5px, transparent 5px);
-}
-.doc-column-resizer::after {
-  width: 4px;
-  height: 40px;
-  border: 1px solid var(--bg);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--toolbar-menu-selected-bg) 50%, var(--border-strong));
-  content: "";
-}
-.doc-column-resizer:hover::after,
-.doc-column-resizer.dragging::after {
-  background: var(--accent);
-}
-#doc-vertical-resizer {
-  height: 8px;
-  flex-basis: 8px;
-  background: linear-gradient(to bottom, var(--border-strong) 0 2px, var(--bg4) 2px 100%);
-}
-#doc-vertical-resizer::after {
-  width: 56px;
-  height: 4px;
-  transform: translateY(-3px);
-  border: 1px solid var(--border-strong);
-  background: color-mix(in srgb, var(--toolbar-menu-selected-bg) 50%, var(--border-strong));
-  opacity: 1;
-}
-#doc-vertical-resizer:hover::after {
-  background: var(--accent);
+  flex: 1 1 auto;
 }
 #doc-preview-toolbar {
   border-bottom-color: var(--border);
   background: var(--bg4);
-}
-/* 根目录切换 tabs（覆盖 base 浅色样式，跟随主题） */
-#doc-root-tabs {
-  display: flex;
-  flex-shrink: 0;
-  gap: 4px;
-  padding: 6px 8px;
-  border: 0;
-  border-bottom: 1px solid var(--border);
-  border-radius: 0;
-  background: var(--bg4);
-}
-.doc-root-tab {
-  border: 0;
-  border-radius: var(--radius-sm);
-  color: var(--text2);
-  transition:
-    background 0.12s ease,
-    color 0.12s ease;
-}
-.doc-root-tab:hover {
-  background: var(--hover-bg);
-  color: var(--text);
-}
-.doc-root-tab.active {
-  background: var(--toolbar-menu-selected-bg);
-  color: var(--text1);
-  box-shadow: none;
 }
 
 /* 文件标签条（覆盖 base 浅色样式，跟随主题） */
@@ -1188,10 +1145,6 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
 .doc-tab-close-icon {
   width: 12px;
   height: 12px;
-}
-.doc-root-tab-icon {
-  width: 14px;
-  height: 14px;
 }
 .doc-tab {
   border-radius: var(--radius-sm);
@@ -1224,30 +1177,6 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
   color: var(--danger);
 }
 
-.doc-column-header {
-  font-weight: var(--weight-semibold);
-}
-.doc-entry {
-  border: 0;
-  border-bottom: 1px solid var(--border);
-  border-radius: 0;
-  margin-bottom: 0;
-  transition:
-    background 0.12s ease,
-    color 0.12s ease;
-}
-.doc-entry:hover {
-  background: var(--hover-bg);
-}
-.doc-entry.active {
-  background: var(--toolbar-menu-selected-bg);
-  color: var(--text1);
-  box-shadow: none;
-}
-.doc-entry .lucide {
-  width: 14px;
-  height: 14px;
-}
 #doc-preview-toolbar {
   height: 34px;
   min-height: 34px;
@@ -1280,7 +1209,7 @@ html[data-theme="monochrome"] #doc-preview-content.markdown-body blockquote {
   min-width: var(--rail-collapsed-width);
   max-width: var(--rail-collapsed-width);
 }
-#action-rail.collapsed #doc-browser {
+#action-rail.collapsed #doc-preview-panel {
   visibility: hidden;
   pointer-events: none;
 }
