@@ -7,7 +7,7 @@ import type { getLogger } from "../logger/index.js";
 import { loadSession } from "../session/index.js";
 import type { Client } from "./protocol.js";
 import { sendToClient } from "./send.js";
-import { buildAugmentedUserContent } from "./services/chat-content.js";
+import { buildAugmentedUserContent, type SelectionRange } from "./services/chat-content.js";
 import { normalizeImageDataUrl } from "../media/image.js";
 import { appendUsageRecord } from "./services/usage-store.js";
 
@@ -75,7 +75,8 @@ export async function processChatMessage(options: {
   model: string;
   thinkingEffort?: string;
   previewPath?: string;
-  selectedPreviewText?: string;
+  selectionRange?: SelectionRange;
+  selectedText?: string;
   pendingPermissions: Map<string, { resolve: (allowed: boolean) => void; sessionId: string }>;
   config: Config;
   logger: ReturnType<typeof getLogger>;
@@ -89,7 +90,8 @@ export async function processChatMessage(options: {
     model,
     thinkingEffort,
     previewPath,
-    selectedPreviewText,
+    selectionRange,
+    selectedText,
     pendingPermissions,
     config,
     logger,
@@ -126,7 +128,8 @@ export async function processChatMessage(options: {
       content,
       normalizedImages,
       previewPath,
-      selectedPreviewText,
+      selectionRange,
+      selectedText,
     );
     let fullResponse = "";
     let usage: UsageRecord | undefined;

@@ -23,7 +23,8 @@ export type ClientMessage =
       model: string;
       thinkingEffort?: string;
       previewPath?: string;
-      selectedPreviewText?: string;
+      selectionRange?: { startLine: number; endLine: number };
+      selectedText?: string;
     }
   | { type: "toolPermissionResponse"; requestId: string; allowed: boolean }
   | { type: "setWritePermission"; enabled: boolean }

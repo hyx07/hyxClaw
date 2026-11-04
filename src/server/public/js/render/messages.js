@@ -6,18 +6,38 @@ const USER_MESSAGE_COLLAPSE_LINE_THRESHOLD = 5;
 const USER_CONTEXT_PATTERN = /^<系统提示>\n([\s\S]*?)\n<\/系统提示>\n用户消息：([\s\S]*)$/;
 const PREVIEW_PATH_PATTERN = /^当前用户正在浏览文件：(.*)$/m;
 const SELECTION_BLOCK_START = "选中内容：\n```text\n";
-const SELECTION_LINE_HINT_PATTERN = /^已选中源文件第\s*\d+\s*行到第\s*\d+\s*行：\n?/;
+const SELECTION_RANGE_PATTERN = /^已选中：第\s*(\d+)\s*行(?:到第\s*(\d+)\s*行)?$/m;
+
+function normalizeSelectionRange(range) {
+  const startLine = Number(range?.startLine);
+  const endLine = Number(range?.endLine);
+  if (!Number.isInteger(startLine) || !Number.isInteger(endLine) || startLine < 1 || endLine < startLine) {
+    return null;
+  }
+  return { startLine, endLine };
+}
+
+/** 行号只用于展示（引用面板的「第 N–M 行」），从来不进围栏内的原文。 */
+function formatSelectionRangeText(range) {
+  if (!range) return "";
+  return range.startLine === range.endLine
+    ? `第 ${range.startLine} 行`
+    : `第 ${range.startLine}–${range.endLine} 行`;
+}
 
 /** 拆分持久化用户消息里的 <系统提示> 前缀，返回真正展示的文本与引用信息。 */
 export function parseUserMessageContent(text) {
   const normalized = String(text || "").replace(/\r\n/g, "\n");
   const match = USER_CONTEXT_PATTERN.exec(normalized);
-  if (!match) return { text: normalized, previewPath: "", selectedText: "" };
+  if (!match) return { text: normalized, previewPath: "", selectionRange: null, selectedText: "" };
 
   const block = match[1];
-  const pathMatch = PREVIEW_PATH_PATTERN.exec(block);
-  let selectedText = "";
   const startIndex = block.indexOf(SELECTION_BLOCK_START);
+  // 元信息只在前缀里找：选中原文本身可能含「当前用户正在浏览文件：」或「已选中：」，不能误当元信息
+  const meta = startIndex === -1 ? block : block.slice(0, startIndex);
+  const pathMatch = PREVIEW_PATH_PATTERN.exec(meta);
+  const rangeMatch = SELECTION_RANGE_PATTERN.exec(meta);
+  let selectedText = "";
   if (startIndex !== -1) {
     const contentStart = startIndex + SELECTION_BLOCK_START.length;
     // 选中内容里可能本身带 ``` 代码块，从末尾找外层的结束围栏
@@ -28,7 +48,14 @@ export function parseUserMessageContent(text) {
   return {
     text: match[2],
     previewPath: pathMatch ? pathMatch[1].trim() : "",
-    selectedText: selectedText.replace(SELECTION_LINE_HINT_PATTERN, ""),
+    selectionRange: rangeMatch
+      ? normalizeSelectionRange({
+          // 单行选区只写了一个行号：起止同行
+          startLine: Number(rangeMatch[1]),
+          endLine: rangeMatch[2] === undefined ? Number(rangeMatch[1]) : Number(rangeMatch[2]),
+        })
+      : null,
+    selectedText,
   };
 }
 
@@ -302,12 +329,10 @@ function getUserReference(content) {
 function normalizeUserReference(reference) {
   if (!reference || typeof reference !== "object") return null;
   const previewPath = String(reference.previewPath || "").trim();
-  const selectedText = String(reference.selectedText ?? reference.selectedPreviewText ?? "").replace(
-    SELECTION_LINE_HINT_PATTERN,
-    "",
-  );
+  const selectedText = String(reference.selectedText || "");
+  const selectionRange = normalizeSelectionRange(reference.selectionRange);
   if (!previewPath && !selectedText.trim()) return null;
-  return { previewPath, selectedText };
+  return { previewPath, selectionRange, selectedText };
 }
 
 function appendUserReference(bubble, reference) {
@@ -336,6 +361,13 @@ function appendUserReference(bubble, reference) {
     path.className = "message-reference-path";
     path.textContent = reference.previewPath;
     row.append(label, path);
+    const rangeText = formatSelectionRangeText(reference.selectionRange);
+    if (rangeText) {
+      const range = document.createElement("span");
+      range.className = "message-reference-range";
+      range.textContent = `（${rangeText}）`;
+      row.appendChild(range);
+    }
     panel.appendChild(row);
   }
 

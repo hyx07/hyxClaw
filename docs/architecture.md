@@ -176,7 +176,7 @@ Client → Server:
 |------|--------|
 | `ping` | — |
 | `joinSession` | `sessionId` |
-| `chatMessage` | `sessionId`, `content`, `images?`, `provider`, `model`, `thinkingEffort?`, `previewPath?`, `selectedPreviewText?` |
+| `chatMessage` | `sessionId`, `content`, `images?`, `provider`, `model`, `thinkingEffort?`, `previewPath?`, `selectionRange?`(`{startLine,endLine}`), `selectedText?` |
 | `toolPermissionResponse` | `requestId`, `allowed` |
 | `setWritePermission` | `enabled` |
 

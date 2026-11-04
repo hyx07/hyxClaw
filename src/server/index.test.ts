@@ -371,15 +371,15 @@ describe("server", () => {
       "请帮我分析这段内容",
       undefined,
       "knowledge_base/example/a.md",
-      "已选中源文件第 3 行到第 4 行：\n第一行\n第二行",
+      { startLine: 3, endLine: 4 },
+      "第一行\n第二行",
     );
     const expected = [
       "<系统提示>",
       "当前用户正在浏览文件：knowledge_base/example/a.md",
-      "",
+      "已选中：第 3 行到第 4 行",
       "选中内容：",
       "```text",
-      "已选中源文件第 3 行到第 4 行：",
       "第一行",
       "第二行",
       "```",
@@ -392,6 +392,45 @@ describe("server", () => {
     expect(result.persistedUserContent).toBe(expected);
     expect(result.llmUserContent).toBe(expected);
     expect(result.latestUserTextForLog).toBe(expected);
+  });
+
+  it("renders a single-line selection with one line number", () => {
+    const result = buildAugmentedUserContent(
+      "看看这行",
+      undefined,
+      "knowledge_base/example/a.md",
+      { startLine: 12, endLine: 12 },
+      "唯一一行",
+    );
+
+    expect(result.llmUserContent).toContain("已选中：第 12 行\n选中内容：");
+    expect(result.llmUserContent).not.toContain("第 12 行到第 12 行");
+  });
+
+  it("keeps the fence free of any line hint when the range is unknown", () => {
+    const result = buildAugmentedUserContent(
+      "请分析",
+      undefined,
+      "knowledge_base/example/a.md",
+      undefined,
+      "第一行\n第二行",
+    );
+
+    expect(result.llmUserContent).toBe(
+      [
+        "<系统提示>",
+        "当前用户正在浏览文件：knowledge_base/example/a.md",
+        "选中内容：",
+        "```text",
+        "第一行",
+        "第二行",
+        "```",
+        "",
+        "用户正在浏览的文件不一定与当前对话直接相关，请结合上下文判断是否需要参考。",
+        "</系统提示>",
+        "用户消息：请分析",
+      ].join("\n"),
+    );
   });
 
   it("omits line-number hint when there is no selected preview text", () => {

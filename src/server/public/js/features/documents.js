@@ -383,18 +383,22 @@ function updateDocSelectionStatus() {
   }
 }
 
-export function getSelectedPreviewPayload() {
-  if (!selectedPreviewText) return undefined;
-  const header = getDocSelectionStatusText();
-  return `${header}：\n${selectedPreviewText}`;
+// 选中文本的行号范围（1-based）；文本缺失或行号算不出来时返回 undefined，
+// 由服务端决定要不要写「已选中：」这一行。
+function getSelectionRangePayload() {
+  if (!selectedPreviewText || !selectedPreviewStartLine || !selectedPreviewEndLine) return undefined;
+  return { startLine: selectedPreviewStartLine, endLine: selectedPreviewEndLine };
 }
 
 export function getPreviewContextPayload() {
   // 关闭附带时返回空对象，chat.js 展开后不会携带任何文件上下文字段
   if (!attachDocContext) return {};
+  const selectedText = selectedPreviewText || undefined;
   return {
     previewPath: activeTabPath || undefined,
-    selectedPreviewText: getSelectedPreviewPayload(),
+    // 只传原始数据：原文与行号分开，如何排版由服务端决定
+    selectionRange: selectedText ? getSelectionRangePayload() : undefined,
+    selectedText,
   };
 }
 

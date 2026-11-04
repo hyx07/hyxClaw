@@ -707,6 +707,10 @@ html[data-theme="monochrome"] .user-message-toggle:hover {
   color: var(--text2);
   word-break: break-all;
 }
+.message-reference-range {
+  flex-shrink: 0;
+  color: var(--muted);
+}
 .message-reference-text {
   min-width: 0;
   max-height: 220px;

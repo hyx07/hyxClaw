@@ -13,6 +13,7 @@ export type { Client, ClientMessage, ServerMessage } from "./protocol.js";
 export type { CommandDefinition } from "./services/commands.js";
 export { parseCommandsMarkdown } from "./services/commands.js";
 export { buildAugmentedUserContent, buildPreviewContextSuffix } from "./services/chat-content.js";
+export type { SelectionRange } from "./services/chat-content.js";
 
 export type ServerState = {
   port: number;
