@@ -36,9 +36,12 @@ function formatOutput(stdout: string, stderr: string): string {
   return [stdout.trim(), stderr.trim()].filter(Boolean).join("\n");
 }
 
+// core.quotepath=false：让 commit/status 输出中的中文文件名正常显示，而不是八进制转义
+const GIT_DISPLAY_ARGS = ["-c", "core.quotepath=false"];
+
 async function runGit(dataDir: string, args: string[], allowedExitCodes = [0]): Promise<GitCommandResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn("git", args, {
+    const child = spawn("git", [...GIT_DISPLAY_ARGS, ...args], {
       cwd: dataDir,
       shell: false,
       windowsHide: true,
