@@ -178,6 +178,7 @@ export async function compactSession(
       maxTokens: 4096,
       thinkingEffort: thinking.level,
       thinkingParams: thinking.params,
+      sessionId,
     },
   );
 

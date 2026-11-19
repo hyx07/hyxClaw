@@ -49,6 +49,11 @@ const mockConfig: Config = {
       baseUrl: "https://api.commandcode.ai/provider/v1",
       models: [{ id: "z-ai/glm-5.3-flash", label: "glm-5.3-flash" }],
     },
+    opencode: {
+      apiKey: "",
+      baseUrl: "https://opencode.ai/inference/openai/v1",
+      models: [{ id: "deepseek-v4.1-flash", label: "oc-v4.1-flash" }],
+    },
   },
   defaultProvider: "zai",
   defaultModel: "GLM-4.7",

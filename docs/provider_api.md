@@ -32,6 +32,7 @@
 - `dashscope`
 - `deepseek`
 - `commandcode`
+- `opencode`（Console PAYG / Go，见第 7 节）
 
 相关实现文件：
 
@@ -39,6 +40,7 @@
 - `src/llm/providers/dashscope.ts`
 - `src/llm/providers/deepseek.ts`
 - `src/llm/providers/commandcode.ts`
+- `src/llm/providers/opencode.ts`
 - 公共类型：`src/llm/types.ts`
 
 ---
@@ -621,9 +623,105 @@ DeepSeek 为 OpenAI-compatible 风格接口，工具调用阶段可按非流式 
 
 ---
 
-## 7. 各 provider 的关键差异
+## 7. OpenCode
 
-### 7.1 Thinking 写法不同
+实现文件：
+
+- `src/llm/providers/opencode.ts`
+
+官方文档：`https://opencode.ai/docs/console/harnesses#base-urls`（接入）、`https://opencode.ai/docs/console/go`（Go 计划）
+
+两个端点，仅 baseUrl 前缀不同，请求/响应结构一致：
+
+| 计费方式 | baseUrl | 说明 |
+| --- | --- | --- |
+| PAYG（按量） | `https://opencode.ai/inference/openai/v1` | 按 workspace 余额计费，个人 API key（`oc_sk_...`）即用 |
+| Go（订阅） | `https://opencode.ai/inference/go/openai/v1` | 需 Go 订阅；未订阅时任何请求都返回 403 `permission_error` |
+
+请求路径：`POST {baseUrl}/chat/completions`；`GET {baseUrl}/models` 拉取模型清单（PAYG 实测约 36 个，Go 约 32 个）。
+
+### 7.1 两条硬性要求（Go 校验，PAYG 同样发送）
+
+- **User-Agent 必须是自己的 client 名**：实现里固定发 `hyxClaw/{version}`（版本号从 package.json 实时读取，`createRequire`）。不能是通用 HTTP 库名（Node fetch 默认 UA 正是这类）
+- **每个会话发送稳定的 `x-opencode-session` 头**：Go 缺头直接 400 `MissingSessionID`；PAYG 可选但推荐（服务端按会话路由 + 复用 prompt cache）。
+  实现方式：`CompletionOptions.sessionId`（`src/llm/types.ts`）由 chat 层传入，调用点全覆盖：`runChat` / `runChatStream`（`src/chat/index.ts`）与压缩（`src/chat/compaction.ts`）；缺省时用进程内稳定 UUID 兜底，保证每个请求都带头。头格式不校验，任意稳定字符串均可
+
+### 7.2 thinking 控制（2026-11 实测，PAYG 端点）
+
+网关会翻译到各模型原生 API，不同模型的可用参数不同：
+
+| 模型 | 开启/档位 | 关闭 | 无效写法 |
+| --- | --- | --- | --- |
+| `deepseek-v4.1-flash` | `reasoning_effort: low/high/max`（实测 113/539/1022 tokens，17×23 题） | `reasoning_effort: "off"`（实测 0） | `enable_thinking: false` 无效 |
+| `glm-5.3-flash` | `reasoning_effort: low/high/max` + zai 式组合均接受 | `thinking: { type: "disabled" }`（实测 0）；模板未配 thinkingOff，与 zai 侧同模型口径一致 | `reasoning_effort: "off"` 返回 400；`enable_thinking` 无效 |
+| `glm-5.3` | `reasoning_effort: low/high/max`（实测 0/81/399） | **强制思考，无法关闭**：`thinking.disabled` 与 `effort:"off"` 均 400 | 不配 `thinkingOff`（会话选 none 时不传参数 = 默认自适应思考） |
+
+注意：
+
+- 默认（无参数）为自适应思考，且深度可能比显式低档更深（glm-5.3-flash 无参数 989 tokens vs effort=high 141 tokens）
+- `low` 档在琐题/部分模型上 reasoning_tokens 为 0，接近关闭效果
+- 档位写法沿用项目模型级 `thinking: [...]` / `thinkingOff` 机制，模板种子已按上表配置
+
+### 7.3 历史消息回传与工具调用
+
+- assistant 消息携带 `reasoning_content` 回传实测接受（glm-5.3 / glm-5.3-flash / deepseek-v4.1-flash 均验证）
+- 响应思考字段按 `reasoning_content` / `reasoning` / `reasoning_text` 三字段兼容（与 commandcode 同策略）
+- 工具调用在 `choice.message.tool_calls`；流式 `delta.tool_calls`，标准 OpenAI SSE，`[DONE]` 收尾，流式终帧自带 usage（请求显式带 `stream_options.include_usage`）
+
+### 7.4 Token usage 返回格式
+
+实测结构（流式终帧同构，含 opencode 附加层）：
+
+```json
+{
+  "prompt_tokens": 28,
+  "completion_tokens": 49,
+  "total_tokens": 77,
+  "prompt_tokens_details": { "cached_tokens": 9 },
+  "completion_tokens_details": { "reasoning_tokens": 46 },
+  "cost": 0.00024014,
+  "opencode": {
+    "billing_source": "balance",
+    "tokens": { "input": 19, "output": 49, "reasoning": 46, "cache_read": 9, "cache_write_5m": 0, "cache_write_1h": 0 }
+  }
+}
+```
+
+标准化映射规则：
+
+- `inputTokens = prompt_tokens`（含缓存命中；`opencode.tokens.input` 是拆分后的未命中部分，不用作 inputTokens）
+- `thinkingTokens = completion_tokens_details.reasoning_tokens`
+- `outputTokens = completion_tokens - thinkingTokens`（`completion_tokens` 含 thinking）
+- `billingOutputTokens = completion_tokens`
+- `cachedRead = prompt_tokens_details.cached_tokens`（缺省时回落 `cache_read_input_tokens` / `opencode.tokens.cache_read`）
+- `cachedWrite = opencode.tokens.cache_write_5m + cache_write_1h`
+- `usage.cost` 是服务端实算费用（美元），可作对账参考；项目内费用仍按 config 的 `cost` 计算
+
+### 7.5 价格与费用配置（人民币近似价）
+
+opencode 官方价目为美元，模板种子按 **1 USD ≈ 7.2 CNY** 折算成人民币近似价（与其他 provider 口径一致）。官方美元价（参考，已用 `usage.cost` 逐请求验证）：
+
+- `glm-5.3-flash`: input $0.15 / output $0.50 / cachedRead $0.03
+- `glm-5.3`: input $1.40 / output $4.40 / cachedRead $0.26
+- `deepseek-v4.1-flash`: 非高峰 input $0.15 / output $0.60 / cachedRead $0.003；高峰（UTC 周一至周五 01:00-04:00 与 06:00-10:00，即北京时间工作日 09:00-12:00 与 14:00-18:00）翻倍
+
+模板人民币价（≈7.2 折算取整）：
+
+- `glm-5.3-flash`: input 1.1 / output 3.6 / cachedRead 0.22
+- `glm-5.3`: input 10.1 / output 31.7 / cachedRead 1.87
+- `deepseek-v4.1-flash`: input 1.1 / output 4.3 / cachedRead 0.02；高峰 `schedules`：input 2.2 / output 8.6 / cachedRead 0.04
+
+汇率明显变化时直接改 config.json 里的数字即可。
+
+### 7.6 探测脚本
+
+实测数据来自兄弟项目 hyxFin 仓库的 `scripts/probe-opencode.mjs`（同一 Console API，两项目行为一致，key 读 `.env` 的 `OC_API`）。
+
+---
+
+## 8. 各 provider 的关键差异
+
+### 8.1 Thinking 写法不同
 
 - `zai`
   - `thinking: { type: "enabled" | "disabled" }`
@@ -634,8 +732,10 @@ DeepSeek 为 OpenAI-compatible 风格接口，工具调用阶段可按非流式 
   - 配合 `reasoning_effort`
 - `commandcode`
   - `reasoning_effort`（合法值 `off|low|medium|high|xhigh|max`，`off` 仅对支持关闭思考的模型生效）
+- `opencode`
+  - 按模型配置：`reasoning_effort`（deepseek 系含 `off`；glm 系不含）与 zai 式 `thinking.type` 组合，见 7.2 实测表
 
-### 7.2 Thinking Budget 支持不同
+### 8.2 Thinking Budget 支持不同
 
 - `zai`
   - 当前不支持数值型 budget
@@ -645,8 +745,10 @@ DeepSeek 为 OpenAI-compatible 风格接口，工具调用阶段可按非流式 
   - 五档可映射到不同数值
 - `commandcode`
   - 无数值 budget，档位由 `reasoning_effort` 表达（见 6.2 的实测说明）
+- `opencode`
+  - 无数值 budget，档位由 `reasoning_effort` 表达（按模型配置，见 7.2）
 
-### 7.3 outputTokens 映射方式不同
+### 8.3 outputTokens 映射方式不同
 
 - `zai`
   - `outputTokens = completion_tokens - reasoning_tokens`
@@ -656,15 +758,17 @@ DeepSeek 为 OpenAI-compatible 风格接口，工具调用阶段可按非流式 
   - `outputTokens = completion_tokens - reasoning_tokens`
 - `commandcode`
   - `outputTokens = completion_tokens - reasoning_tokens`
+- `opencode`
+  - `outputTokens = completion_tokens - reasoning_tokens`
 
-### 7.4 DeepSeek 补充
+### 8.4 DeepSeek 补充
 
 - `deepseek` 的 thinking budget 不建议依赖数值型 `thinking_budget`
 - 当前更适合映射到 `reasoning_effort`
 
 ---
 
-## 8. 维护建议
+## 9. 维护建议
 
 后续维护时，新增或修改 provider，建议逐项确认以下内容：
 

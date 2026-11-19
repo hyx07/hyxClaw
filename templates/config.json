@@ -226,6 +226,51 @@
           "thinkingOff": { "reasoning_effort": "off" }
         }
       ]
+    },
+    "opencode": {
+      "apiKey": "",
+      "baseUrl": "https://opencode.ai/inference/openai/v1",
+      "models": [
+        {
+          "id": "deepseek-v4.1-flash",
+          "label": "oc-v4.1-flash",
+          "cost": {
+            "input": 1.0,
+            "output": 4.0,
+            "cachedRead": 0.02,
+            "schedules": [
+              { "name": "peak-am", "weekdays": [1, 2, 3, 4, 5], "start": "09:00", "end": "12:00", "input": 2.0, "output": 8.0, "cachedRead": 0.04 },
+              { "name": "peak-pm", "weekdays": [1, 2, 3, 4, 5], "start": "14:00", "end": "18:00", "input": 2.0, "output": 8.0, "cachedRead": 0.04 }
+            ]
+          },
+          "thinking": [
+            { "id": "low", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "low" } },
+            { "id": "high", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "high" } },
+            { "id": "max", "params": { "thinking": { "type": "enabled" }, "reasoning_effort": "max" } }
+          ],
+          "thinkingOff": { "reasoning_effort": "off" }
+        },
+        {
+          "id": "glm-5.3-flash",
+          "label": "oc-glm-5.3-flash",
+          "cost": { "input": 1.1, "output": 3.6, "cachedRead": 0.22 },
+          "thinking": [
+            { "id": "low", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "low" } },
+            { "id": "high", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "high" } },
+            { "id": "max", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "max" } }
+          ]
+        },
+        {
+          "id": "glm-5.3",
+          "label": "oc-glm-5.3",
+          "cost": { "input": 10.1, "output": 31.7, "cachedRead": 1.87 },
+          "thinking": [
+            { "id": "low", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "low" } },
+            { "id": "high", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "high" } },
+            { "id": "max", "params": { "thinking": { "type": "enabled", "clear_thinking": false }, "reasoning_effort": "max" } }
+          ]
+        }
+      ]
     }
   },
   "defaultProvider": "deepseek",

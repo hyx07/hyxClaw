@@ -10,8 +10,9 @@ import { ZaiProvider } from "./providers/zai.js";
 import { DashScopeProvider } from "./providers/dashscope.js";
 import { DeepSeekProvider } from "./providers/deepseek.js";
 import { CommandCodeProvider } from "./providers/commandcode.js";
+import { OpenCodeProvider } from "./providers/opencode.js";
 
-export type LLMProviderName = "zai" | "dashscope" | "deepseek" | "commandcode";
+export type LLMProviderName = "zai" | "dashscope" | "deepseek" | "commandcode" | "opencode";
 
 export function createProvider(provider: LLMProviderName): LLMProvider {
   switch (provider) {
@@ -23,6 +24,8 @@ export function createProvider(provider: LLMProviderName): LLMProvider {
       return new DeepSeekProvider();
     case "commandcode":
       return new CommandCodeProvider();
+    case "opencode":
+      return new OpenCodeProvider();
     default:
       throw new Error(`Unknown LLM provider: ${provider as string}`);
   }

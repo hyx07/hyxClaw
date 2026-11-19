@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 
-export const SUPPORTED_PROVIDERS = ["zai", "dashscope", "deepseek", "commandcode"] as const;
+export const SUPPORTED_PROVIDERS = ["zai", "dashscope", "deepseek", "commandcode", "opencode"] as const;
 export const THINKING_EFFORTS = ["off", "minimal", "low", "medium", "high"] as const;
 export const TAVILY_SEARCH_DEPTHS = ["basic", "advanced", "fast", "ultra-fast"] as const;
 export const TAVILY_FETCH_DEPTHS = ["basic", "advanced"] as const;
@@ -169,6 +169,53 @@ export const DEFAULT_CONFIG = {
       apiKey: "",
       baseUrl: "https://api.commandcode.ai/provider/v1",
       models: [{ id: "z-ai/glm-5.3-flash", label: "glm-5.3-flash" }],
+    },
+    opencode: {
+      apiKey: "",
+      baseUrl: "https://opencode.ai/inference/openai/v1",
+      models: [
+        {
+          id: "deepseek-v4.1-flash",
+          label: "oc-v4.1-flash",
+          cost: {
+            input: 1.1,
+            output: 4.3,
+            cachedRead: 0.02,
+            cachedWrite: 0,
+            // 高峰（北京时间工作日 09:00-12:00 / 14:00-18:00）价格翻倍；人民币近似价（1 USD ≈ 7.2 CNY）
+            schedules: [
+              { name: "peak-am", weekdays: [1, 2, 3, 4, 5], start: "09:00", end: "12:00", input: 2.2, output: 8.6, cachedRead: 0.04, cachedWrite: 0 },
+              { name: "peak-pm", weekdays: [1, 2, 3, 4, 5], start: "14:00", end: "18:00", input: 2.2, output: 8.6, cachedRead: 0.04, cachedWrite: 0 },
+            ],
+          },
+          thinking: [
+            { id: "low", params: { thinking: { type: "enabled" }, reasoning_effort: "low" } },
+            { id: "high", params: { thinking: { type: "enabled" }, reasoning_effort: "high" } },
+            { id: "max", params: { thinking: { type: "enabled" }, reasoning_effort: "max" } },
+          ],
+          thinkingOff: { reasoning_effort: "off" },
+        },
+        {
+          id: "glm-5.3-flash",
+          label: "oc-glm-5.3-flash",
+          cost: { input: 1.1, output: 3.6, cachedRead: 0.22, cachedWrite: 0 },
+          thinking: [
+            { id: "low", params: { thinking: { type: "enabled", clear_thinking: false }, reasoning_effort: "low" } },
+            { id: "high", params: { thinking: { type: "enabled", clear_thinking: false }, reasoning_effort: "high" } },
+            { id: "max", params: { thinking: { type: "enabled", clear_thinking: false }, reasoning_effort: "max" } },
+          ],
+        },
+        {
+          id: "glm-5.3",
+          label: "oc-glm-5.3",
+          cost: { input: 10.1, output: 31.7, cachedRead: 1.87, cachedWrite: 0 },
+          thinking: [
+            { id: "low", params: { thinking: { type: "enabled", clear_thinking: false }, reasoning_effort: "low" } },
+            { id: "high", params: { thinking: { type: "enabled", clear_thinking: false }, reasoning_effort: "high" } },
+            { id: "max", params: { thinking: { type: "enabled", clear_thinking: false }, reasoning_effort: "max" } },
+          ],
+        },
+      ],
     },
   },
   defaultProvider: "zai" as const,

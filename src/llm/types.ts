@@ -63,6 +63,8 @@ export interface CompletionOptions {
   thinkingParams?: Record<string, unknown>;
   responseFormat?: { type: "json_object" | "text" };
   signal?: AbortSignal;
+  /** 会话 ID：opencode 等网关要求每会话稳定的 x-opencode-session 头 */
+  sessionId?: string;
 }
 
 /**

@@ -181,6 +181,7 @@ function mergeWithDefaults(userConfig: Partial<Config>): Config {
       dashscope: mergeProviderConfig("dashscope", userConfig),
       deepseek: mergeProviderConfig("deepseek", userConfig),
       commandcode: mergeProviderConfig("commandcode", userConfig),
+      opencode: mergeProviderConfig("opencode", userConfig),
     },
     defaultProvider: userConfig.defaultProvider ?? DEFAULT_CONFIG.defaultProvider,
     defaultModel: userConfig.defaultModel ?? DEFAULT_CONFIG.defaultModel,

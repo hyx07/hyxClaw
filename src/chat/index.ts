@@ -647,6 +647,7 @@ export async function chat(
     maxTokens,
     thinkingEffort: run.thinkingEffort,
     thinkingParams: run.thinkingParams,
+    sessionId,
   };
 
   const extraMessages: Message[] = [];
@@ -801,6 +802,7 @@ export async function* chatStream(
     maxTokens,
     thinkingEffort: run.thinkingEffort,
     thinkingParams: run.thinkingParams,
+    sessionId,
   };
 
   const extraMessages: Message[] = [];
